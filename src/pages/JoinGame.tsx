@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
@@ -101,7 +100,7 @@ const JoinGame = () => {
               className="h-16 text-xl flex items-center justify-center gap-3"
             >
               <UserRoundIcon size={24} />
-              {language === 'it' ? 'Inizia Partita' : 'Start Game'}
+              {language === 'it' ? '1° narratore' : 'First Host'}
             </Button>
             
             <Button 
@@ -110,7 +109,7 @@ const JoinGame = () => {
               className="h-16 text-xl flex items-center justify-center gap-3 bg-white/80"
             >
               <Users size={24} />
-              {language === 'it' ? 'Inserisci PIN' : 'Enter PIN'}
+              {language === 'it' ? 'Gli altri giocatori' : 'Other Players'}
             </Button>
           </div>
         </div>
