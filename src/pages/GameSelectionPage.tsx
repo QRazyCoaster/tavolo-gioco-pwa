@@ -21,7 +21,8 @@ const GameSelectionPage = () => {
       payload: gameId
     });
     
-    navigate('/join');
+    // Navigate to rules page instead of join
+    navigate('/rules');
   };
   
   const handleBackToLanguage = () => {

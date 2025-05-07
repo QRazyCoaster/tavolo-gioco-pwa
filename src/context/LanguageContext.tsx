@@ -39,12 +39,27 @@ const it = {
     waitingForHost: 'In attesa del narratore...',
     endGame: 'Termina il gioco',
     loadingResources: 'Caricamento risorse...',
+    gameRules: 'Regole del gioco',
+    readBeforePlaying: 'Leggi prima di giocare',
+    rules: 'Regole',
+    continue: 'Continua',
+    noGameSelected: 'Nessun gioco selezionato',
   },
   games: {
     trivia: 'Trivia',
     triviaDesc: 'Sfida le tue conoscenze con domande di cultura generale',
     bottleGame: 'Gioco della Bottiglia',
     bottleGameDesc: 'Divertimento classico con la bottiglia che gira',
+  },
+  rules: {
+    trivia1: 'Ogni giocatore risponde a domande a turno',
+    trivia2: 'Per ogni risposta corretta, guadagnerai 1 punto',
+    trivia3: 'Hai 20 secondi per rispondere ad ogni domanda',
+    trivia4: 'Il giocatore con più punti alla fine vince',
+    bottle1: 'I giocatori siedono in cerchio',
+    bottle2: 'A turno, ogni giocatore fa girare la bottiglia',
+    bottle3: 'Il giocatore a cui punta la bottiglia deve rispondere a una domanda o fare un\'azione',
+    bottle4: 'Divertimento garantito per tutti!',
   }
 };
 
@@ -74,12 +89,27 @@ const en = {
     waitingForHost: 'Waiting for host...',
     endGame: 'End game',
     loadingResources: 'Loading resources...',
+    gameRules: 'Game Rules',
+    readBeforePlaying: 'Read before playing',
+    rules: 'Rules',
+    continue: 'Continue',
+    noGameSelected: 'No game selected',
   },
   games: {
     trivia: 'Trivia',
     triviaDesc: 'Test your knowledge with general knowledge questions',
     bottleGame: 'Bottle Game',
     bottleGameDesc: 'Classic fun with the spinning bottle',
+  },
+  rules: {
+    trivia1: 'Each player answers questions in turns',
+    trivia2: 'For each correct answer, you earn 1 point',
+    trivia3: 'You have 20 seconds to answer each question',
+    trivia4: 'The player with the most points at the end wins',
+    bottle1: 'Players sit in a circle',
+    bottle2: 'Each player takes turns spinning the bottle',
+    bottle3: 'The player the bottle points to must answer a question or perform an action',
+    bottle4: 'Fun is guaranteed for everyone!',
   }
 };
 
