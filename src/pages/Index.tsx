@@ -39,14 +39,11 @@ const Index = () => {
         backgroundPosition: 'center'
       }}
     >
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-2">Tavolo Gioco</h1>
-        </div>
-        
-        <div className="grid gap-6">
+      <div className="w-full max-w-md flex flex-col justify-end" style={{ height: '80vh' }}>
+        <div className="grid gap-6 mb-12">
           <Card 
-            className="p-8 hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border-0"
+            className="p-6 hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border-0 transform scale-80"
+            style={{ transform: 'scale(0.8)' }}
             onClick={() => handleLanguageSelect('it')}
           >
             <div className="flex items-center justify-center">
@@ -56,7 +53,8 @@ const Index = () => {
           </Card>
           
           <Card 
-            className="p-8 hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border-0"
+            className="p-6 hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border-0 transform scale-80"
+            style={{ transform: 'scale(0.8)' }}
             onClick={() => handleLanguageSelect('en')}
           >
             <div className="flex items-center justify-center">
