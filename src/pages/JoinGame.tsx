@@ -156,20 +156,6 @@ const JoinGame = () => {
       }}
     >
       <div className="w-full max-w-md flex flex-col items-center">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-6">
-            {state.selectedGame ? 
-              (isHost === null ? t('common.joinOrCreate') : 
-                (isHost ? t('common.createGame') : t('common.joinGame'))) 
-              : t('common.joinOrCreate')}
-          </h2>
-          {state.selectedGame && (
-            <p className="text-xl text-white drop-shadow-md mb-2">
-              {state.selectedGame === 'trivia' ? t('games.trivia') : t('games.bottleGame')}
-            </p>
-          )}
-        </div>
-        
         {renderContent()}
         
         <div className="flex gap-4 mt-4">
