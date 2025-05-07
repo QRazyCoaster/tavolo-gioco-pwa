@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
-import { Bottle, BookText } from "lucide-react";
+import { BookText, Wine } from "lucide-react";
 
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
@@ -73,7 +73,7 @@ const GameSelectionPage = () => {
           >
             <div className="flex items-center gap-4">
               <div className="bg-primary/10 p-3 rounded-full">
-                <Bottle size={28} className="text-primary" />
+                <Wine size={28} className="text-primary" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold">
