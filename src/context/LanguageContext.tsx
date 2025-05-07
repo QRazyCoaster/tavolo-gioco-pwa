@@ -4,9 +4,12 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 // Define our language type and translations interface
 export type Language = 'it' | 'en';
 
+// Updated interface to correctly handle the nested structure
 interface Translations {
-  [key: string]: {
-    [key: string]: string;
+  [language: string]: {
+    [category: string]: {
+      [key: string]: string;
+    };
   };
 }
 

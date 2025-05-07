@@ -17,6 +17,7 @@ const JoinGame = () => {
   
   const handlePinSubmit = (enteredPin: string) => {
     setPin(enteredPin);
+    playAudio('buttonClick');
   };
   
   const handleNameSubmit = (name: string) => {
@@ -45,27 +46,53 @@ const JoinGame = () => {
     navigate('/');
   };
   
+  const handleCreateGame = () => {
+    playAudio('buttonClick');
+    navigate('/create');
+  };
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
-      <div className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ 
+        backgroundImage: `url('/lovable-uploads/3513380f-9e72-4df5-a6b6-1cdbe36f3f30.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div className="w-full max-w-md flex flex-col items-center">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">Tavolo Gioco</h1>
-          <h2 className="text-2xl mb-6">{t('common.joinGame')}</h2>
+          <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-6">{t('common.joinGame')}</h2>
         </div>
         
         {!pin ? (
-          <GamePinInput onSubmit={handlePinSubmit} />
+          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+            <GamePinInput onSubmit={handlePinSubmit} />
+          </div>
         ) : (
-          <PlayerNameInput onSubmit={handleNameSubmit} />
+          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+            <PlayerNameInput onSubmit={handleNameSubmit} />
+          </div>
         )}
         
-        <div className="mt-6 text-center">
+        <div className="flex gap-4 mt-4">
           <Button 
-            variant="ghost" 
+            variant="outline" 
             onClick={handleBack}
+            className="bg-white/80 backdrop-blur-sm"
           >
             {t('common.back')}
           </Button>
+          
+          {!pin && (
+            <Button 
+              variant="outline" 
+              onClick={handleCreateGame}
+              className="bg-white/80 backdrop-blur-sm"
+            >
+              {t('common.create')}
+            </Button>
+          )}
         </div>
       </div>
     </div>
