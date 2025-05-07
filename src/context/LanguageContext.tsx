@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Define our language type and translations interface
@@ -102,10 +101,16 @@ const en = {
     bottleGameDesc: 'Classic fun with the spinning bottle',
   },
   rules: {
-    trivia1: 'Each player answers questions in turns',
-    trivia2: 'For each correct answer, you earn 1 point',
-    trivia3: 'You have 20 seconds to answer each question',
-    trivia4: 'The player with the most points at the end wins',
+    trivia1: 'Choose the first host.',
+    trivia2: 'Click "NEXT" to continue.',
+    trivia3: 'The host clicks "Start Game" and receives a 4-digit PIN.',
+    trivia4: 'Others enter their name and PIN to join.',
+    trivia5: 'Play the game!',
+    trivia6: 'After each round, the host role passes to another player.',
+    trivia7: 'The game ends when everyone has been the host.',
+    trivia8: 'At the end of the game:',
+    trivia9: '🏆 The player with the most points gets a free drink.',
+    trivia10: '😅 The player with the least points plays Truth or Dare.',
     bottle1: 'Players sit in a circle',
     bottle2: 'Each player takes turns spinning the bottle',
     bottle3: 'The player the bottle points to must answer a question or perform an action',

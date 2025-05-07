@@ -37,6 +37,12 @@ const RulesPage = () => {
               <li>{t('rules.trivia2')}</li>
               <li>{t('rules.trivia3')}</li>
               <li>{t('rules.trivia4')}</li>
+              <li>{t('rules.trivia5')}</li>
+              <li>{t('rules.trivia6')}</li>
+              <li>{t('rules.trivia7')}</li>
+              <li className="font-semibold mt-4">{t('rules.trivia8')}</li>
+              <li>{t('rules.trivia9')}</li>
+              <li>{t('rules.trivia10')}</li>
             </ul>
           </div>
         );
