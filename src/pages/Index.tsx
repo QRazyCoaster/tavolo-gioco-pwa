@@ -3,13 +3,15 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { useLanguage, Language } from '@/context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import { preloadAudio, gameAudioFiles, playAudio } from '@/utils/audioUtils';
+import { preloadAudio, gameAudioFiles, playAudio, playBackgroundMusic } from '@/utils/audioUtils';
 import { useEffect, useState } from 'react';
+import { useGame } from '@/context/GameContext';
 
 const Index = () => {
   const { setLanguage } = useLanguage();
   const navigate = useNavigate();
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const { dispatch } = useGame();
 
   // Preload audio files when component mounts
   useEffect(() => {
@@ -24,6 +26,13 @@ const Index = () => {
   const handleLanguageSelect = (language: Language) => {
     setLanguage(language);
     playAudio('buttonClick');
+    
+    // Start background music and update the game state
+    if (audioLoaded) {
+      playBackgroundMusic('backgroundMusic', 0.3);
+      dispatch({ type: 'START_BACKGROUND_MUSIC' });
+    }
+    
     navigate('/games');
   };
 

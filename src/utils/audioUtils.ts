@@ -6,6 +6,9 @@ type AudioMap = {
 // Cache for preloaded audio elements
 const audioCache: AudioMap = {};
 
+// Reference to the background music instance
+let backgroundMusicInstance: HTMLAudioElement | null = null;
+
 /**
  * Preload audio files
  * @param audioFiles - Object with audio names and paths
@@ -55,6 +58,40 @@ export const playAudio = (name: string): void => {
 };
 
 /**
+ * Play background music in loop
+ * @param name - Name of the audio file to play as background music
+ * @param volume - Volume level (0.0 to 1.0)
+ */
+export const playBackgroundMusic = (name: string, volume = 0.3): void => {
+  // If there's already background music playing, stop it first
+  if (backgroundMusicInstance) {
+    stopBackgroundMusic();
+  }
+  
+  if (audioCache[name]) {
+    backgroundMusicInstance = audioCache[name].cloneNode() as HTMLAudioElement;
+    backgroundMusicInstance.loop = true;
+    backgroundMusicInstance.volume = volume;
+    backgroundMusicInstance.play().catch(err => console.error('Error playing background music:', err));
+    console.log('Background music started:', name);
+  } else {
+    console.warn(`Background music "${name}" not found in cache`);
+  }
+};
+
+/**
+ * Stop currently playing background music
+ */
+export const stopBackgroundMusic = (): void => {
+  if (backgroundMusicInstance) {
+    backgroundMusicInstance.pause();
+    backgroundMusicInstance.currentTime = 0;
+    backgroundMusicInstance = null;
+    console.log('Background music stopped');
+  }
+};
+
+/**
  * Set of common game sounds to be preloaded
  */
 export const gameAudioFiles = {
@@ -65,4 +102,5 @@ export const gameAudioFiles = {
   success: '/audio/success.mp3',
   buzzer: '/audio/buzzer.mp3',
   notification: '/audio/notification.mp3',
+  backgroundMusic: '/audio/background-music.mp3',
 };

@@ -17,6 +17,7 @@ export interface GameState {
   selectedGame: string | null;
   gameStarted: boolean;
   currentPlayer: Player | null;
+  backgroundMusicPlaying: boolean;
 }
 
 // Initial state
@@ -27,6 +28,7 @@ const initialState: GameState = {
   selectedGame: null,
   gameStarted: false,
   currentPlayer: null,
+  backgroundMusicPlaying: false,
 };
 
 // Action types
@@ -39,7 +41,9 @@ type GameAction =
   | { type: 'START_GAME' }
   | { type: 'END_GAME' }
   | { type: 'UPDATE_SCORE'; payload: { playerId: string; score: number } }
-  | { type: 'SET_CURRENT_PLAYER'; payload: Player | null };
+  | { type: 'SET_CURRENT_PLAYER'; payload: Player | null }
+  | { type: 'START_BACKGROUND_MUSIC' }
+  | { type: 'STOP_BACKGROUND_MUSIC' };
 
 // Reducer function
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -100,6 +104,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         currentPlayer: action.payload,
+      };
+    case 'START_BACKGROUND_MUSIC':
+      return {
+        ...state,
+        backgroundMusicPlaying: true,
+      };
+    case 'STOP_BACKGROUND_MUSIC':
+      return {
+        ...state,
+        backgroundMusicPlaying: false,
       };
     default:
       return state;
