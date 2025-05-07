@@ -20,15 +20,15 @@ const CreateGame = () => {
     setName(playerName);
   };
   
-  const handleGameSelect = (gameId: string) => {
+  const handleGameSelect = (selectedGameId: string) => {
     const playerId = generateId();
     const gamePin = generateGamePin();
-    const gameId = generateId();
+    const newGameId = generateId();
     
     dispatch({
       type: 'CREATE_GAME',
       payload: {
-        gameId: gameId,
+        gameId: newGameId,
         pin: gamePin,
         host: {
           id: playerId,
@@ -41,7 +41,7 @@ const CreateGame = () => {
     
     dispatch({
       type: 'SELECT_GAME',
-      payload: gameId
+      payload: selectedGameId
     });
     
     playAudio('success');
