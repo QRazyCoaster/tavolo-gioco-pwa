@@ -101,7 +101,7 @@ const JoinGame = () => {
               className="h-16 text-xl flex items-center justify-center gap-3"
             >
               <UserRoundIcon size={24} />
-              {t('common.host')}
+              {t('common.language') === 'it' ? 'Inizia Partita' : 'Start Game'}
             </Button>
             
             <Button 
@@ -110,7 +110,7 @@ const JoinGame = () => {
               className="h-16 text-xl flex items-center justify-center gap-3 bg-white/80"
             >
               <Users size={24} />
-              {t('common.player')}
+              {t('common.language') === 'it' ? 'Inserisci PIN' : 'Enter PIN'}
             </Button>
           </div>
         </div>
