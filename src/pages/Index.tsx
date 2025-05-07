@@ -31,37 +31,44 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center"
+      style={{ 
+        backgroundImage: `url('/lovable-uploads/3513380f-9e72-4df5-a6b6-1cdbe36f3f30.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">Tavolo Gioco</h1>
+          <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-2">Tavolo Gioco</h1>
         </div>
         
         <div className="grid gap-6">
           <Card 
-            className="p-8 hover:shadow-lg transition-shadow cursor-pointer"
+            className="p-8 hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border-0"
             onClick={() => handleLanguageSelect('it')}
           >
             <div className="flex items-center justify-center">
-              <span className="text-2xl mr-2">🇮🇹</span>
-              <span className="text-2xl font-semibold">Italiano</span>
+              <span className="text-3xl mr-3">🇮🇹</span>
+              <span className="text-3xl font-semibold">Italiano</span>
             </div>
           </Card>
           
           <Card 
-            className="p-8 hover:shadow-lg transition-shadow cursor-pointer"
+            className="p-8 hover:shadow-lg transition-shadow cursor-pointer bg-white/80 backdrop-blur-sm border-0"
             onClick={() => handleLanguageSelect('en')}
           >
             <div className="flex items-center justify-center">
-              <span className="text-2xl mr-2">🇬🇧</span>
-              <span className="text-2xl font-semibold">English</span>
+              <span className="text-3xl mr-3">🇬🇧</span>
+              <span className="text-3xl font-semibold">English</span>
             </div>
           </Card>
         </div>
         
         {!audioLoaded && (
-          <div className="mt-6 text-center text-gray-500">
-            <p>Loading resources...</p>
+          <div className="mt-6 text-center text-white">
+            <p className="drop-shadow-lg">Loading resources...</p>
           </div>
         )}
       </div>
