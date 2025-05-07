@@ -32,6 +32,10 @@ const it = {
     chooseName: 'Scegli il tuo nome',
     chooseGame: 'Scegli un gioco',
     players: 'Giocatori',
+    select: 'Seleziona',
+    waitingForHost: 'In attesa del narratore...',
+    endGame: 'Termina il gioco',
+    loadingResources: 'Caricamento risorse...',
   },
 };
 
@@ -57,6 +61,10 @@ const en = {
     chooseName: 'Choose your name',
     chooseGame: 'Choose a game',
     players: 'Players',
+    select: 'Select',
+    waitingForHost: 'Waiting for host...',
+    endGame: 'End game',
+    loadingResources: 'Loading resources...',
   },
 };
 
