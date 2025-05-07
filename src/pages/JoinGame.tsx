@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { UserRoundIcon, Users } from "lucide-react";
 
 const JoinGame = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { dispatch, state } = useGame();
   const [pin, setPin] = useState<string | null>(null);
@@ -101,7 +101,7 @@ const JoinGame = () => {
               className="h-16 text-xl flex items-center justify-center gap-3"
             >
               <UserRoundIcon size={24} />
-              {t('common.language') === 'it' ? 'Inizia Partita' : 'Start Game'}
+              {language === 'it' ? 'Inizia Partita' : 'Start Game'}
             </Button>
             
             <Button 
@@ -110,7 +110,7 @@ const JoinGame = () => {
               className="h-16 text-xl flex items-center justify-center gap-3 bg-white/80"
             >
               <Users size={24} />
-              {t('common.language') === 'it' ? 'Inserisci PIN' : 'Enter PIN'}
+              {language === 'it' ? 'Inserisci PIN' : 'Enter PIN'}
             </Button>
           </div>
         </div>
