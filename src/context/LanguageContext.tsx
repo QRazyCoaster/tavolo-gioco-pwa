@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Define our language type and translations interface
@@ -51,10 +52,16 @@ const it = {
     bottleGameDesc: 'Divertimento classico con la bottiglia che gira',
   },
   rules: {
-    trivia1: 'Ogni giocatore risponde a domande a turno',
-    trivia2: 'Per ogni risposta corretta, guadagnerai 1 punto',
-    trivia3: 'Hai 20 secondi per rispondere ad ogni domanda',
-    trivia4: 'Il giocatore con più punti alla fine vince',
+    trivia1: 'Scegliete il primo narratore.',
+    trivia2: 'Cliccate su "NEXT" per procedere.',
+    trivia3: 'Il narratore clicca su "Inizia Partita" e riceve un PIN a 4 cifre.',
+    trivia4: 'Gli altri inseriscono nome e PIN per entrare.',
+    trivia5: 'Si gioca!',
+    trivia6: 'A ogni round, il ruolo di narratore passa a un altro giocatore.',
+    trivia7: 'Il gioco termina quando tutti hanno fatto il narratore.',
+    trivia8: 'A fine partita:',
+    trivia9: '🏆 Chi ha più punti si fa offrire da bere.',
+    trivia10: '😅 Chi ha meno punti fa Obbligo o Verità.',
     bottle1: 'I giocatori siedono in cerchio',
     bottle2: 'A turno, ogni giocatore fa girare la bottiglia',
     bottle3: 'Il giocatore a cui punta la bottiglia deve rispondere a una domanda o fare un\'azione',
