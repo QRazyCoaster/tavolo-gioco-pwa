@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import WaitingRoom from '@/components/WaitingRoom';
 import { playAudio, stopBackgroundMusic } from '@/utils/audioUtils';
-import { Music, MusicOff } from "lucide-react";
+import { Music, MicOff } from "lucide-react";
 
 const WaitingRoomPage = () => {
   const { t } = useLanguage();
@@ -61,7 +61,7 @@ const WaitingRoomPage = () => {
             onClick={toggleBackgroundMusic}
             title={state.backgroundMusicPlaying ? t('common.muteMusic') : t('common.playMusic')}
           >
-            {state.backgroundMusicPlaying ? <Music size={20} /> : <MusicOff size={20} />}
+            {state.backgroundMusicPlaying ? <Music size={20} /> : <MicOff size={20} />}
           </Button>
         </div>
         
