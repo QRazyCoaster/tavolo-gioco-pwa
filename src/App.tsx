@@ -12,6 +12,7 @@ import CreateGame from "./pages/CreateGame";
 import WaitingRoomPage from "./pages/WaitingRoomPage";
 import GamePage from "./pages/GamePage";
 import NotFound from "./pages/NotFound";
+import GameSelectionPage from "./pages/GameSelectionPage";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/games" element={<GameSelectionPage />} />
               <Route path="/join" element={<JoinGame />} />
               <Route path="/create" element={<CreateGame />} />
               <Route path="/waiting-room" element={<WaitingRoomPage />} />

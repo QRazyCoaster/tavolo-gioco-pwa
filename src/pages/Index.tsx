@@ -1,16 +1,13 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage, Language } from '@/context/LanguageContext';
-import { useGame } from '@/context/GameContext';
 import { useNavigate } from 'react-router-dom';
 import { preloadAudio, gameAudioFiles, playAudio } from '@/utils/audioUtils';
 import { useEffect, useState } from 'react';
 
 const Index = () => {
   const { setLanguage } = useLanguage();
-  const { state } = useGame();
   const navigate = useNavigate();
   const [audioLoaded, setAudioLoaded] = useState(false);
 
@@ -27,7 +24,7 @@ const Index = () => {
   const handleLanguageSelect = (language: Language) => {
     setLanguage(language);
     playAudio('buttonClick');
-    navigate('/join');
+    navigate('/games');
   };
 
   return (

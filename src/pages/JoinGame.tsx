@@ -12,7 +12,7 @@ import { playAudio } from '@/utils/audioUtils';
 const JoinGame = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { dispatch } = useGame();
+  const { dispatch, state } = useGame();
   const [pin, setPin] = useState<string | null>(null);
   
   const handlePinSubmit = (enteredPin: string) => {
@@ -26,7 +26,7 @@ const JoinGame = () => {
     dispatch({
       type: 'JOIN_GAME',
       payload: {
-        gameId: pin as string, // In a real app, we would validate this with the server
+        gameId: pin as string,
         pin: pin as string,
         player: {
           id: playerId,
@@ -43,7 +43,11 @@ const JoinGame = () => {
   
   const handleBack = () => {
     playAudio('buttonClick');
-    navigate('/');
+    if (pin) {
+      setPin(null);
+    } else {
+      navigate('/games');
+    }
   };
   
   const handleCreateGame = () => {
@@ -62,7 +66,14 @@ const JoinGame = () => {
     >
       <div className="w-full max-w-md flex flex-col items-center">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-6">{t('common.joinGame')}</h2>
+          <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-6">
+            {state.selectedGame ? t('common.joinGame') : t('common.joinGame')}
+          </h2>
+          {state.selectedGame && (
+            <p className="text-xl text-white drop-shadow-md mb-2">
+              {state.selectedGame === 'trivia' ? t('games.trivia') : t('games.bottleGame')}
+            </p>
+          )}
         </div>
         
         {!pin ? (

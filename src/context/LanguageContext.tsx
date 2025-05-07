@@ -40,6 +40,12 @@ const it = {
     endGame: 'Termina il gioco',
     loadingResources: 'Caricamento risorse...',
   },
+  games: {
+    trivia: 'Trivia',
+    triviaDesc: 'Sfida le tue conoscenze con domande di cultura generale',
+    bottleGame: 'Gioco della Bottiglia',
+    bottleGameDesc: 'Divertimento classico con la bottiglia che gira',
+  }
 };
 
 // English translations
@@ -69,6 +75,12 @@ const en = {
     endGame: 'End game',
     loadingResources: 'Loading resources...',
   },
+  games: {
+    trivia: 'Trivia',
+    triviaDesc: 'Test your knowledge with general knowledge questions',
+    bottleGame: 'Bottle Game',
+    bottleGameDesc: 'Classic fun with the spinning bottle',
+  }
 };
 
 // Combine all translations
