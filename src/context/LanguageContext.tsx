@@ -44,6 +44,10 @@ const it = {
     rules: 'Regole',
     continue: 'Continua',
     noGameSelected: 'Nessun gioco selezionato',
+    chooseRole: 'Scegli il tuo ruolo',
+    joinOrCreate: 'Partecipa o crea partita',
+    yourGamePin: 'Il tuo codice PIN',
+    sharePinWithPlayers: 'Condividi questo PIN con gli altri giocatori',
   },
   games: {
     trivia: 'Trivia',
@@ -100,6 +104,10 @@ const en = {
     rules: 'Rules',
     continue: 'Continue',
     noGameSelected: 'No game selected',
+    chooseRole: 'Choose your role',
+    joinOrCreate: 'Join or create game',
+    yourGamePin: 'Your Game PIN',
+    sharePinWithPlayers: 'Share this PIN with other players',
   },
   games: {
     trivia: 'Trivia',

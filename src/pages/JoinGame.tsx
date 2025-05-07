@@ -6,21 +6,56 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import GamePinInput from '@/components/GamePinInput';
 import PlayerNameInput from '@/components/PlayerNameInput';
-import { generateId } from '@/utils/gameUtils';
+import { generateId, generateGamePin } from '@/utils/gameUtils';
 import { playAudio } from '@/utils/audioUtils';
+import { Card } from "@/components/ui/card";
+import { UserRoundIcon, Users } from "lucide-react";
 
 const JoinGame = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { dispatch, state } = useGame();
   const [pin, setPin] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState<boolean | null>(null);
+  
+  const handlePlayerRole = (host: boolean) => {
+    setIsHost(host);
+    playAudio('buttonClick');
+    
+    if (host) {
+      // Generate PIN for host
+      const gamePin = generateGamePin();
+      setPin(gamePin);
+    }
+  };
   
   const handlePinSubmit = (enteredPin: string) => {
     setPin(enteredPin);
     playAudio('buttonClick');
   };
   
-  const handleNameSubmit = (name: string) => {
+  const handleHostNameSubmit = (name: string) => {
+    const hostId = generateId();
+    
+    dispatch({
+      type: 'CREATE_GAME',
+      payload: {
+        gameId: pin as string,
+        pin: pin as string,
+        host: {
+          id: hostId,
+          name: name,
+          isHost: true,
+          score: 0
+        }
+      }
+    });
+    
+    playAudio('success');
+    navigate('/waiting-room');
+  };
+  
+  const handlePlayerNameSubmit = (name: string) => {
     const playerId = generateId();
     
     dispatch({
@@ -43,16 +78,73 @@ const JoinGame = () => {
   
   const handleBack = () => {
     playAudio('buttonClick');
-    if (pin) {
+    if (pin && isHost !== null) {
       setPin(null);
+      setIsHost(null);
+    } else if (isHost !== null) {
+      setIsHost(null);
     } else {
-      navigate('/games');
+      navigate('/rules');
     }
   };
   
-  const handleCreateGame = () => {
-    playAudio('buttonClick');
-    navigate('/create');
+  const renderContent = () => {
+    if (isHost === null) {
+      // Initial screen - choose role
+      return (
+        <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+          <h3 className="text-2xl font-semibold text-center mb-6">{t('common.chooseRole')}</h3>
+          
+          <div className="flex flex-col space-y-4">
+            <Button 
+              onClick={() => handlePlayerRole(true)}
+              className="h-16 text-xl flex items-center justify-center gap-3"
+            >
+              <UserRoundIcon size={24} />
+              {t('common.host')}
+            </Button>
+            
+            <Button 
+              onClick={() => handlePlayerRole(false)}
+              variant="outline"
+              className="h-16 text-xl flex items-center justify-center gap-3 bg-white/80"
+            >
+              <Users size={24} />
+              {t('common.player')}
+            </Button>
+          </div>
+        </div>
+      );
+    } else if (isHost && pin) {
+      // Host - Show PIN and collect name
+      return (
+        <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+          <div className="mb-6">
+            <h3 className="text-xl font-semibold text-center mb-2">{t('common.yourGamePin')}</h3>
+            <div className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-2 text-center">
+              <span className="text-3xl font-bold tracking-wider">{pin}</span>
+            </div>
+            <p className="text-center text-sm text-gray-600">{t('common.sharePinWithPlayers')}</p>
+          </div>
+          
+          <PlayerNameInput onSubmit={handleHostNameSubmit} />
+        </div>
+      );
+    } else if (!isHost && !pin) {
+      // Player - Enter PIN
+      return (
+        <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+          <GamePinInput onSubmit={handlePinSubmit} />
+        </div>
+      );
+    } else {
+      // Player - Enter name after PIN
+      return (
+        <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+          <PlayerNameInput onSubmit={handlePlayerNameSubmit} />
+        </div>
+      );
+    }
   };
   
   return (
@@ -67,7 +159,10 @@ const JoinGame = () => {
       <div className="w-full max-w-md flex flex-col items-center">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-6">
-            {state.selectedGame ? t('common.joinGame') : t('common.joinGame')}
+            {state.selectedGame ? 
+              (isHost === null ? t('common.joinOrCreate') : 
+                (isHost ? t('common.createGame') : t('common.joinGame'))) 
+              : t('common.joinOrCreate')}
           </h2>
           {state.selectedGame && (
             <p className="text-xl text-white drop-shadow-md mb-2">
@@ -76,15 +171,7 @@ const JoinGame = () => {
           )}
         </div>
         
-        {!pin ? (
-          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-            <GamePinInput onSubmit={handlePinSubmit} />
-          </div>
-        ) : (
-          <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-            <PlayerNameInput onSubmit={handleNameSubmit} />
-          </div>
-        )}
+        {renderContent()}
         
         <div className="flex gap-4 mt-4">
           <Button 
@@ -94,16 +181,6 @@ const JoinGame = () => {
           >
             {t('common.back')}
           </Button>
-          
-          {!pin && (
-            <Button 
-              variant="outline" 
-              onClick={handleCreateGame}
-              className="bg-white/80 backdrop-blur-sm"
-            >
-              {t('common.create')}
-            </Button>
-          )}
         </div>
       </div>
     </div>
