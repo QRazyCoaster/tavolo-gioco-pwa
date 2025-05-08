@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { useLanguage, Language } from '@/context/LanguageContext';
@@ -16,8 +15,13 @@ const Index = () => {
   // Preload audio files when component mounts
   useEffect(() => {
     const loadAudio = async () => {
-      await preloadAudio(gameAudioFiles);
-      setAudioLoaded(true);
+      try {
+        await preloadAudio(gameAudioFiles);
+        setAudioLoaded(true);
+        console.log('Audio preloading complete');
+      } catch (error) {
+        console.error('Error during audio preloading:', error);
+      }
     };
     
     loadAudio();
@@ -27,7 +31,7 @@ const Index = () => {
     setLanguage(language);
     playAudio('buttonClick');
     
-    // Start background music and update the game state
+    // Start background music and update the game state after user interaction
     if (audioLoaded) {
       playBackgroundMusic('backgroundMusic', 0.3);
       dispatch({ type: 'START_BACKGROUND_MUSIC' });

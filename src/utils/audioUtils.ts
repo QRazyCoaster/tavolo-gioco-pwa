@@ -26,6 +26,7 @@ export const preloadAudio = async (audioFiles: Record<string, string>): Promise<
       };
       
       audio.onerror = () => {
+        console.error(`Failed to load audio: ${path}`);
         reject(new Error(`Failed to load audio: ${path}`));
       };
       
@@ -102,5 +103,6 @@ export const gameAudioFiles = {
   success: '/audio/success.mp3',
   buzzer: '/audio/buzzer.mp3',
   notification: '/audio/notification.mp3',
-  backgroundMusic: '/audio/background-music.mp3',
+  backgroundMusic: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//background-music.mp3',
 };
+
