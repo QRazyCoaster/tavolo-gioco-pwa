@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { useLanguage, Language } from '@/context/LanguageContext';
@@ -33,7 +34,7 @@ const Index = () => {
     
     // Start background music and update the game state after user interaction
     if (audioLoaded) {
-      playBackgroundMusic('backgroundMusic', 0.3);
+      playBackgroundMusic('backgroundMusic', 0.5);
       dispatch({ type: 'START_BACKGROUND_MUSIC' });
     }
     

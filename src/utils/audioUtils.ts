@@ -63,7 +63,7 @@ export const playAudio = (name: string): void => {
  * @param name - Name of the audio file to play as background music
  * @param volume - Volume level (0.0 to 1.0)
  */
-export const playBackgroundMusic = (name: string, volume = 0.3): void => {
+export const playBackgroundMusic = (name: string, volume = 0.5): void => {
   // If there's already background music playing, stop it first
   if (backgroundMusicInstance) {
     stopBackgroundMusic();
@@ -105,4 +105,3 @@ export const gameAudioFiles = {
   notification: '/audio/notification.mp3',
   backgroundMusic: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//background-music.mp3',
 };
-

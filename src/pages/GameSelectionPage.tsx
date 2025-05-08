@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
-import { playAudio } from '@/utils/audioUtils';
-import { BookText, Wine } from "lucide-react";
+import { playAudio, stopBackgroundMusic, playBackgroundMusic } from '@/utils/audioUtils';
+import { BookText, Wine, Music, VolumeX } from "lucide-react";
 
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
   
   const handleGameSelect = (gameId: string) => {
     playAudio('buttonClick');
@@ -30,6 +30,18 @@ const GameSelectionPage = () => {
     navigate('/');
   };
   
+  const toggleBackgroundMusic = () => {
+    if (state.backgroundMusicPlaying) {
+      stopBackgroundMusic();
+      dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+      playAudio('buttonClick');
+    } else {
+      playBackgroundMusic('backgroundMusic', 0.5);
+      dispatch({ type: 'START_BACKGROUND_MUSIC' });
+      playAudio('buttonClick');
+    }
+  };
+  
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4"
@@ -40,10 +52,19 @@ const GameSelectionPage = () => {
       }}
     >
       <div className="w-full max-w-md flex flex-col items-center">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-6">
+        <div className="text-center mb-8 w-full flex justify-between items-center">
+          <h2 className="text-3xl font-bold text-white drop-shadow-lg">
             {t('common.chooseGame')}
           </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleBackgroundMusic}
+            title={state.backgroundMusicPlaying ? t('common.muteMusic') : t('common.playMusic')}
+            className="bg-white/50 backdrop-blur-sm text-primary rounded-full"
+          >
+            {state.backgroundMusicPlaying ? <Music size={20} /> : <VolumeX size={20} />}
+          </Button>
         </div>
         
         <div className="w-full space-y-4">
