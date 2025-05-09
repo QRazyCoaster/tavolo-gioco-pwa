@@ -1,6 +1,8 @@
 import { supabase } from '@/supabaseClient';
-import { listBuzzers } from '@/actions/listBuzzers'
+import { listBuzzers } from '@/actions/listBuzzers';
+
 export async function joinGame({ gameId, playerName }) {
+  // 1. inserisci il giocatore
   const { data: player, error } = await supabase
     .from('players')
     .insert({
@@ -10,3 +12,8 @@ export async function joinGame({ gameId, playerName }) {
     })
     .single();
   if (error) throw error;
+
+  // (prossimo passo: assegneremo il suono qui)
+
+  return player;          // ritorna la riga appena creata
+}
