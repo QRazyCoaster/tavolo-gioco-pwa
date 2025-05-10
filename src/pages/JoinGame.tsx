@@ -12,14 +12,19 @@ import { UserRoundIcon, Users } from "lucide-react";
 import { createGame } from '@/actions/createGame';
 import { supabase } from '@/supabaseClient';
 import { joinGame } from '@/actions/joinGame';
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const JoinGame = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { dispatch, state } = useGame();
-  const [pin, setPin] = useState<string | null>(null);
+  const [pin, setPin] = useState<string>('');
+  const [name, setName] = useState<string>('');
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [isPinValid, setIsPinValid] = useState<boolean>(false);
+  const [showPinError, setShowPinError] = useState<boolean>(false);
+  const { toast } = useToast();
   
   const handlePlayerRole = (host: boolean) => {
     setIsHost(host);
@@ -32,92 +37,140 @@ const JoinGame = () => {
     }
   };
   
-  const handlePinSubmit = async (enteredPin: string) => {
-    playAudio('buttonClick');
-    
-    // Verify the PIN exists in the database
-    const { data: gameRow, error } = await supabase
-      .from('games')
-      .select('id')
-      .eq('pin_code', enteredPin)
-      .single();
-    
-    if (error || !gameRow) {
-      console.error('Invalid PIN', error);
-      // You could show an error toast here
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      setShowPinError(true);
       return;
     }
     
-    // PIN is valid, proceed to name input
-    setPin(enteredPin);
-    setIsPinValid(true);
+    playAudio('buttonClick');
+    setShowPinError(false);
+    
+    try {
+      // Verify the PIN exists in the database
+      const { data: gameRow, error } = await supabase
+        .from('games')
+        .select('id')
+        .eq('pin_code', pin)
+        .single();
+      
+      if (error || !gameRow) {
+        toast({
+          title: t('common.error'),
+          description: t('common.invalidPin'),
+          variant: "destructive",
+        });
+        setShowPinError(true);
+        return;
+      }
+      
+      // PIN is valid
+      setIsPinValid(true);
+    } catch (error) {
+      console.error('Error verifying PIN:', error);
+      toast({
+        title: t('common.error'),
+        description: t('common.invalidPin'),
+        variant: "destructive",
+      });
+      setShowPinError(true);
+    }
   };
   
-  const handleHostNameSubmit = async (name: string) => {
-    const { game, hostPlayer } = await createGame({
-      gameType: 'trivia',
-      hostName: name
-    });
+  const handleHostNameSubmit = async () => {
+    if (!name.trim()) return;
+    
+    try {
+      const { game, hostPlayer } = await createGame({
+        gameType: 'trivia',
+        hostName: name
+      });
 
-    dispatch({
-      type: 'CREATE_GAME',
-      payload: {
-        gameId: game.id,
-        pin: game.pin_code,
-        host: hostPlayer
-      }
-    });
+      dispatch({
+        type: 'CREATE_GAME',
+        payload: {
+          gameId: game.id,
+          pin: game.pin_code,
+          host: hostPlayer
+        }
+      });
 
-    playAudio('success');
-    navigate('/waiting-room');
+      playAudio('success');
+      navigate('/waiting-room');
+    } catch (error) {
+      console.error('Error creating game:', error);
+      toast({
+        title: t('common.error'),
+        description: t('common.errorCreatingGame'),
+        variant: "destructive",
+      });
+    }
   };
 
-  const handlePlayerNameSubmit = async (name: string) => {
-    // 1. recupera l'id partita a partire dal PIN
-    const { data: gameRow, error: gErr } = await supabase
-      .from('games')
-      .select('id')
-      .eq('pin_code', pin)
-      .single();
-    if (gErr || !gameRow) {
-      console.error('PIN non valido', gErr);
-      return;
-    }
-
-    // 2. crea il player e assegna il suono buzzer
-    const player = await joinGame({
-      gameId: gameRow.id,
-      playerName: name
-    });
-
-    // 3. aggiorna stato globale e passa alla waiting‑room
-    dispatch({
-      type: 'JOIN_GAME',
-      payload: {
-        gameId: gameRow.id,
-        pin,
-        player
+  const handlePlayerNameSubmit = async () => {
+    if (!name.trim() || !pin) return;
+    
+    try {
+      // 1. recupera l'id partita a partire dal PIN
+      const { data: gameRow, error: gErr } = await supabase
+        .from('games')
+        .select('id')
+        .eq('pin_code', pin)
+        .single();
+        
+      if (gErr || !gameRow) {
+        toast({
+          title: t('common.error'),
+          description: t('common.invalidPin'),
+          variant: "destructive",
+        });
+        setShowPinError(true);
+        return;
       }
-    });
 
-    playAudio('success');
-    navigate('/waiting-room');
+      // 2. crea il player e assegna il suono buzzer
+      const player = await joinGame({
+        gameId: gameRow.id,
+        playerName: name
+      });
+
+      // 3. aggiorna stato globale e passa alla waiting‑room
+      dispatch({
+        type: 'JOIN_GAME',
+        payload: {
+          gameId: gameRow.id,
+          pin,
+          player
+        }
+      });
+
+      playAudio('success');
+      navigate('/waiting-room');
+    } catch (error) {
+      console.error('Error joining game:', error);
+      toast({
+        title: t('common.error'),
+        description: t('common.errorJoiningGame'),
+        variant: "destructive",
+      });
+    }
   };
 
   const handleBack = () => {
     playAudio('buttonClick');
-    if (pin && isHost !== null) {
-      if (isPinValid) {
-        setIsPinValid(false);
-      } else {
-        setPin(null);
-        setIsHost(null);
-      }
-    } else if (isHost !== null) {
+    if (isHost !== null) {
       setIsHost(null);
+      setPin('');
+      setName('');
+      setShowPinError(false);
     } else {
       navigate('/rules');
     }
+  };
+  
+  const handlePinChange = (value: string) => {
+    setPin(value);
+    if (showPinError) setShowPinError(false);
   };
   
   const renderContent = () => {
@@ -159,21 +212,92 @@ const JoinGame = () => {
             <p className="text-center text-sm text-gray-600">{t('common.sharePinWithPlayers')}</p>
           </div>
           
-          <PlayerNameInput onSubmit={handleHostNameSubmit} />
+          <div className="mt-6">
+            <form onSubmit={(e) => { e.preventDefault(); handleHostNameSubmit(); }} className="flex flex-col space-y-4 w-full">
+              <label htmlFor="host-name" className="text-2xl font-semibold text-center">
+                {t('common.chooseName')}
+              </label>
+              <input
+                id="host-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="text-2xl text-center h-16 border rounded-md p-2"
+                placeholder="Player name"
+                maxLength={20}
+              />
+              <Button 
+                type="submit"
+                className="w-full h-14 text-xl" 
+                variant="default" 
+                disabled={!name.trim()}
+              >
+                {t('common.next')}
+              </Button>
+            </form>
+          </div>
         </div>
       );
-    } else if (!isHost && !pin) {
-      // Player - Enter PIN
+    } else if (!isHost) {
+      // Player - Enter PIN and name together
       return (
         <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-          <GamePinInput onSubmit={handlePinSubmit} />
-        </div>
-      );
-    } else if (!isHost && pin && isPinValid) {
-      // Player - Enter name after valid PIN
-      return (
-        <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-          <PlayerNameInput onSubmit={handlePlayerNameSubmit} />
+          <form onSubmit={(e) => { e.preventDefault(); handlePinSubmit(); }} className="flex flex-col space-y-6">
+            <div>
+              <label className="text-2xl font-semibold text-center block mb-4">
+                {t('common.enterPin')}
+              </label>
+              
+              <div className="flex justify-center mb-2">
+                <InputOTP 
+                  maxLength={4} 
+                  value={pin} 
+                  onChange={handlePinChange}
+                  pattern="\d{1}"
+                  inputMode="numeric"
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} className="h-16 w-16 text-2xl" />
+                    <InputOTPSlot index={1} className="h-16 w-16 text-2xl" />
+                    <InputOTPSlot index={2} className="h-16 w-16 text-2xl" />
+                    <InputOTPSlot index={3} className="h-16 w-16 text-2xl" />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              
+              {showPinError && (
+                <Alert variant="destructive" className="mt-2 mb-2">
+                  <AlertDescription>
+                    {language === 'it' ? 'PIN non valido' : 'Invalid PIN'}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+            
+            <div className="mt-4">
+              <label htmlFor="player-name" className="text-2xl font-semibold text-center block mb-4">
+                {t('common.chooseName')}
+              </label>
+              <input
+                id="player-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="text-2xl text-center h-16 w-full border rounded-md p-2"
+                placeholder="Player name"
+                maxLength={20}
+              />
+            </div>
+            
+            <Button 
+              onClick={handlePlayerNameSubmit}
+              className="w-full h-14 text-xl" 
+              variant="default" 
+              disabled={!pin || !name.trim() || pin.length !== 4}
+            >
+              {t('common.join')}
+            </Button>
+          </form>
         </div>
       );
     } else {
@@ -214,3 +338,10 @@ export default JoinGame;
 const generateGamePin = () => {
   return Math.floor(1000 + Math.random() * 9000).toString();
 };
+
+// Add a missing import
+import { 
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot 
+} from "@/components/ui/input-otp";

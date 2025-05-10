@@ -7,11 +7,12 @@ import { playAudio } from '@/utils/audioUtils';
 
 interface PlayerNameInputProps {
   onSubmit: (name: string) => void;
+  initialValue?: string;
 }
 
-const PlayerNameInput = ({ onSubmit }: PlayerNameInputProps) => {
+const PlayerNameInput = ({ onSubmit, initialValue = '' }: PlayerNameInputProps) => {
   const { t } = useLanguage();
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialValue);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
