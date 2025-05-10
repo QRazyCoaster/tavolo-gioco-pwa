@@ -12,6 +12,15 @@ const WaitingRoomPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
+
+React.useEffect(() => {
+  if (state.player?.buzzer_sound_url) {
+    const s = new Audio(state.player.buzzer_sound_url);
+    s.preload = 'auto';
+    window.myBuzzer = s;
+  }
+}, [state.player]);
+
   
   const handleStartGame = () => {
     // Stop background music when game starts
