@@ -8,20 +8,27 @@ import WaitingRoom from '@/components/WaitingRoom';
 import { playAudio, stopBackgroundMusic } from '@/utils/audioUtils';
 import { Music, VolumeX } from "lucide-react";
 
+// Add TypeScript interface to extend Window
+declare global {
+  interface Window {
+    myBuzzer?: HTMLAudioElement;
+  }
+}
+
 const WaitingRoomPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
 
-React.useEffect(() => {
-  if (state.player?.buzzer_sound_url) {
-    const s = new Audio(state.player.buzzer_sound_url);
-    s.preload = 'auto';
-    window.myBuzzer = s;
-  }
-}, [state.player]);
+  React.useEffect(() => {
+    // Use currentPlayer instead of player
+    if (state.currentPlayer?.buzzer_sound_url) {
+      const s = new Audio(state.currentPlayer.buzzer_sound_url);
+      s.preload = 'auto';
+      window.myBuzzer = s;
+    }
+  }, [state.currentPlayer]);
 
-  
   const handleStartGame = () => {
     // Stop background music when game starts
     if (state.backgroundMusicPlaying) {
