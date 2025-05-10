@@ -10,6 +10,7 @@ export async function joinGame({ gameId, playerName }) {
       name: playerName,
       is_host: false
     })
+    .select()
     .single();
   if (error) throw error;
 
