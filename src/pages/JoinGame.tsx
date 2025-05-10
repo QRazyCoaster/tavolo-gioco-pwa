@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +20,7 @@ const JoinGame = () => {
   const { dispatch, state } = useGame();
   const [pin, setPin] = useState<string | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
+  const [isPinValid, setIsPinValid] = useState<boolean>(false);
   
   const handlePlayerRole = (host: boolean) => {
     setIsHost(host);
@@ -31,72 +33,87 @@ const JoinGame = () => {
     }
   };
   
-  const handlePinSubmit = (enteredPin: string) => {
-    setPin(enteredPin);
+  const handlePinSubmit = async (enteredPin: string) => {
     playAudio('buttonClick');
+    
+    // Verify the PIN exists in the database
+    const { data: gameRow, error } = await supabase
+      .from('games')
+      .select('id')
+      .eq('pin_code', enteredPin)
+      .single();
+    
+    if (error || !gameRow) {
+      console.error('Invalid PIN', error);
+      // You could show an error toast here
+      return;
+    }
+    
+    // PIN is valid, proceed to name input
+    setPin(enteredPin);
+    setIsPinValid(true);
   };
   
-const handleHostNameSubmit = async (name: string) => {
-  const { game, hostPlayer } = await createGame({
-    gameType: 'trivia',
-    hostName: name
-  });
+  const handleHostNameSubmit = async (name: string) => {
+    const { game, hostPlayer } = await createGame({
+      gameType: 'trivia',
+      hostName: name
+    });
 
-  dispatch({
-    type: 'CREATE_GAME',
-    payload: {
-      gameId: game.id,
-      pin: game.pin_code,
-      host: hostPlayer
+    dispatch({
+      type: 'CREATE_GAME',
+      payload: {
+        gameId: game.id,
+        pin: game.pin_code,
+        host: hostPlayer
+      }
+    });
+
+    playAudio('success');
+    navigate('/waiting-room');
+  };
+
+  const handlePlayerNameSubmit = async (name: string) => {
+    // 1. recupera l'id partita a partire dal PIN
+    const { data: gameRow, error: gErr } = await supabase
+      .from('games')
+      .select('id')
+      .eq('pin_code', pin)
+      .single();
+    if (gErr || !gameRow) {
+      console.error('PIN non valido', gErr);
+      return;
     }
-  });
 
-  playAudio('success');
-  navigate('/waiting-room');
-};
-
-// ⚠️ Assicurati di avere in cima al file:
-// import { supabase } from '@/supabaseClient';
-// import { joinGame }   from '@/actions/joinGame';
-
-const handlePlayerNameSubmit = async (name: string) => {
-  // 1. recupera l’id partita a partire dal PIN
-  const { data: gameRow, error: gErr } = await supabase
-    .from('games')
-    .select('id')
-    .eq('pin_code', pin)
-    .single();
-  if (gErr || !gameRow) {
-    console.error('PIN non valido', gErr);
-    return;
-  }
-
-  // 2. crea il player e assegna il suono buzzer
-  const player = await joinGame({
-    gameId: gameRow.id,
-    playerName: name
-  });
-
-  // 3. aggiorna stato globale e passa alla waiting‑room
-  dispatch({
-    type: 'JOIN_GAME',
-    payload: {
+    // 2. crea il player e assegna il suono buzzer
+    const player = await joinGame({
       gameId: gameRow.id,
-      pin,
-      player
-    }
-  });
+      playerName: name
+    });
 
-  playAudio('success');
-  navigate('/waiting-room');
-};
+    // 3. aggiorna stato globale e passa alla waiting‑room
+    dispatch({
+      type: 'JOIN_GAME',
+      payload: {
+        gameId: gameRow.id,
+        pin,
+        player
+      }
+    });
 
-  
+    playAudio('success');
+    navigate('/waiting-room');
+  };
+
   const handleBack = () => {
     playAudio('buttonClick');
     if (pin && isHost !== null) {
-      setPin(null);
-      setIsHost(null);
+      if (isPinValid) {
+        setIsPinValid(false);
+      } else {
+        setPin(null);
+        setIsHost(null);
+      }
     } else if (isHost !== null) {
       setIsHost(null);
     } else {
@@ -153,13 +170,16 @@ const handlePlayerNameSubmit = async (name: string) => {
           <GamePinInput onSubmit={handlePinSubmit} />
         </div>
       );
-    } else {
-      // Player - Enter name after PIN
+    } else if (!isHost && pin && isPinValid) {
+      // Player - Enter name after valid PIN
       return (
         <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
           <PlayerNameInput onSubmit={handlePlayerNameSubmit} />
         </div>
       );
+    } else {
+      // Default state (shouldn't reach here)
+      return null;
     }
   };
   
@@ -190,3 +210,8 @@ const handlePlayerNameSubmit = async (name: string) => {
 };
 
 export default JoinGame;
+
+// Function to generate a game PIN (this was missing but is referenced in the code)
+const generateGamePin = () => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
