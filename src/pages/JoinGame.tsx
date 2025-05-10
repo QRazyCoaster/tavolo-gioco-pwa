@@ -53,27 +53,42 @@ const handleHostNameSubmit = async (name: string) => {
   navigate('/waiting-room');
 };
 
-  
-  const handlePlayerNameSubmit = (name: string) => {
-    const playerId = generateId();
-    
-    dispatch({
-      type: 'JOIN_GAME',
-      payload: {
-        gameId: pin as string,
-        pin: pin as string,
-        player: {
-          id: playerId,
-          name: name,
-          isHost: false,
-          score: 0
-        }
-      }
-    });
-    
-    playAudio('success');
-    navigate('/waiting-room');
-  };
+// ⚠️ Assicurati di avere in cima al file:
+// import { supabase } from '@/supabaseClient';
+// import { joinGame }   from '@/actions/joinGame';
+
+const handlePlayerNameSubmit = async (name: string) => {
+  // 1. recupera l’id partita a partire dal PIN
+  const { data: gameRow, error: gErr } = await supabase
+    .from('games')
+    .select('id')
+    .eq('pin_code', pin)
+    .single();
+  if (gErr || !gameRow) {
+    console.error('PIN non valido', gErr);
+    return;
+  }
+
+  // 2. crea il player e assegna il suono buzzer
+  const player = await joinGame({
+    gameId: gameRow.id,
+    playerName: name
+  });
+
+  // 3. aggiorna stato globale e passa alla waiting‑room
+  dispatch({
+    type: 'JOIN_GAME',
+    payload: {
+      gameId: gameRow.id,
+      pin,
+      player
+    }
+  });
+
+  playAudio('success');
+  navigate('/waiting-room');
+};
+
   
   const handleBack = () => {
     playAudio('buttonClick');
