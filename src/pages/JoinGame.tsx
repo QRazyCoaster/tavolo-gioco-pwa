@@ -9,6 +9,8 @@ import { playAudio } from '@/utils/audioUtils';
 import { Card } from "@/components/ui/card";
 import { UserRoundIcon, Users } from "lucide-react";
 import { createGame } from '@/actions/createGame';
+import { supabase } from '@/supabaseClient';
+import { joinGame } from '@/actions/joinGame';
 
 
 const JoinGame = () => {
