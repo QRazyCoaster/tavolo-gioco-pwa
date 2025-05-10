@@ -9,6 +9,8 @@ import { generateId, generateGamePin } from '@/utils/gameUtils';
 import { playAudio } from '@/utils/audioUtils';
 import { Card } from "@/components/ui/card";
 import { UserRoundIcon, Users } from "lucide-react";
+import { createGame } from '@/actions/createGame';
+
 
 const JoinGame = () => {
   const { t, language } = useLanguage();
