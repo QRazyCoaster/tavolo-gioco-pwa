@@ -45,15 +45,19 @@ export const useGameJoin = () => {
     setName(e.target.value);
   };
   
-  const handleHostNameSubmit = async () => {
-    if (!name.trim()) return;
+  const handleHostNameSubmit = async (submittedName: string) => {
+    if (!submittedName.trim()) return;
     
     try {
       setLoading(true);
+      console.log('Creating game with name:', submittedName);
       const { game, hostPlayer } = await createGame({
         gameType: 'trivia',
-        hostName: name
+        hostName: submittedName
       });
+
+      console.log('Game created:', game);
+      console.log('Host player:', hostPlayer);
 
       dispatch({
         type: 'CREATE_GAME',

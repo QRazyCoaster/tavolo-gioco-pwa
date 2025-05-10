@@ -13,6 +13,12 @@ interface HostPinDisplayProps {
 const HostPinDisplay = ({ pin, name, loading, onSubmit }: HostPinDisplayProps) => {
   const { t, language } = useLanguage();
   
+  const handleSubmit = (submittedName: string) => {
+    if (submittedName.trim()) {
+      onSubmit(submittedName);
+    }
+  };
+  
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
       <div className="mb-6">
@@ -25,7 +31,7 @@ const HostPinDisplay = ({ pin, name, loading, onSubmit }: HostPinDisplayProps) =
       
       <div className="mt-6">
         <PlayerNameInput 
-          onSubmit={onSubmit} 
+          onSubmit={handleSubmit} 
           initialValue={name}
         />
       </div>
