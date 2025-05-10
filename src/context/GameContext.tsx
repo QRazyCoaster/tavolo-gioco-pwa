@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 
 /* ──────────────── Player type ──────────────── */
@@ -113,4 +114,3 @@ export const useGame = (): GameContextType => {
   if (!context) throw new Error('useGame must be used within a GameProvider');
   return context;
 };
-```
