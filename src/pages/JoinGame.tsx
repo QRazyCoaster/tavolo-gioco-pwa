@@ -35,26 +35,25 @@ const JoinGame = () => {
     playAudio('buttonClick');
   };
   
-  const handleHostNameSubmit = (name: string) => {
-    const hostId = generateId();
-    
-    dispatch({
-      type: 'CREATE_GAME',
-      payload: {
-        gameId: pin as string,
-        pin: pin as string,
-        host: {
-          id: hostId,
-          name: name,
-          isHost: true,
-          score: 0
-        }
-      }
-    });
-    
-    playAudio('success');
-    navigate('/waiting-room');
-  };
+const handleHostNameSubmit = async (name: string) => {
+  const { game, hostPlayer } = await createGame({
+    gameType: 'trivia',
+    hostName: name
+  });
+
+  dispatch({
+    type: 'CREATE_GAME',
+    payload: {
+      gameId: game.id,
+      pin: game.pin_code,
+      host: hostPlayer
+    }
+  });
+
+  playAudio('success');
+  navigate('/waiting-room');
+};
+
   
   const handlePlayerNameSubmit = (name: string) => {
     const playerId = generateId();
