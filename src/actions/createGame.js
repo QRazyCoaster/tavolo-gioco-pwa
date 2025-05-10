@@ -10,6 +10,7 @@ export async function createGame({ gameType, hostName }) {
       host_name: hostName,
       status: 'waiting'
     })
+    .select()          // ← AGGIUNGI
     .single();
   if (gErr) throw gErr;
 
@@ -22,6 +23,7 @@ export async function createGame({ gameType, hostName }) {
       is_host: true,
       narrator_order: 1
     })
+    .select()          // ← AGGIUNGI
     .single();
   if (pErr) throw pErr;
 
@@ -40,4 +42,6 @@ export async function createGame({ gameType, hostName }) {
 
   return { game, hostPlayer: { ...player, buzzer_sound_url: chosen } };
 }
+
+
 
