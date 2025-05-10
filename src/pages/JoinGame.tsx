@@ -13,7 +13,6 @@ import { createGame } from '@/actions/createGame';
 import { supabase } from '@/supabaseClient';
 import { joinGame } from '@/actions/joinGame';
 
-
 const JoinGame = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
