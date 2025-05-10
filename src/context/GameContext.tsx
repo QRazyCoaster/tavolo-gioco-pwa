@@ -1,15 +1,15 @@
-
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 
-// Player type
+/* ──────────────── Player type ──────────────── */
 export interface Player {
   id: string;
   name: string;
   isHost: boolean;
   score?: number;
+  buzzer_sound_url?: string;   // ← nuovo campo
 }
 
-// Game state interface
+/* ──────────────── Game state ──────────────── */
 export interface GameState {
   gameId: string | null;
   pin: string | null;
@@ -20,7 +20,7 @@ export interface GameState {
   backgroundMusicPlaying: boolean;
 }
 
-// Initial state
+/* ──────────────── Initial state ──────────────── */
 const initialState: GameState = {
   gameId: null,
   pin: null,
@@ -31,7 +31,7 @@ const initialState: GameState = {
   backgroundMusicPlaying: false,
 };
 
-// Action types
+/* ──────────────── Action types ──────────────── */
 type GameAction =
   | { type: 'CREATE_GAME'; payload: { gameId: string; pin: string; host: Player } }
   | { type: 'JOIN_GAME'; payload: { gameId: string; pin: string; player: Player } }
@@ -45,7 +45,7 @@ type GameAction =
   | { type: 'START_BACKGROUND_MUSIC' }
   | { type: 'STOP_BACKGROUND_MUSIC' };
 
-// Reducer function
+/* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'CREATE_GAME':
@@ -57,7 +57,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         currentPlayer: action.payload.host,
       };
     case 'JOIN_GAME':
-      // In a real app, we would validate the game ID and PIN here
       return {
         ...state,
         gameId: action.payload.gameId,
@@ -66,61 +65,34 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         players: [...state.players, action.payload.player],
       };
     case 'ADD_PLAYER':
-      return {
-        ...state,
-        players: [...state.players, action.payload],
-      };
+      return { ...state, players: [...state.players, action.payload] };
     case 'REMOVE_PLAYER':
-      return {
-        ...state,
-        players: state.players.filter(player => player.id !== action.payload),
-      };
+      return { ...state, players: state.players.filter(p => p.id !== action.payload) };
     case 'SELECT_GAME':
-      return {
-        ...state,
-        selectedGame: action.payload,
-      };
+      return { ...state, selectedGame: action.payload };
     case 'START_GAME':
-      return {
-        ...state,
-        gameStarted: true,
-      };
+      return { ...state, gameStarted: true };
     case 'END_GAME':
-      return {
-        ...state,
-        gameStarted: false,
-        selectedGame: null,
-      };
+      return { ...state, gameStarted: false, selectedGame: null };
     case 'UPDATE_SCORE':
       return {
         ...state,
-        players: state.players.map(player =>
-          player.id === action.payload.playerId
-            ? { ...player, score: action.payload.score }
-            : player
+        players: state.players.map(p =>
+          p.id === action.payload.playerId ? { ...p, score: action.payload.score } : p
         ),
       };
     case 'SET_CURRENT_PLAYER':
-      return {
-        ...state,
-        currentPlayer: action.payload,
-      };
+      return { ...state, currentPlayer: action.payload };
     case 'START_BACKGROUND_MUSIC':
-      return {
-        ...state,
-        backgroundMusicPlaying: true,
-      };
+      return { ...state, backgroundMusicPlaying: true };
     case 'STOP_BACKGROUND_MUSIC':
-      return {
-        ...state,
-        backgroundMusicPlaying: false,
-      };
+      return { ...state, backgroundMusicPlaying: false };
     default:
       return state;
   }
 }
 
-// Context
+/* ──────────────── Context ──────────────── */
 interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
@@ -128,22 +100,17 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-// Provider component
+/* ──────────────── Provider ──────────────── */
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  return (
-    <GameContext.Provider value={{ state, dispatch }}>
-      {children}
-    </GameContext.Provider>
-  );
+  return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
 };
 
-// Hook for using game context
+/* ──────────────── Hook ──────────────── */
 export const useGame = (): GameContextType => {
   const context = useContext(GameContext);
-  if (context === undefined) {
-    throw new Error('useGame must be used within a GameProvider');
-  }
+  if (!context) throw new Error('useGame must be used within a GameProvider');
   return context;
 };
+```
