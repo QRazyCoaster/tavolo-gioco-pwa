@@ -5,7 +5,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import GamePinInput from '@/components/GamePinInput';
 import PlayerNameInput from '@/components/PlayerNameInput';
-import { generateId, generateGamePin } from '@/utils/gameUtils';
 import { playAudio } from '@/utils/audioUtils';
 import { Card } from "@/components/ui/card";
 import { UserRoundIcon, Users } from "lucide-react";
