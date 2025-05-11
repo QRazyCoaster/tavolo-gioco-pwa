@@ -34,7 +34,7 @@ const Index = () => {
     
     // Start background music and update the game state after user interaction
     if (audioLoaded) {
-      playBackgroundMusic('backgroundMusic', 0.1);
+      playBackgroundMusic('backgroundMusic', 0.05);
       dispatch({ type: 'START_BACKGROUND_MUSIC' });
     }
     
