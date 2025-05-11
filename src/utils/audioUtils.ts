@@ -1,4 +1,3 @@
-
 type AudioMap = {
   [key: string]: HTMLAudioElement;
 };
@@ -49,10 +48,8 @@ export const preloadAudio = async (audioFiles: Record<string, string>): Promise<
  */
 export const playAudio = (name: string): void => {
   if (audioCache[name]) {
-    // Create a new Audio instance that uses the cached file
-    // This allows for multiple simultaneous playback
     const audio = audioCache[name].cloneNode() as HTMLAudioElement;
-    audio.volume = volume
+    audio.volume = 1.0; // Full volume for effects
     audio.play().catch(err => console.error('Error playing audio:', err));
   } else {
     console.warn(`Audio "${name}" not found in cache`);
@@ -65,7 +62,6 @@ export const playAudio = (name: string): void => {
  * @param volume - Volume level (0.0 to 1.0)
  */
 export const playBackgroundMusic = (name: string, volume = 0.5): void => {
-  // If there's already background music playing, stop it first
   if (backgroundMusicInstance) {
     stopBackgroundMusic();
   }
@@ -97,12 +93,12 @@ export const stopBackgroundMusic = (): void => {
  * Set of common game sounds to be preloaded
  */
 export const gameAudioFiles = {
-  buttonClick: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//button-click.mp3',
-  correct: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//correct.mp3',
-  wrong: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//wrong.mp3',
-  countdown: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//countdown.mp3',
-  success: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//success.mp3',
-  buzzer: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//buzzer.mp3',
-  notification: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//notification.mp3',
-  backgroundMusic: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//background-music.mp3',
+  buttonClick: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/button-click.mp3',
+  correct: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/correct.mp3',
+  wrong: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/wrong.mp3',
+  countdown: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/countdown.mp3',
+  success: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/success.mp3',
+  buzzer: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzer.mp3',
+  notification: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/notification.mp3',
+  backgroundMusic: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/background-music.mp3',
 };
