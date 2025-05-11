@@ -7,8 +7,7 @@ import RoleSelector from '@/components/join/RoleSelector';
 import HostPinDisplay from '@/components/join/HostPinDisplay';
 import PlayerJoinForm from '@/components/join/PlayerJoinForm';
 import { joinGame } from '@/actions/joinGame';
-import { supabase } from '@/supabaseClient';   // se non c’è già
-
+import { supabase } from '@/supabaseClient';
 
 const JoinGame = () => {
   const { language } = useLanguage();
@@ -37,6 +36,7 @@ const JoinGame = () => {
           pin={pin}
           name={name}
           loading={loading}
+          onNameChange={handleNameChange}
           onSubmit={handleHostNameSubmit}
         />
       );

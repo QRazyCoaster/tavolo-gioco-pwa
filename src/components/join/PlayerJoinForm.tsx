@@ -44,7 +44,6 @@ const PlayerJoinForm = ({
               maxLength={4} 
               value={pin} 
               onChange={onPinChange}
-              pattern="\d{1}"
               inputMode="numeric"
             >
               <InputOTPGroup>

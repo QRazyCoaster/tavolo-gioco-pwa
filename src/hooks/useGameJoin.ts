@@ -45,15 +45,16 @@ export const useGameJoin = () => {
     setName(e.target.value);
   };
   
-  const handleHostNameSubmit = async (submittedName: string) => {
-    if (!submittedName.trim()) return;
+  const handleHostNameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
     
     try {
       setLoading(true);
-      console.log('Creating game with name:', submittedName);
+      console.log('Creating game with name:', name);
       const { game, hostPlayer } = await createGame({
         gameType: 'trivia',
-        hostName: submittedName
+        hostName: name
       });
 
       console.log('Game created:', game);
@@ -89,6 +90,9 @@ export const useGameJoin = () => {
     
     try {
       setLoading(true);
+      console.log('Joining game with PIN:', pin);
+      console.log('Player name:', name);
+      
       // 1. recupera l'id partita a partire dal PIN
       const { data: gameRow, error: gErr } = await supabase
         .from('games')
@@ -96,7 +100,10 @@ export const useGameJoin = () => {
         .eq('pin_code', pin)
         .single();
         
+      console.log('Game lookup result:', gameRow, gErr);
+        
       if (gErr || !gameRow) {
+        console.error('Invalid PIN or game not found:', gErr);
         toast({
           title: t('common.error'),
           description: language === 'it' ? 'PIN non valido' : 'Invalid PIN',
@@ -107,10 +114,13 @@ export const useGameJoin = () => {
       }
 
       // 2. crea il player e assegna il suono buzzer
+      console.log('Creating player for game ID:', gameRow.id);
       const player = await joinGame({
         gameId: gameRow.id,
         playerName: name
       });
+
+      console.log('Player created:', player);
 
       // 3. aggiorna stato globale e passa alla waiting‑room
       dispatch({
