@@ -96,12 +96,12 @@ export const stopBackgroundMusic = (): void => {
  * Set of common game sounds to be preloaded
  */
 export const gameAudioFiles = {
-  buttonClick: '/audio/button-click.mp3',
-  correct: '/audio/correct.mp3',
-  wrong: '/audio/wrong.mp3',
-  countdown: '/audio/countdown.mp3',
-  success: '/audio/success.mp3',
-  buzzer: '/audio/buzzer.mp3',
-  notification: '/audio/notification.mp3',
+  buttonClick: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//button-click.mp3',
+  correct: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//correct.mp3',
+  wrong: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//wrong.mp3',
+  countdown: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//countdown.mp3',
+  success: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//success.mp3',
+  buzzer: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//buzzer.mp3',
+  notification: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//notification.mp3',
   backgroundMusic: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio//background-music.mp3',
 };
