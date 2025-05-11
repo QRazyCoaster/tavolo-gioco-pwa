@@ -6,6 +6,9 @@ import { useGameJoin } from '@/hooks/useGameJoin';
 import RoleSelector from '@/components/join/RoleSelector';
 import HostPinDisplay from '@/components/join/HostPinDisplay';
 import PlayerJoinForm from '@/components/join/PlayerJoinForm';
+import { joinGame } from '@/actions/joinGame';
+import { supabase } from '@/supabaseClient';   // se non c’è già
+
 
 const JoinGame = () => {
   const { language } = useLanguage();
