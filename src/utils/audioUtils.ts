@@ -61,7 +61,7 @@ export const playAudio = (name: string): void => {
  * @param name - Name of the audio file to play as background music
  * @param volume - Volume level (0.0 to 1.0)
  */
-export const playBackgroundMusic = (name: string, volume = 0.5): void => {
+export const playBackgroundMusic = (name: string, volume = 0.2): void => {
   if (backgroundMusicInstance) {
     stopBackgroundMusic();
   }
