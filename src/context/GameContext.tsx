@@ -37,6 +37,7 @@ type GameAction =
   | { type: 'CREATE_GAME'; payload: { gameId: string; pin: string; host: Player } }
   | { type: 'JOIN_GAME'; payload: { gameId: string; pin: string; player: Player } }
   | { type: 'ADD_PLAYER'; payload: Player }
+  | { type: 'ADD_PLAYER_LIST'; payload: Player[] }
   | { type: 'REMOVE_PLAYER'; payload: string }
   | { type: 'SELECT_GAME'; payload: string }
   | { type: 'START_GAME' }
