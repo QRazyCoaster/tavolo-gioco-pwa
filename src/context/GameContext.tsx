@@ -67,6 +67,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     case 'ADD_PLAYER':
       return { ...state, players: [...state.players, action.payload] };
+      case 'ADD_PLAYER_LIST':
+  return { ...state, players: action.payload };
     case 'REMOVE_PLAYER':
       return { ...state, players: state.players.filter(p => p.id !== action.payload) };
     case 'SELECT_GAME':
