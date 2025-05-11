@@ -16,21 +16,26 @@ let backgroundMusicInstance: HTMLAudioElement | null = null;
 export const preloadAudio = async (audioFiles: Record<string, string>): Promise<void> => {
   const loadPromises = Object.entries(audioFiles).map(([name, path]) => {
     return new Promise<void>((resolve, reject) => {
-      const audio = new Audio();
+      const audio = new Audio(path);
       audio.preload = 'auto';
-      
+
+      // Try to prime it with a silent frame
       audio.oncanplaythrough = () => {
         audioCache[name] = audio;
         resolve();
       };
-      
+
       audio.onerror = () => {
         console.error(`Failed to load audio: ${path}`);
         reject(new Error(`Failed to load audio: ${path}`));
       };
-      
-      audio.src = path;
-      audio.load();
+
+      // Try to silently load a tiny frame
+      audio.volume = 0.0;
+      audio.play().catch(() => {
+        // ignore autoplay block — we're just forcing decode
+        resolve();
+      });
     });
   });
 
