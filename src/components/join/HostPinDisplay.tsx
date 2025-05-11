@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { FormEvent } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import PlayerNameInput from '@/components/PlayerNameInput';
 
@@ -7,17 +7,12 @@ interface HostPinDisplayProps {
   pin: string;
   name: string;
   loading: boolean;
-  onSubmit: (name: string) => void;
+  onNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit: (e: FormEvent) => void;
 }
 
-const HostPinDisplay = ({ pin, name, loading, onSubmit }: HostPinDisplayProps) => {
+const HostPinDisplay = ({ pin, name, loading, onNameChange, onSubmit }: HostPinDisplayProps) => {
   const { t, language } = useLanguage();
-  
-  const handleSubmit = (submittedName: string) => {
-    if (submittedName.trim()) {
-      onSubmit(submittedName);
-    }
-  };
   
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
@@ -30,10 +25,28 @@ const HostPinDisplay = ({ pin, name, loading, onSubmit }: HostPinDisplayProps) =
       </div>
       
       <div className="mt-6">
-        <PlayerNameInput 
-          onSubmit={handleSubmit} 
-          initialValue={name}
-        />
+        <form onSubmit={onSubmit}>
+          <div className="mb-4">
+            <label htmlFor="host-name" className="block text-sm font-medium text-gray-700 mb-1">
+              {t('common.chooseName')}
+            </label>
+            <input
+              id="host-name"
+              type="text"
+              value={name}
+              onChange={onNameChange}
+              className="w-full px-4 py-2 border rounded-md"
+              placeholder={language === 'it' ? 'Nome narratore' : 'Host name'}
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-primary text-white py-2 px-4 rounded-md disabled:opacity-50"
+            disabled={!name.trim() || loading}
+          >
+            {loading ? (language === 'it' ? 'Attendi...' : 'Loading...') : (language === 'it' ? 'Continua' : 'Continue')}
+          </button>
+        </form>
       </div>
     </div>
   );
