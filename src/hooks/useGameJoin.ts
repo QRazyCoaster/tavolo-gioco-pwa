@@ -86,7 +86,10 @@ export const useGameJoin = () => {
   const handlePlayerFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!pin || !name.trim() || pin.length !== 4) return;
+    if (!pin || !name.trim() || pin.length !== 4) {
+      console.log("Form validation failed:", { pin, name });
+      return;
+    }
     
     try {
       setLoading(true);
@@ -122,7 +125,7 @@ export const useGameJoin = () => {
 
       console.log('Player created:', player);
 
-      // 3. aggiorna stato globale e passa alla waiting‑room
+      // 3. aggiorna stato globale e passa alla waiting-room
       dispatch({
         type: 'JOIN_GAME',
         payload: {
