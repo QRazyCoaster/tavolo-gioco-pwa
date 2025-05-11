@@ -52,6 +52,7 @@ export const playAudio = (name: string): void => {
     // Create a new Audio instance that uses the cached file
     // This allows for multiple simultaneous playback
     const audio = audioCache[name].cloneNode() as HTMLAudioElement;
+    audio.volume = volume
     audio.play().catch(err => console.error('Error playing audio:', err));
   } else {
     console.warn(`Audio "${name}" not found in cache`);
