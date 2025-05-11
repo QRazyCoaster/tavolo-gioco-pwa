@@ -1,7 +1,6 @@
 
 import React, { FormEvent } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import PlayerNameInput from '@/components/PlayerNameInput';
 
 interface HostPinDisplayProps {
   pin: string;
@@ -16,18 +15,10 @@ const HostPinDisplay = ({ pin, name, loading, onNameChange, onSubmit }: HostPinD
   
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-center mb-2">{t('common.yourGamePin')}</h3>
-        <div className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-2 text-center">
-          <span className="text-3xl font-bold tracking-wider">{pin}</span>
-        </div>
-        <p className="text-center text-sm text-gray-600">{t('common.sharePinWithPlayers')}</p>
-      </div>
-      
-      <div className="mt-6">
+      <div className="mt-2">
         <form onSubmit={onSubmit}>
           <div className="mb-4">
-            <label htmlFor="host-name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="host-name" className="block text-xl font-semibold text-center mb-4">
               {t('common.chooseName')}
             </label>
             <input
@@ -35,13 +26,13 @@ const HostPinDisplay = ({ pin, name, loading, onNameChange, onSubmit }: HostPinD
               type="text"
               value={name}
               onChange={onNameChange}
-              className="w-full px-4 py-2 border rounded-md"
+              className="w-full px-4 py-2 border rounded-md text-center text-lg"
               placeholder={language === 'it' ? 'Nome narratore' : 'Host name'}
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-primary text-white py-2 px-4 rounded-md disabled:opacity-50"
+            className="w-full bg-primary text-white py-2 px-4 rounded-md disabled:opacity-50 mt-4"
             disabled={!name.trim() || loading}
           >
             {loading ? (language === 'it' ? 'Attendi...' : 'Loading...') : (language === 'it' ? 'Continua' : 'Continue')}
