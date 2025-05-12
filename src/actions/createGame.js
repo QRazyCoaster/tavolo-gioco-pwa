@@ -1,3 +1,4 @@
+
 import { supabase } from '@/supabaseClient';
 import { listBuzzers } from '@/actions/listBuzzers';
 
@@ -40,8 +41,13 @@ export async function createGame({ gameType, hostName }) {
     .update({ buzzer_sound_url: chosen })
     .eq('id', player.id);
 
-  return { game, hostPlayer: { ...player, buzzer_sound_url: chosen } };
+  // Assicurarci che is_host sia convertito a isHost per il frontend
+  return { 
+    game, 
+    hostPlayer: { 
+      ...player, 
+      isHost: player.is_host === true, // Assicurarsi che isHost sia definito correttamente
+      buzzer_sound_url: chosen 
+    } 
+  };
 }
-
-
-

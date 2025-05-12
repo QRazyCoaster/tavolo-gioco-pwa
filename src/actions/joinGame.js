@@ -81,7 +81,11 @@ export async function joinGame({ gameId, playerName }) {
       }
     }
 
-    return { ...player, buzzer_sound_url: chosen };  // ritorna la riga aggiornata
+    return { 
+      ...player, 
+      isHost: player.is_host === true, // Conversione esplicita a boolean
+      buzzer_sound_url: chosen 
+    };
   } catch (error) {
     console.error('Join game error:', error);
     throw error;

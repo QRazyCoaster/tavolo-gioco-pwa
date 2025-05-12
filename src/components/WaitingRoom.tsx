@@ -35,13 +35,30 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       .eq('game_id', state.gameId)
       .then(({ data }) => {
         if (data) {
-          dispatch({ type: 'ADD_PLAYER_LIST', payload: data.map(player => ({
-            id: player.id,
-            name: player.name,
-            isHost: player.is_host,
-            score: player.score || 0,
-            buzzer_sound_url: player.buzzer_sound_url
-          }))}); // <-- mappatura corretta dei dati al tipo Player
+          const mappedPlayers = data.map(player => {
+            // Log per debug
+            console.log('Player data from DB:', player);
+            console.log('is_host value:', player.is_host);
+            
+            return {
+              id: player.id,
+              name: player.name,
+              isHost: player.is_host === true, // Conversione esplicita a boolean
+              score: player.score || 0,
+              buzzer_sound_url: player.buzzer_sound_url
+            };
+          });
+          
+          // Aggiorna il giocatore corrente se è nell'elenco
+          if (state.currentPlayer) {
+            const updatedCurrentPlayer = mappedPlayers.find(p => p.id === state.currentPlayer?.id);
+            if (updatedCurrentPlayer) {
+              console.log("Aggiorno current player:", updatedCurrentPlayer);
+              dispatch({ type: 'SET_CURRENT_PLAYER', payload: updatedCurrentPlayer });
+            }
+          }
+          
+          dispatch({ type: 'ADD_PLAYER_LIST', payload: mappedPlayers });
         }
       });
 
@@ -56,7 +73,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           const newPlayer: Player = {
             id: payload.new.id,
             name: payload.new.name,
-            isHost: payload.new.is_host,
+            isHost: payload.new.is_host === true, // Conversione esplicita a boolean
             score: payload.new.score || 0,
             buzzer_sound_url: payload.new.buzzer_sound_url
           };
@@ -68,7 +85,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [state.gameId, dispatch]);
+  }, [state.gameId, dispatch, state.currentPlayer]);
   /* ──────────────────────────────────────────────────── */
 
   const handleStartGame = () => {
