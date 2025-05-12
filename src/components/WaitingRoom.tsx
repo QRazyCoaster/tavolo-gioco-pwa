@@ -28,7 +28,13 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       .eq('game_id', state.gameId)
       .then(({ data }) => {
         if (data) {
-          dispatch({ type: 'ADD_PLAYER_LIST', payload: data }); // <-- aggiungi questa action al reducer
+          dispatch({ type: 'ADD_PLAYER_LIST', payload: data.map(player => ({
+            id: player.id,
+            name: player.name,
+            isHost: player.is_host,
+            score: player.score || 0,
+            buzzer_sound_url: player.buzzer_sound_url
+          }))}); // <-- mappatura corretta dei dati al tipo Player
         }
       });
 
@@ -44,7 +50,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             id: payload.new.id,
             name: payload.new.name,
             isHost: payload.new.is_host,
-            score: payload.new.score,
+            score: payload.new.score || 0,
             buzzer_sound_url: payload.new.buzzer_sound_url
           };
           dispatch({ type: 'ADD_PLAYER', payload: newPlayer });
@@ -104,7 +110,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         </Button>
       )}
 
-      {!isHost && (
+      {!isHost && state.players.some(player => player.isHost) && (
         <div className="w-full max-w-md p-4 text-center">
           <p className="text-lg">{t('common.waitingForHost')}</p>
           <div className="mt-4 flex justify-center">
