@@ -1,18 +1,26 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
-import { playAudio } from '@/utils/audioUtils';
+import { playAudio, playBackgroundMusic } from '@/utils/audioUtils';
 import { BookText, Wine } from "lucide-react";
 import MusicToggle from '@/components/MusicToggle';
 
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
+  
+  // Effetto per avviare la musica di sottofondo all'accesso alla pagina
+  useEffect(() => {
+    if (!state.backgroundMusicPlaying) {
+      playBackgroundMusic('backgroundMusic', 0.2);
+      dispatch({ type: 'START_BACKGROUND_MUSIC' });
+    }
+  }, []);
   
   const handleGameSelect = (gameId: string) => {
     playAudio('buttonClick');
