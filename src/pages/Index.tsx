@@ -34,6 +34,14 @@ useEffect(() => {
   loadAudio();
 }, []);
 
+  useEffect(() => {
+  return () => {
+    stopBackgroundMusic();
+    // You can also stop or cancel any other AudioContext sounds here if needed
+    console.log('Cleaning up sounds on exit');
+  };
+}, []);
+
   const handleLanguageSelect = (language: Language) => {
   setLanguage(language);
 
