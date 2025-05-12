@@ -29,17 +29,23 @@ const Index = () => {
   }, []);
 
   const handleLanguageSelect = (language: Language) => {
-    setLanguage(language);
-    playAudio('buttonClick');
-    
-    // Start background music and update the game state after user interaction
-    if (audioLoaded) {
-      playBackgroundMusic('backgroundMusic', 0.02);
-      dispatch({ type: 'START_BACKGROUND_MUSIC' });
-    }
-    
-    navigate('/games');
-  };
+  setLanguage(language);
+
+  // Safari fix: warm-up click sound silently
+  const testClick = new Audio(gameAudioFiles.buttonClick);
+  testClick.volume = 0;
+  testClick.play().catch(() => {});
+  
+  // Then play it for real after the warmup
+  playAudio('buttonClick');
+
+  if (audioLoaded) {
+    playBackgroundMusic('backgroundMusic', 0.2);  // already reduced volume
+    dispatch({ type: 'START_BACKGROUND_MUSIC' });
+  }
+
+  navigate('/games');
+};
 
   return (
     <div 
