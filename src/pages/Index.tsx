@@ -17,13 +17,13 @@ const Index = () => {
   useEffect(() => {
     const loadAudio = async () => {
       try {
-        await preloadAudio(gameAudioFiles);
-        setAudioLoaded(true);
-        console.log('Audio preloading complete');
-      } catch (error) {
-        console.error('Error during audio preloading:', error);
-      }
-    };
+        await preloadButtonClickSound(); // new preload for buffer
+      setAudioLoaded(true);
+      console.log('Audio preloading complete');
+    } catch (error) {
+      console.error('Error during audio preloading:', error);
+    }
+  };
     
     loadAudio();
   }, []);
