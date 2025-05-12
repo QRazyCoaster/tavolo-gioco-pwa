@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Export the Language type so it can be imported elsewhere
@@ -181,6 +180,10 @@ const translations: Translations = {
     en: 'Error creating game',
     it: 'Errore nella creazione della partita',
   },
+  'common.endGame': {
+    en: 'Exit Game',
+    it: 'Esci dal Gioco',
+  },
   'rules.title': {
     en: 'Game Rules',
     it: 'Regole del Gioco',
@@ -189,6 +192,34 @@ const translations: Translations = {
     en: 'Learn how to play our games',
     it: 'Impara come giocare ai nostri giochi',
   },
+  'games.trivia': {
+    en: 'Trivia Game',
+    it: 'Gioco Trivia',
+  },
+  'games.bottleGame': {
+    en: 'Bottle Game',
+    it: 'Gioco della Bottiglia',
+  },
+  'trivia.yourTurn': {
+    en: "It's your turn to answer!",
+    it: "È il tuo turno di rispondere!",
+  },
+  'trivia.playerAnswering': {
+    en: "is answering...",
+    it: "sta rispondendo...",
+  },
+  'trivia.correct': {
+    en: "Correct answer!",
+    it: "Risposta corretta!",
+  },
+  'trivia.wrong': {
+    en: "Wrong answer",
+    it: "Risposta sbagliata",
+  },
+  'trivia.waitingForQuestion': {
+    en: "Waiting for the narrator to show the question...",
+    it: "In attesa che il narratore mostri la domanda...",
+  }
 };
 
 interface LanguageContextType {

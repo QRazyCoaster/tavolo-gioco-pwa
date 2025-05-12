@@ -6,9 +6,8 @@ import { useGame } from '@/context/GameContext';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { playAudio } from '@/utils/audioUtils';
+import TriviaGame from '@/components/games/TriviaGame';
 
-// This is a placeholder for the actual game components
-// In a real app, you would have separate components for each game type
 const GamePage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
@@ -31,8 +30,33 @@ const GamePage = () => {
     return null;
   }
   
-  // Find the selected game from our available games
-  const selectedGame = state.selectedGame;
+  // Renderizza il gioco in base al tipo selezionato
+  const renderGame = () => {
+    switch (state.selectedGame) {
+      case 'trivia':
+        return <TriviaGame />;
+      case 'bottlegame':
+        return (
+          <div className="flex items-center justify-center p-10">
+            <p className="text-xl font-semibold text-center">
+              {language === 'it' 
+                ? 'Gioco della Bottiglia in arrivo...' 
+                : 'Bottle Game coming soon...'}
+            </p>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center justify-center p-10">
+            <p className="text-xl font-semibold text-center">
+              {language === 'it' 
+                ? 'Gioco non riconosciuto' 
+                : 'Game not recognized'}
+            </p>
+          </div>
+        );
+    }
+  };
   
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -44,40 +68,39 @@ const GamePage = () => {
         </div>
       </div>
       
-      <div className="flex-grow flex flex-col items-center justify-center">
-        <Card className="w-full max-w-md p-6 mb-6">
-          <h2 className="text-3xl font-semibold text-center mb-4">
-            {selectedGame ? selectedGame : 'Game'}
+      <div className="flex-grow flex flex-col items-center justify-start">
+        <div className="text-center mb-4">
+          <h2 className="text-3xl font-semibold">
+            {state.selectedGame === 'trivia' 
+              ? (language === 'it' ? 'Trivia' : 'Trivia') 
+              : (language === 'it' ? 'Gioco della Bottiglia' : 'Bottle Game')}
           </h2>
-          <p className="text-center mb-8">
-            {language === 'it' 
-              ? 'Contenuto del gioco qui' 
-              : 'Game content here'}
-          </p>
-          <div className="text-center">
-            <p className="text-lg font-semibold mb-2">{t('common.players')}:</p>
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              {state.players.map(player => (
-                <div 
-                  key={player.id}
-                  className={`px-3 py-1 rounded-full text-white ${player.isHost ? 'bg-primary' : 'bg-secondary'}`}
-                >
-                  {player.name}: {player.score || 0}
-                </div>
-              ))}
-            </div>
+        </div>
+        
+        {renderGame()}
+        
+        <div className="w-full max-w-md mt-6">
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
+            {state.players.map(player => (
+              <div 
+                key={player.id}
+                className={`px-3 py-1 rounded-full text-white ${player.isHost ? 'bg-primary' : 'bg-secondary'}`}
+              >
+                {player.name}: {player.score || 0}
+              </div>
+            ))}
           </div>
           
           {state.currentPlayer?.isHost && (
             <Button 
-              className="w-full" 
+              className="w-full mt-2" 
               variant="destructive"
               onClick={handleEndGame}
             >
               {t('common.endGame')}
             </Button>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );
