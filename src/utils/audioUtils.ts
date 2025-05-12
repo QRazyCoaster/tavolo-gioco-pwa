@@ -1,3 +1,7 @@
+let buttonClickBuffer: AudioBuffer | null = null;
+let audioCtx: AudioContext | null = null;
+
+
 type AudioMap = {
   [key: string]: HTMLAudioElement;
 };
@@ -29,6 +33,27 @@ export const preloadAudio = async (audioFiles: Record<string, string>): Promise<
         console.error(`Failed to load audio: ${path}`);
         reject(new Error(`Failed to load audio: ${path}`));
       };
+
+      export const preloadButtonClickSound = async () => {
+  try {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const response = await fetch(gameAudioFiles.buttonClick);
+    const arrayBuffer = await response.arrayBuffer();
+    buttonClickBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    console.log('Button click decoded and ready');
+  } catch (err) {
+    console.error('Failed to preload button click sound:', err);
+  }
+};
+
+      export const playClickBuffer = () => {
+  if (audioCtx && buttonClickBuffer) {
+    const source = audioCtx.createBufferSource();
+    source.buffer = buttonClickBuffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
+  }
+};
 
       // Try to silently load a tiny frame
       audio.volume = 0.0;
