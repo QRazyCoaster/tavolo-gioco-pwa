@@ -31,16 +31,10 @@ const Index = () => {
   const handleLanguageSelect = (language: Language) => {
   setLanguage(language);
 
-  // Safari fix: warm-up click sound silently
-  const testClick = new Audio(gameAudioFiles.buttonClick);
-  testClick.volume = 0;
-  testClick.play().catch(() => {});
-  
-  // Then play it for real after the warmup
-  playAudio('buttonClick');
+  playClickBuffer();  // replaces playAudio('buttonClick')
 
   if (audioLoaded) {
-    playBackgroundMusic('backgroundMusic', 0.2);  // already reduced volume
+    playBackgroundMusic('backgroundMusic', 0.2);
     dispatch({ type: 'START_BACKGROUND_MUSIC' });
   }
 
