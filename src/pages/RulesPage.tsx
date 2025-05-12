@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
 import { Book, BookText, Wine } from "lucide-react";
+import MusicToggle from '@/components/MusicToggle';
 
 const RulesPage = () => {
   const { t, language } = useLanguage();
@@ -85,13 +85,11 @@ const RulesPage = () => {
       }}
     >
       <div className="w-full max-w-md flex flex-col items-center">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-2">
+        <div className="text-center mb-8 w-full flex justify-between items-center">
+          <h2 className="text-3xl font-bold text-white drop-shadow-lg">
             {t('common.gameRules')}
           </h2>
-          <p className="text-white drop-shadow-md">
-            {t('common.readBeforePlaying')}
-          </p>
+          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
         </div>
         
         <Card className="w-full bg-white/90 backdrop-blur-sm p-6 mb-6">

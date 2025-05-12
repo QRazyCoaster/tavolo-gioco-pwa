@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import WaitingRoom from '@/components/WaitingRoom';
 import { playAudio, stopBackgroundMusic } from '@/utils/audioUtils';
-import { Music, VolumeX } from "lucide-react";
+import MusicToggle from '@/components/MusicToggle';
 
 // Add TypeScript interface to extend Window
 declare global {
@@ -46,20 +46,6 @@ const WaitingRoomPage = () => {
     playAudio('buttonClick');
   };
   
-  const toggleBackgroundMusic = () => {
-    if (state.backgroundMusicPlaying) {
-      stopBackgroundMusic();
-      dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-      playAudio('buttonClick');
-    } else {
-      import('@/utils/audioUtils').then(({ playBackgroundMusic }) => {
-        playBackgroundMusic('backgroundMusic', 0.3);
-        dispatch({ type: 'START_BACKGROUND_MUSIC' });
-        playAudio('buttonClick');
-      });
-    }
-  };
-  
   // Redirect if there's no game
   if (!state.gameId || !state.pin) {
     navigate('/');
@@ -71,14 +57,7 @@ const WaitingRoomPage = () => {
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-primary">Tavolo Gioco</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleBackgroundMusic}
-            title={state.backgroundMusicPlaying ? t('common.muteMusic') : t('common.playMusic')}
-          >
-            {state.backgroundMusicPlaying ? <Music size={20} /> : <VolumeX size={20} />}
-          </Button>
+          <MusicToggle />
         </div>
         
         <WaitingRoom onStartGame={handleStartGame} />

@@ -5,13 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
-import { playAudio, stopBackgroundMusic, playBackgroundMusic } from '@/utils/audioUtils';
-import { BookText, Wine, Music, VolumeX } from "lucide-react";
+import { playAudio } from '@/utils/audioUtils';
+import { BookText, Wine } from "lucide-react";
+import MusicToggle from '@/components/MusicToggle';
 
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { state, dispatch } = useGame();
+  const { dispatch } = useGame();
   
   const handleGameSelect = (gameId: string) => {
     playAudio('buttonClick');
@@ -30,18 +31,6 @@ const GameSelectionPage = () => {
     navigate('/');
   };
   
-  const toggleBackgroundMusic = () => {
-    if (state.backgroundMusicPlaying) {
-      stopBackgroundMusic();
-      dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-      playAudio('buttonClick');
-    } else {
-      playBackgroundMusic('backgroundMusic', 0.5);
-      dispatch({ type: 'START_BACKGROUND_MUSIC' });
-      playAudio('buttonClick');
-    }
-  };
-  
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4"
@@ -56,15 +45,7 @@ const GameSelectionPage = () => {
           <h2 className="text-3xl font-bold text-white drop-shadow-lg">
             {t('common.chooseGame')}
           </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleBackgroundMusic}
-            title={state.backgroundMusicPlaying ? t('common.muteMusic') : t('common.playMusic')}
-            className="bg-white/50 backdrop-blur-sm text-primary rounded-full"
-          >
-            {state.backgroundMusicPlaying ? <Music size={20} /> : <VolumeX size={20} />}
-          </Button>
+          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
         </div>
         
         <div className="w-full space-y-4">

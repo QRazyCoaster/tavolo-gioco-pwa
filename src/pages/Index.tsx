@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useLanguage, Language } from '@/context/LanguageContext';
@@ -38,11 +39,13 @@ const Index = () => {
   const handleLanguage = (lang: Language) => {
     setLanguage(lang);
     playClickBuffer();                                          // instant click
-    if (ready && !musicStarted) {
+    
+    if (ready) {
       playBackgroundMusic('backgroundMusic', 0.2);
       dispatch({ type: 'START_BACKGROUND_MUSIC' });
       setMusicStarted(true);
     }
+    
     navigate('/games');
   };
 

@@ -6,6 +6,7 @@ import { useGameJoin } from '@/hooks/useGameJoin';
 import RoleSelector from '@/components/join/RoleSelector';
 import HostPinDisplay from '@/components/join/HostPinDisplay';
 import PlayerJoinForm from '@/components/join/PlayerJoinForm';
+import MusicToggle from '@/components/MusicToggle';
 
 const JoinGame = () => {
   const { language } = useLanguage();
@@ -67,6 +68,10 @@ const JoinGame = () => {
       }}
     >
       <div className="w-full max-w-md flex flex-col items-center">
+        <div className="w-full flex justify-end mb-4">
+          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
+        </div>
+      
         {renderContent()}
         
         <div className="flex gap-4 mt-4">
