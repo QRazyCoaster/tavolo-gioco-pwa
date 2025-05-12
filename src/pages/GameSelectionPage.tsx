@@ -58,9 +58,8 @@ const GameSelectionPage = () => {
     >
       <div className="w-full max-w-md flex flex-col items-center">
         <div className="text-center mb-8 w-full flex justify-between items-center">
-          <h2 className="text-3xl font-bold text-white drop-shadow-lg">
-            {t('common.chooseGame')}
-          </h2>
+          {/* Removed common.chooseGame text here */}
+          <div className="w-1/3"></div> {/* Empty div for layout balance */}
           <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
         </div>
         

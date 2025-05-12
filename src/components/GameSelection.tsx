@@ -20,7 +20,6 @@ const GameSelection = ({ onSelectGame }: GameSelectionProps) => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
-      <h2 className="text-3xl font-bold mb-6">{t('common.chooseGame')}</h2>
       <div className="grid grid-cols-1 gap-4 w-full max-w-md">
         {availableGames.map((game) => (
           <Card 

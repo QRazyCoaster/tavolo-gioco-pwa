@@ -16,11 +16,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   const { t } = useLanguage();
   const { state, dispatch } = useGame();
   
-  // Add a console log to debug the host status
-  console.log("Current player:", state.currentPlayer);
-  console.log("Is host:", state.currentPlayer?.isHost);
-  console.log("Number of players:", state.players.length);
-  
   // Let's make sure we correctly identify if current player is the host
   const isHost = state.currentPlayer?.isHost === true;
 
@@ -36,10 +31,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       .then(({ data }) => {
         if (data) {
           const mappedPlayers = data.map(player => {
-            // Log per debug
-            console.log('Player data from DB:', player);
-            console.log('is_host value:', player.is_host);
-            
             return {
               id: player.id,
               name: player.name,
@@ -53,7 +44,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           if (state.currentPlayer) {
             const updatedCurrentPlayer = mappedPlayers.find(p => p.id === state.currentPlayer?.id);
             if (updatedCurrentPlayer) {
-              console.log("Aggiorno current player:", updatedCurrentPlayer);
               dispatch({ type: 'SET_CURRENT_PLAYER', payload: updatedCurrentPlayer });
             }
           }
@@ -123,7 +113,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         </ul>
       </Card>
 
-      {/* Modified host check to use our clearer isHost variable */}
       {isHost ? (
         <Button
           className="w-full max-w-md h-14 text-xl"
@@ -145,12 +134,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           </div>
         </div>
       )}
-      
-      {/* Debug information - temporary */}
-      <div className="mt-4 text-xs text-gray-500">
-        <p>Debug: Current user is host: {isHost ? 'Yes' : 'No'}</p>
-        <p>Players in room: {state.players.length}</p>
-      </div>
     </div>
   );
 };
