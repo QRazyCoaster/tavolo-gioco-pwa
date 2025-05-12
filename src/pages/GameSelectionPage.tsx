@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
-import { playAudio, playBackgroundMusic } from '@/utils/audioUtils';
+import { playAudio, playBackgroundMusic, stopBackgroundMusic } from '@/utils/audioUtils';
 import { BookText, Wine } from "lucide-react";
 import MusicToggle from '@/components/MusicToggle';
 
@@ -16,10 +16,18 @@ const GameSelectionPage = () => {
   
   // Effetto per avviare la musica di sottofondo all'accesso alla pagina
   useEffect(() => {
-    if (!state.backgroundMusicPlaying) {
-      playBackgroundMusic('backgroundMusic', 0.2);
-      dispatch({ type: 'START_BACKGROUND_MUSIC' });
-    }
+    // Fermiamo qualsiasi riproduzione precedente per sicurezza
+    stopBackgroundMusic();
+    // Avviamo la musica indipendentemente dallo stato precedente
+    playBackgroundMusic('backgroundMusic', 0.2);
+    dispatch({ type: 'START_BACKGROUND_MUSIC' });
+    
+    // Pulizia quando si lascia la pagina
+    return () => {
+      if (!state.backgroundMusicPlaying) {
+        stopBackgroundMusic();
+      }
+    };
   }, []);
   
   const handleGameSelect = (gameId: string) => {

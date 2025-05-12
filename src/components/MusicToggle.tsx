@@ -15,14 +15,14 @@ const MusicToggle = ({ className = "" }: MusicToggleProps) => {
   const { state, dispatch } = useGame();
 
   const toggleBackgroundMusic = () => {
+    playAudio('buttonClick');
+    
     if (state.backgroundMusicPlaying) {
       stopBackgroundMusic();
       dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-      playAudio('buttonClick');
     } else {
       playBackgroundMusic('backgroundMusic', 0.2);
       dispatch({ type: 'START_BACKGROUND_MUSIC' });
-      playAudio('buttonClick');
     }
   };
 
