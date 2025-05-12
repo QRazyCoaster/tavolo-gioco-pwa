@@ -1,7 +1,6 @@
 let buttonClickBuffer: AudioBuffer | null = null;
 let audioCtx: AudioContext | null = null;
 
-
 type AudioMap = {
   [key: string]: HTMLAudioElement;
 };
@@ -14,8 +13,6 @@ let backgroundMusicInstance: HTMLAudioElement | null = null;
 
 /**
  * Preload audio files
- * @param audioFiles - Object with audio names and paths
- * @returns Promise that resolves when all audio files are loaded
  */
 export const preloadAudio = async (audioFiles: Record<string, string>): Promise<void> => {
   const loadPromises = Object.entries(audioFiles).map(([name, path]) => {
@@ -23,7 +20,6 @@ export const preloadAudio = async (audioFiles: Record<string, string>): Promise<
       const audio = new Audio(path);
       audio.preload = 'auto';
 
-      // Try to prime it with a silent frame
       audio.oncanplaythrough = () => {
         audioCache[name] = audio;
         resolve();
@@ -34,33 +30,9 @@ export const preloadAudio = async (audioFiles: Record<string, string>): Promise<
         reject(new Error(`Failed to load audio: ${path}`));
       };
 
-      export const preloadButtonClickSound = async () => {
-  try {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const response = await fetch(gameAudioFiles.buttonClick);
-    const arrayBuffer = await response.arrayBuffer();
-    buttonClickBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    console.log('Button click decoded and ready');
-  } catch (err) {
-    console.error('Failed to preload button click sound:', err);
-  }
-};
-
-      export const playClickBuffer = () => {
-  if (audioCtx && buttonClickBuffer) {
-    const source = audioCtx.createBufferSource();
-    source.buffer = buttonClickBuffer;
-    source.connect(audioCtx.destination);
-    source.start(0);
-  }
-};
-
-      // Try to silently load a tiny frame
+      // Try to silently trigger decode
       audio.volume = 0.0;
-      audio.play().catch(() => {
-        // ignore autoplay block — we're just forcing decode
-        resolve();
-      });
+      audio.play().catch(() => resolve()); // ignore autoplay block
     });
   });
 
@@ -73,13 +45,39 @@ export const preloadAudio = async (audioFiles: Record<string, string>): Promise<
 };
 
 /**
+ * Preload button click sound as a decoded buffer for Safari
+ */
+export const preloadButtonClickSound = async () => {
+  try {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const response = await fetch(gameAudioFiles.buttonClick);
+    const arrayBuffer = await response.arrayBuffer();
+    buttonClickBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    console.log('Button click decoded and ready');
+  } catch (err) {
+    console.error('Failed to preload button click sound:', err);
+  }
+};
+
+/**
+ * Play preloaded button click buffer instantly
+ */
+export const playClickBuffer = () => {
+  if (audioCtx && buttonClickBuffer) {
+    const source = audioCtx.createBufferSource();
+    source.buffer = buttonClickBuffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
+  }
+};
+
+/**
  * Play a preloaded audio file
- * @param name - Name of the audio file to play
  */
 export const playAudio = (name: string): void => {
   if (audioCache[name]) {
     const audio = audioCache[name].cloneNode() as HTMLAudioElement;
-    audio.volume = 1.0; // Full volume for effects
+    audio.volume = 1.0;
     audio.play().catch(err => console.error('Error playing audio:', err));
   } else {
     console.warn(`Audio "${name}" not found in cache`);
@@ -88,14 +86,12 @@ export const playAudio = (name: string): void => {
 
 /**
  * Play background music in loop
- * @param name - Name of the audio file to play as background music
- * @param volume - Volume level (0.0 to 1.0)
  */
 export const playBackgroundMusic = (name: string, volume = 0.2): void => {
   if (backgroundMusicInstance) {
     stopBackgroundMusic();
   }
-  
+
   if (audioCache[name]) {
     backgroundMusicInstance = audioCache[name].cloneNode() as HTMLAudioElement;
     backgroundMusicInstance.loop = true;
@@ -120,7 +116,7 @@ export const stopBackgroundMusic = (): void => {
 };
 
 /**
- * Set of common game sounds to be preloaded
+ * Map of audio files used in the game
  */
 export const gameAudioFiles = {
   buttonClick: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/button-click.mp3',
