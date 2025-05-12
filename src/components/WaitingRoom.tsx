@@ -90,7 +90,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
                 {player.name}
                 {player.isHost && (
                   <span className="ml-2 text-sm bg-primary text-white px-2 py-1 rounded-full">
-                    {t('common.host')}
+                    {t('common.firstNarrator')}
                   </span>
                 )}
               </span>
@@ -106,13 +106,13 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           onClick={handleStartGame}
           disabled={state.players.length < 2}
         >
-          {t('common.start')}
+          {t('common.startGame')}
         </Button>
       )}
 
-      {!isHost && state.players.some(player => player.isHost) && (
+      {!isHost && (
         <div className="w-full max-w-md p-4 text-center">
-          <p className="text-lg">{t('common.waitingForHost')}</p>
+          <p className="text-lg">{t('common.waitingForPlayersToJoin')}</p>
           <div className="mt-4 flex justify-center">
             <div className="animate-pulse flex space-x-2">
               <div className="w-3 h-3 bg-secondary rounded-full"></div>

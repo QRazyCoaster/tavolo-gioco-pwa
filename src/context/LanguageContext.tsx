@@ -1,170 +1,212 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Define our language type and translations interface
-export type Language = 'it' | 'en';
+type Language = 'en' | 'it';
 
-// Updated interface to correctly handle the nested structure
 interface Translations {
-  [language: string]: {
-    [category: string]: {
-      [key: string]: string;
-    };
+  [key: string]: {
+    en: string;
+    it: string;
   };
 }
 
-// Italian translations
-const it = {
-  common: {
-    host: 'Narratore',
-    player: 'Giocatore',
-    join: 'Partecipa',
-    create: 'Crea',
-    back: 'Indietro',
-    next: 'Avanti',
-    start: 'Inizia',
-    cancel: 'Annulla',
-    pin: 'Codice PIN',
-    language: 'Lingua',
-    welcome: 'Benvenuto a Tavolo Gioco',
-    chooseLanguage: 'Scegli la lingua',
-    enterPin: 'Inserisci il PIN',
-    createGame: 'Crea una partita',
-    joinGame: 'Partecipa a una partita',
-    waitingForPlayers: 'In attesa di giocatori...',
-    chooseName: 'Scegli il tuo nome',
-    chooseGame: 'Scegli un gioco',
-    players: 'Giocatori',
-    select: 'Seleziona',
-    waitingForHost: 'In attesa del narratore...',
-    endGame: 'Termina il gioco',
-    loadingResources: 'Caricamento risorse...',
-    gameRules: 'Regole del gioco',
-    readBeforePlaying: 'Leggi prima di giocare',
-    rules: 'Regole',
-    continue: 'Continua',
-    noGameSelected: 'Nessun gioco selezionato',
-    chooseRole: 'Scegli il tuo ruolo',
-    joinOrCreate: 'Partecipa o crea partita',
-    yourGamePin: 'Il tuo codice PIN',
-    sharePinWithPlayers: 'Condividi questo PIN con gli altri giocatori',
+// Translations dictionary
+const translations: Translations = {
+  'common.welcome': {
+    en: 'Welcome to Tavolo Gioco',
+    it: 'Benvenuto in Tavolo Gioco',
   },
-  games: {
-    trivia: 'Trivia',
-    triviaDesc: 'Sfida le tue conoscenze con domande di cultura generale',
-    bottleGame: 'Gioco della Bottiglia',
-    bottleGameDesc: 'Divertimento classico con la bottiglia che gira',
+  'common.createGame': {
+    en: 'Create Game',
+    it: 'Crea Partita',
   },
-  rules: {
-    trivia1: 'Scegliete il primo narratore.',
-    trivia2: 'Cliccate su "NEXT" per procedere.',
-    trivia3: 'Il narratore clicca su "Inizia Partita" e riceve un PIN a 4 cifre.',
-    trivia4: 'Gli altri inseriscono nome e PIN per entrare.',
-    trivia5: 'Si gioca!',
-    trivia6: 'A ogni round, il ruolo di narratore passa a un altro giocatore.',
-    trivia7: 'Il gioco termina quando tutti hanno fatto il narratore.',
-    trivia8: 'A fine partita:',
-    trivia9: '🏆 Chi ha più punti si fa offrire da bere.',
-    trivia10: '😅 Chi ha meno punti fa Obbligo o Verità.',
-    bottle1: 'I giocatori siedono in cerchio',
-    bottle2: 'A turno, ogni giocatore fa girare la bottiglia',
-    bottle3: 'Il giocatore a cui punta la bottiglia deve rispondere a una domanda o fare un\'azione',
-    bottle4: 'Divertimento garantito per tutti!',
-  }
+  'common.joinGame': {
+    en: 'Join Game',
+    it: 'Unisciti alla Partita',
+  },
+  'common.rules': {
+    en: 'Rules',
+    it: 'Regole',
+  },
+  'common.start': {
+    en: 'Start',
+    it: 'Inizia',
+  },
+  'common.startGame': {
+    en: 'START GAME',
+    it: 'INIZIA PARTITA',
+  },
+  'common.back': {
+    en: 'Back',
+    it: 'Indietro',
+  },
+  'common.next': {
+    en: 'Next',
+    it: 'Avanti',
+  },
+  'common.confirm': {
+    en: 'Confirm',
+    it: 'Conferma',
+  },
+  'common.cancel': {
+    en: 'Cancel',
+    it: 'Annulla',
+  },
+  'common.submit': {
+    en: 'Submit',
+    it: 'Invia',
+  },
+  'common.loading': {
+    en: 'Loading...',
+    it: 'Caricamento...',
+  },
+  'common.success': {
+    en: 'Success!',
+    it: 'Successo!',
+  },
+  'common.error': {
+    en: 'Error',
+    it: 'Errore',
+  },
+  'common.yes': {
+    en: 'Yes',
+    it: 'Sì',
+  },
+  'common.no': {
+    en: 'No',
+    it: 'No',
+  },
+  'common.continue': {
+    en: 'Continue',
+    it: 'Continua',
+  },
+  'common.gamePin': {
+    en: 'Game PIN',
+    it: 'PIN Partita',
+  },
+  'common.pin': {
+    en: 'PIN',
+    it: 'PIN',
+  },
+  'common.playerName': {
+    en: 'Player Name',
+    it: 'Nome Giocatore',
+  },
+  'common.host': {
+    en: 'Host',
+    it: 'Narratore',
+  },
+  'common.firstNarrator': {
+    en: '1st Narrator',
+    it: '1° Narratore',
+  },
+  'common.waitingForHost': {
+    en: 'Waiting for the host...',
+    it: 'In attesa del narratore...',
+  },
+  'common.waitingForPlayers': {
+    en: 'Waiting for players to join...',
+    it: 'In attesa che i giocatori si uniscano...',
+  },
+  'common.waitingForPlayersToJoin': {
+    en: 'Waiting for more players to join...',
+    it: 'In attesa che altri giocatori si uniscano...',
+  },
+  'common.players': {
+    en: 'Players',
+    it: 'Giocatori',
+  },
+  'common.score': {
+    en: 'Score',
+    it: 'Punteggio',
+  },
+  'common.round': {
+    en: 'Round',
+    it: 'Round',
+  },
+  'common.yourTurn': {
+    en: 'Your turn',
+    it: 'È il tuo turno',
+  },
+  'common.waitingForTurn': {
+    en: 'Waiting for your turn',
+    it: 'In attesa del tuo turno',
+  },
+  'common.gameOver': {
+    en: 'Game Over',
+    it: 'Fine della Partita',
+  },
+  'common.winner': {
+    en: 'Winner',
+    it: 'Vincitore',
+  },
+  'common.playAgain': {
+    en: 'Play Again',
+    it: 'Gioca Ancora',
+  },
+  'common.exitGame': {
+    en: 'Exit Game',
+    it: 'Esci dal Gioco',
+  },
+  'common.selectGame': {
+    en: 'Select a Game',
+    it: 'Seleziona un Gioco',
+  },
+  'common.invalidPin': {
+    en: 'Invalid PIN',
+    it: 'PIN non valido',
+  },
+  'common.nameTooShort': {
+    en: 'Name must be at least 2 characters',
+    it: 'Il nome deve avere almeno 2 caratteri',
+  },
+  'common.enterPin': {
+    en: 'Enter the 4-digit PIN',
+    it: 'Inserisci il PIN di 4 cifre',
+  },
+  'common.enterName': {
+    en: 'Enter your name',
+    it: 'Inserisci il tuo nome',
+  },
+  'common.chooseRole': {
+    en: 'Choose your role',
+    it: 'Scegli il tuo ruolo',
+  },
+  'common.errorJoiningGame': {
+    en: 'Error joining game',
+    it: 'Errore nell\'unirsi alla partita',
+  },
+  'common.errorCreatingGame': {
+    en: 'Error creating game',
+    it: 'Errore nella creazione della partita',
+  },
+  'rules.title': {
+    en: 'Game Rules',
+    it: 'Regole del Gioco',
+  },
+  'rules.description': {
+    en: 'Learn how to play our games',
+    it: 'Impara come giocare ai nostri giochi',
+  },
 };
-
-// English translations
-const en = {
-  common: {
-    host: 'Host',
-    player: 'Player',
-    join: 'Join',
-    create: 'Create',
-    back: 'Back',
-    next: 'Next',
-    start: 'Start',
-    cancel: 'Cancel',
-    pin: 'PIN Code',
-    language: 'Language',
-    welcome: 'Welcome to Tavolo Gioco',
-    chooseLanguage: 'Choose language',
-    enterPin: 'Enter PIN',
-    createGame: 'Create a game',
-    joinGame: 'Join a game',
-    waitingForPlayers: 'Waiting for players...',
-    chooseName: 'Choose your name',
-    chooseGame: 'Choose a game',
-    players: 'Players',
-    select: 'Select',
-    waitingForHost: 'Waiting for host...',
-    endGame: 'End game',
-    loadingResources: 'Loading resources...',
-    gameRules: 'Game Rules',
-    readBeforePlaying: 'Read before playing',
-    rules: 'Rules',
-    continue: 'Continue',
-    noGameSelected: 'No game selected',
-    chooseRole: 'Choose your role',
-    joinOrCreate: 'Join or create game',
-    yourGamePin: 'Your Game PIN',
-    sharePinWithPlayers: 'Share this PIN with other players',
-  },
-  games: {
-    trivia: 'Trivia',
-    triviaDesc: 'Test your knowledge with general knowledge questions',
-    bottleGame: 'Bottle Game',
-    bottleGameDesc: 'Classic fun with the spinning bottle',
-  },
-  rules: {
-    trivia1: 'Choose the first host.',
-    trivia2: 'Click "NEXT" to continue.',
-    trivia3: 'The host clicks "Start Game" and receives a 4-digit PIN.',
-    trivia4: 'Others enter their name and PIN to join.',
-    trivia5: 'Play the game!',
-    trivia6: 'After each round, the host role passes to another player.',
-    trivia7: 'The game ends when everyone has been the host.',
-    trivia8: 'At the end of the game:',
-    trivia9: '🏆 The player with the most points gets a free drink.',
-    trivia10: '😅 The player with the least points plays Truth or Dare.',
-    bottle1: 'Players sit in a circle',
-    bottle2: 'Each player takes turns spinning the bottle',
-    bottle3: 'The player the bottle points to must answer a question or perform an action',
-    bottle4: 'Fun is guaranteed for everyone!',
-  }
-};
-
-// Combine all translations
-const translations: Translations = { it, en };
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (language: Language) => void;
+  setLanguage: (lang: Language) => void;
   t: (key: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('en');
+  // Default to Italian
+  const [language, setLanguage] = useState<Language>('it');
 
-  // Translation function
   const t = (key: string): string => {
-    const keys = key.split('.');
-    if (keys.length !== 2) return key; // We expect keys like "common.welcome"
-
-    const category = keys[0];
-    const stringKey = keys[1];
-
-    if (translations[language] && translations[language][category] && translations[language][category][stringKey]) {
-      return translations[language][category][stringKey];
+    if (!translations[key]) {
+      console.warn(`Translation key not found: ${key}`);
+      return key;
     }
-
-    // Fallback to English if translation not found
-    if (language !== 'en' && translations['en'][category] && translations['en'][category][stringKey]) {
-      return translations['en'][category][stringKey];
-    }
-
-    return key; // Return the key as is if no translation found
+    return translations[key][language];
   };
 
   return (
@@ -174,7 +216,6 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   );
 };
 
-// Hook for using language context
 export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
   if (context === undefined) {
