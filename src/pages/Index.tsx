@@ -14,19 +14,25 @@ const Index = () => {
   const { dispatch } = useGame();
 
   // Preload audio files when component mounts
-  useEffect(() => {
-    const loadAudio = async () => {
-      try {
-        await preloadButtonClickSound(); // new preload for buffer
+useEffect(() => {
+  let hasLoaded = false;
+
+  const loadAudio = async () => {
+    if (hasLoaded) return;
+    hasLoaded = true;
+
+    try {
+      await preloadAudio(gameAudioFiles);
+      await preloadButtonClickSound();
       setAudioLoaded(true);
       console.log('Audio preloading complete');
     } catch (error) {
       console.error('Error during audio preloading:', error);
     }
   };
-    
-    loadAudio();
-  }, []);
+
+  loadAudio();
+}, []);
 
   const handleLanguageSelect = (language: Language) => {
   setLanguage(language);
