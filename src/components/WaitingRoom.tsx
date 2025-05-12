@@ -15,7 +15,14 @@ interface WaitingRoomProps {
 const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   const { t } = useLanguage();
   const { state, dispatch } = useGame();
-  const isHost = state.currentPlayer?.isHost;
+  
+  // Add a console log to debug the host status
+  console.log("Current player:", state.currentPlayer);
+  console.log("Is host:", state.currentPlayer?.isHost);
+  console.log("Number of players:", state.players.length);
+  
+  // Let's make sure we correctly identify if current player is the host
+  const isHost = state.currentPlayer?.isHost === true;
 
   /* ───────────── fetch + realtime players ───────────── */
   useEffect(() => {
@@ -99,6 +106,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         </ul>
       </Card>
 
+      {/* Modified host check to use our clearer isHost variable */}
       {isHost ? (
         <Button
           className="w-full max-w-md h-14 text-xl"
@@ -120,6 +128,12 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           </div>
         </div>
       )}
+      
+      {/* Debug information - temporary */}
+      <div className="mt-4 text-xs text-gray-500">
+        <p>Debug: Current user is host: {isHost ? 'Yes' : 'No'}</p>
+        <p>Players in room: {state.players.length}</p>
+      </div>
     </div>
   );
 };
