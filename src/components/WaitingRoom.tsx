@@ -89,7 +89,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
               <span className="text-lg">
                 {player.name}
                 {player.isHost && (
-                  <span className="ml-2 text-sm bg-primary text-white px-2 py-1 rounded-full">
+                  <span className="ml-2 text-sm bg-purple-400 text-white px-2 py-1 rounded-full">
                     {t('common.firstNarrator')}
                   </span>
                 )}
@@ -113,9 +113,9 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           <p className="text-lg">{t('common.waitingForPlayersToJoin')}</p>
           <div className="mt-4 flex justify-center">
             <div className="animate-pulse flex space-x-2">
-              <div className="w-3 h-3 bg-secondary rounded-full"></div>
-              <div className="w-3 h-3 bg-secondary rounded-full"></div>
-              <div className="w-3 h-3 bg-secondary rounded-full"></div>
+              <div className="w-3 h-3 bg-orange-300 rounded-full"></div>
+              <div className="w-3 h-3 bg-orange-300 rounded-full"></div>
+              <div className="w-3 h-3 bg-orange-300 rounded-full"></div>
             </div>
           </div>
         </div>
