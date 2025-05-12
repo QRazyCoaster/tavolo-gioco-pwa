@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
 import { supabase } from '@/supabaseClient';
+import { Player } from '@/context/GameContext'; // Import Player type
 
 interface WaitingRoomProps {
   onStartGame: () => void;
@@ -37,7 +39,15 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'players', filter: `game_id=eq.${state.gameId}` },
         payload => {
-          dispatch({ type: 'ADD_PLAYER', payload: payload.new });
+          // Cast the payload.new to match the Player type
+          const newPlayer: Player = {
+            id: payload.new.id,
+            name: payload.new.name,
+            isHost: payload.new.is_host,
+            score: payload.new.score,
+            buzzer_sound_url: payload.new.buzzer_sound_url
+          };
+          dispatch({ type: 'ADD_PLAYER', payload: newPlayer });
         }
       )
       .subscribe();
