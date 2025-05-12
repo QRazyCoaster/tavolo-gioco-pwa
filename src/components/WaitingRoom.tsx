@@ -99,7 +99,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         </ul>
       </Card>
 
-      {isHost && (
+      {isHost ? (
         <Button
           className="w-full max-w-md h-14 text-xl"
           variant="default"
@@ -108,9 +108,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         >
           {t('common.startGame')}
         </Button>
-      )}
-
-      {!isHost && (
+      ) : (
         <div className="w-full max-w-md p-4 text-center">
           <p className="text-lg">{t('common.waitingForPlayersToJoin')}</p>
           <div className="mt-4 flex justify-center">
