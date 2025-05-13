@@ -1,9 +1,22 @@
+
 import { supabase } from '@/supabaseClient';
 
 export async function listBuzzers() {
-  const { data } = await supabase
-    .storage
-    .from('audio')
-    .list('buzzers');            // cartella con i 12 MP3
-  return data;                   // array di file
+  try {
+    const { data, error } = await supabase
+      .storage
+      .from('audio')
+      .list('buzzers');
+      
+    if (error) {
+      console.error('Error listing buzzers:', error);
+      return [];
+    }
+    
+    console.log('Buzzers found:', data);
+    return data || [];
+  } catch (error) {
+    console.error('Error in listBuzzers:', error);
+    return [];
+  }
 }
