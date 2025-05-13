@@ -32,10 +32,11 @@ export async function joinGame({ gameId, playerName }) {
       console.log('Buzzers fetched:', files ? files.length : 0);
       
       if (files && files.length > 0) {
-        const allURLs = files.map(f =>
-          supabase.storage.from('audio')
-            .getPublicUrl(`buzzers/${f.name}`).data.publicUrl
-        );
+        // Utilizziamo l'URL completo che hai fornito come base
+        const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
+        
+        // Costruiamo gli URL completi
+        const allURLs = files.map(f => baseUrl + f.name);
         console.log('Available buzzer URLs:', allURLs.length);
 
         // 3. suoni già usati in questa partita

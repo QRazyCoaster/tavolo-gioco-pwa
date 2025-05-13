@@ -43,10 +43,11 @@ export async function createGame({ gameType, hostName }) {
       console.log('Buzzers available:', files.length);
       
       if (files && files.length > 0) {
-        const allURLs = files.map(f =>
-          supabase.storage.from('audio')
-            .getPublicUrl(`buzzers/${f.name}`).data.publicUrl
-        );
+        // Utilizziamo l'URL completo che hai fornito come base
+        const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
+        
+        // Costruiamo gli URL completi
+        const allURLs = files.map(f => baseUrl + f.name);
         console.log('Buzzer URLs:', allURLs);
         
         buzzerSound = allURLs[Math.floor(Math.random() * allURLs.length)];
