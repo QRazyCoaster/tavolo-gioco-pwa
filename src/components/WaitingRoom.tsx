@@ -28,9 +28,18 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       .from('players')
       .select('*')
       .eq('game_id', state.gameId)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching players:', error);
+          return;
+        }
+        
+        console.log('Raw players data from DB:', data);
+        
         if (data) {
           const mappedPlayers = data.map(player => {
+            console.log(`Player ${player.name} buzzer URL: ${player.buzzer_sound_url}`);
+            
             return {
               id: player.id,
               name: player.name,
@@ -44,6 +53,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           if (state.currentPlayer) {
             const updatedCurrentPlayer = mappedPlayers.find(p => p.id === state.currentPlayer?.id);
             if (updatedCurrentPlayer) {
+              console.log('Updated current player:', updatedCurrentPlayer);
               dispatch({ type: 'SET_CURRENT_PLAYER', payload: updatedCurrentPlayer });
             }
           }
@@ -59,6 +69,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'players', filter: `game_id=eq.${state.gameId}` },
         payload => {
+          console.log('New player joined:', payload.new);
           // Cast the payload.new to match the Player type
           const newPlayer: Player = {
             id: payload.new.id,
@@ -92,6 +103,14 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         <span className="text-3xl font-bold tracking-wider">{state.pin}</span>
       </div>
 
+      {/* Debug information section */}
+      <div className="w-full mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+        <h3 className="font-semibold mb-1">Debug Info:</h3>
+        <p className="text-xs">Current player ID: {state.currentPlayer?.id || 'None'}</p>
+        <p className="text-xs">Current player buzzer: {state.currentPlayer?.buzzer_sound_url || 'None'}</p>
+        <p className="text-xs">Game ID: {state.gameId}</p>
+      </div>
+
       <Card className="w-full max-w-md p-4 mb-6">
         <h3 className="text-xl font-semibold mb-2">{t('common.players')}</h3>
         <ul className="space-y-2">
@@ -100,14 +119,20 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
               key={player.id}
               className="p-3 bg-gray-50 rounded-md flex items-center justify-between"
             >
-              <span className="text-lg">
-                {player.name}
-                {player.isHost && (
-                  <span className="ml-2 text-sm bg-purple-400 text-white px-2 py-1 rounded-full">
-                    {t('common.firstNarrator')}
-                  </span>
-                )}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-lg">
+                  {player.name}
+                  {player.isHost && (
+                    <span className="ml-2 text-sm bg-purple-400 text-white px-2 py-1 rounded-full">
+                      {t('common.firstNarrator')}
+                    </span>
+                  )}
+                </span>
+                {/* Show buzzer URL status - for debugging */}
+                <span className="text-xs text-gray-500">
+                  Buzzer: {player.buzzer_sound_url ? '✅' : '❌'}
+                </span>
+              </div>
             </li>
           ))}
         </ul>

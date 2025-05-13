@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -20,12 +20,27 @@ const WaitingRoomPage = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
 
-  React.useEffect(() => {
+  useEffect(() => {
+    // Debug log to check currentPlayer
+    console.log('Current player in WaitingRoomPage:', state.currentPlayer);
+    
     // Use currentPlayer instead of player
     if (state.currentPlayer?.buzzer_sound_url) {
       const s = new Audio(state.currentPlayer.buzzer_sound_url);
       s.preload = 'auto';
       window.myBuzzer = s;
+      
+      // Try to load the buzzer sound to verify the URL is valid
+      s.addEventListener('canplaythrough', () => {
+        console.log('Buzzer sound loaded successfully!');
+      });
+      
+      s.addEventListener('error', (e) => {
+        console.error('Error loading buzzer sound:', e);
+        console.error('Invalid buzzer URL:', state.currentPlayer?.buzzer_sound_url);
+      });
+    } else {
+      console.warn('No buzzer sound URL for current player!');
     }
   }, [state.currentPlayer]);
 
