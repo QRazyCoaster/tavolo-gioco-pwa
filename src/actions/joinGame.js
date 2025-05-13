@@ -32,12 +32,12 @@ export async function joinGame({ gameId, playerName }) {
       console.log('Buzzers fetched:', files ? files.length : 0);
       
       if (files && files.length > 0) {
-        // Utilizziamo l'URL completo che hai fornito come base
+        // Utilizziamo l'URL hardcoded per garantire la corretta formattazione
         const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
         
         // Costruiamo gli URL completi
         const allURLs = files.map(f => baseUrl + f.name);
-        console.log('Available buzzer URLs:', allURLs.length);
+        console.log('All possible buzzer URLs:', allURLs);
 
         // 3. suoni già usati in questa partita
         const { data: usedRows, error: usedError } = await supabase
@@ -62,19 +62,34 @@ export async function joinGame({ gameId, playerName }) {
         } else if (allURLs.length > 0) {
           buzzerSound = allURLs[Math.floor(Math.random() * allURLs.length)];
         }
-        console.log('Chosen buzzer:', buzzerSound);
+        console.log('Chosen buzzer for player:', buzzerSound);
+
+        // Test URL validity
+        const testAudio = new Audio();
+        testAudio.addEventListener('error', () => {
+          console.error('TEST: Buzzer URL is not valid:', buzzerSound);
+        });
+        testAudio.src = buzzerSound;
 
         // 4. aggiorna la riga del giocatore con il suono scelto (solo se ne abbiamo trovato uno)
         if (buzzerSound) {
-          const { error: updateError } = await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from('players')
             .update({ buzzer_sound_url: buzzerSound })
-            .eq('id', player.id);
+            .eq('id', player.id)
+            .select();
             
           if (updateError) {
             console.error('Error updating player with buzzer:', updateError);
           } else {
-            console.log('Player buzzer sound updated successfully');
+            console.log('Player buzzer sound updated successfully:', updateData);
+            // Verifica se l'aggiornamento è avvenuto correttamente
+            const { data: checkData } = await supabase
+              .from('players')
+              .select('buzzer_sound_url')
+              .eq('id', player.id)
+              .single();
+            console.log('Verification - buzzer URL in DB:', checkData?.buzzer_sound_url);
           }
         }
       } else {
@@ -88,7 +103,7 @@ export async function joinGame({ gameId, playerName }) {
     return { 
       ...player, 
       isHost: player.is_host === true,
-      buzzer_sound_url: buzzerSound 
+      buzzer_sound_url: buzzerSound // Assicuriamoci di passare il buzzer URL al frontend
     };
   } catch (error) {
     console.error('Join game error:', error);
