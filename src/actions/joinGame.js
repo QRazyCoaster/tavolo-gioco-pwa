@@ -37,10 +37,6 @@ export async function joinGame({ gameId, playerName }) {
         
         // Logging individual files with their actual names for debugging
         console.log('[JOIN_GAME] All actual buzzer files:', files.map(f => f.name));
-        
-        // Build URLs using the actual file names from storage
-        const allURLs = files.map(f => baseUrl + encodeURIComponent(f.name));
-        console.log('[JOIN_GAME] All possible buzzer URLs:', allURLs);
 
         // 3. suoni già usati in questa partita
         const { data: usedRows, error: usedError } = await supabase
@@ -56,16 +52,30 @@ export async function joinGame({ gameId, playerName }) {
         const used = usedRows?.map(r => r.buzzer_sound_url) || [];
         console.log('[JOIN_GAME] Used buzzers:', used);
         
-        const available = allURLs.filter(u => !used.includes(u));
-        console.log('[JOIN_GAME] Available buzzers after filtering:', available.length);
-
-        // Assign a sound only if there are available ones
-        if (available.length > 0) {
-          buzzerSound = available[Math.floor(Math.random() * available.length)];
-        } else if (allURLs.length > 0) {
-          buzzerSound = allURLs[Math.floor(Math.random() * allURLs.length)];
+        // Build available buzzer list
+        const availableFiles = [];
+        for (const file of files) {
+          const fileUrl = baseUrl + encodeURIComponent(file.name);
+          if (!used.some(u => u === fileUrl)) {
+            availableFiles.push(file);
+          }
         }
-        console.log('[JOIN_GAME] Chosen buzzer for player:', buzzerSound);
+        
+        console.log('[JOIN_GAME] Available buzzer files after filtering:', availableFiles.length);
+
+        // Assign a sound
+        let selectedFile;
+        if (availableFiles.length > 0) {
+          selectedFile = availableFiles[Math.floor(Math.random() * availableFiles.length)];
+        } else {
+          selectedFile = files[Math.floor(Math.random() * files.length)];
+        }
+        
+        console.log('[JOIN_GAME] Selected buzzer file:', selectedFile.name);
+        
+        // Use encodeURIComponent to handle special characters in filenames
+        buzzerSound = baseUrl + encodeURIComponent(selectedFile.name);
+        console.log('[JOIN_GAME] Full buzzer URL for player:', buzzerSound);
 
         // Test URL validity
         try {
@@ -78,35 +88,33 @@ export async function joinGame({ gameId, playerName }) {
           console.error('[JOIN_GAME] Error testing audio URL:', audioErr);
         }
 
-        // 4. aggiorna la riga del giocatore con il suono scelto (solo se ne abbiamo trovato uno)
-        if (buzzerSound) {
-          console.log('[JOIN_GAME] Updating player with buzzer URL:', { 
-            playerId: player.id, 
-            buzzerSound 
-          });
+        // 4. aggiorna la riga del giocatore con il suono scelto
+        console.log('[JOIN_GAME] Updating player with buzzer URL:', { 
+          playerId: player.id, 
+          buzzerSound 
+        });
+        
+        const { data: updateData, error: updateError } = await supabase
+          .from('players')
+          .update({ buzzer_sound_url: buzzerSound })
+          .eq('id', player.id)
+          .select();
           
-          const { data: updateData, error: updateError } = await supabase
+        if (updateError) {
+          console.error('[JOIN_GAME] Error updating player with buzzer:', updateError);
+        } else {
+          console.log('[JOIN_GAME] Player buzzer sound updated successfully:', updateData);
+          
+          // Verify if the update was successful
+          const { data: checkData } = await supabase
             .from('players')
-            .update({ buzzer_sound_url: buzzerSound })
+            .select('buzzer_sound_url')
             .eq('id', player.id)
-            .select();
-            
-          if (updateError) {
-            console.error('[JOIN_GAME] Error updating player with buzzer:', updateError);
-          } else {
-            console.log('[JOIN_GAME] Player buzzer sound updated successfully:', updateData);
-            
-            // Verify if the update was successful
-            const { data: checkData } = await supabase
-              .from('players')
-              .select('buzzer_sound_url')
-              .eq('id', player.id)
-              .single();
-            console.log('[JOIN_GAME] Verification - buzzer URL in DB:', checkData?.buzzer_sound_url);
-            
-            // Set the buzzer sound for our return value to match the database
-            buzzerSound = checkData?.buzzer_sound_url || buzzerSound;
-          }
+            .single();
+          console.log('[JOIN_GAME] Verification - buzzer URL in DB:', checkData?.buzzer_sound_url);
+          
+          // Set the buzzer sound for our return value to match the database
+          buzzerSound = checkData?.buzzer_sound_url || buzzerSound;
         }
       } else {
         console.warn('[JOIN_GAME] No buzzer sounds found!');

@@ -13,13 +13,11 @@ export async function listBuzzers() {
       
     if (error) {
       console.error('[LIST_BUZZERS] Error listing buzzers:', error);
-      // Fallback to a hardcoded list if needed
       return fallbackBuzzerList();
     }
     
     if (!data || data.length === 0) {
       console.warn('[LIST_BUZZERS] No buzzer files found in storage.');
-      // Fallback to a hardcoded list if needed
       return fallbackBuzzerList();
     }
     
@@ -28,21 +26,19 @@ export async function listBuzzers() {
     return data;
   } catch (error) {
     console.error('[LIST_BUZZERS] Error in listBuzzers:', error);
-    // Fallback to a hardcoded list if needed
     return fallbackBuzzerList();
   }
 }
 
-// Updated fallback function with more generic naming in case we need it
+// Updated fallback function with more realistic file names
 function fallbackBuzzerList() {
   console.log('[LIST_BUZZERS] Using fallback buzzer list');
   // These are dummy file objects that mimic the structure returned by storage.list()
-  // Note: In a real scenario, we should match the actual file naming pattern from storage
   return [
-    { name: 'default_buzzer1.mp3', id: 'fallback1' },
-    { name: 'default_buzzer2.mp3', id: 'fallback2' },
-    { name: 'default_buzzer3.mp3', id: 'fallback3' },
-    { name: 'default_buzzer4.mp3', id: 'fallback4' },
-    { name: 'default_buzzer5.mp3', id: 'fallback5' }
+    { name: 'Aaaaa.MP3', id: 'fallback1' },
+    { name: 'cagnolino.MP3', id: 'fallback2' },
+    { name: 'buzzer3.mp3', id: 'fallback3' },
+    { name: 'buzzer4.mp3', id: 'fallback4' },
+    { name: 'buzzer5.mp3', id: 'fallback5' }
   ];
 }

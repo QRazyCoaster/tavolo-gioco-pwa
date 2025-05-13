@@ -50,15 +50,15 @@ export async function createGame({ gameType, hostName }) {
         // Logging individual files with their actual names for debugging
         console.log('[CREATE_GAME] All actual buzzer files:', files.map(f => f.name));
         
-        // Build URLs using the actual file names from storage
-        const allURLs = files.map(f => baseUrl + encodeURIComponent(f.name));
-        console.log('[CREATE_GAME] All possible buzzer URLs:', allURLs);
+        // Select a random file and use its actual name to build the URL
+        const randomFile = files[Math.floor(Math.random() * files.length)];
+        console.log('[CREATE_GAME] Selected buzzer file:', randomFile.name);
         
-        // Randomly select a buzzer URL from the available ones
-        buzzerSound = allURLs[Math.floor(Math.random() * allURLs.length)];
-        console.log('[CREATE_GAME] Selected buzzer for host:', buzzerSound);
+        // Use encodeURIComponent to handle special characters in filenames
+        buzzerSound = baseUrl + encodeURIComponent(randomFile.name);
+        console.log('[CREATE_GAME] Full buzzer URL for host:', buzzerSound);
         
-        // Test URL validity
+        // Test URL validity by trying to create an Audio object
         try {
           const testAudio = new Audio();
           testAudio.addEventListener('error', () => {
@@ -69,7 +69,7 @@ export async function createGame({ gameType, hostName }) {
           console.error('[CREATE_GAME] Error testing audio URL:', audioErr);
         }
         
-        // Update the player with the chosen sound - USING DIRECT UPDATE
+        // Update the player with the chosen sound
         console.log('[CREATE_GAME] Updating player with buzzer URL:', { 
           playerId: player.id, 
           buzzerSound 
