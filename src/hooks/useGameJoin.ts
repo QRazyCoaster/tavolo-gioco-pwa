@@ -25,6 +25,16 @@ export const useGameJoin = () => {
     return Math.floor(1000 + Math.random() * 9000).toString();
   };
 
+  // Helper function to log player data for debugging
+  const logPlayerData = (player: any, source: string) => {
+    console.log(`[${source}] Player data:`, player);
+    console.log(`[${source}] Player buzzer URL:`, player.buzzer_sound_url);
+    
+    if (!player.buzzer_sound_url) {
+      console.warn(`[${source}] WARNING: No buzzer URL for player`);
+    }
+  };
+
   const handlePlayerRole = (host: boolean) => {
     setIsHost(host);
     playAudio('buttonClick');
@@ -51,14 +61,31 @@ export const useGameJoin = () => {
     
     try {
       setLoading(true);
-      console.log('Creating game with name:', name);
+      console.log('[HOST] Creating game with name:', name);
       const { game, hostPlayer } = await createGame({
         gameType: 'trivia',
         hostName: name
       });
 
-      console.log('Game created:', game);
-      console.log('Host player:', hostPlayer);
+      console.log('[HOST] Game created:', game);
+      logPlayerData(hostPlayer, 'HOST_CREATE');
+
+      // Double-check buzzer URL directly from database
+      if (!hostPlayer.buzzer_sound_url) {
+        console.log('[HOST] No buzzer URL in response, checking database directly...');
+        const { data: playerCheck } = await supabase
+          .from('players')
+          .select('buzzer_sound_url')
+          .eq('id', hostPlayer.id)
+          .single();
+          
+        console.log('[HOST] Database check result:', playerCheck);
+        
+        if (playerCheck && playerCheck.buzzer_sound_url) {
+          hostPlayer.buzzer_sound_url = playerCheck.buzzer_sound_url;
+          console.log('[HOST] Updated buzzer URL from DB:', hostPlayer.buzzer_sound_url);
+        }
+      }
 
       dispatch({
         type: 'CREATE_GAME',
@@ -72,7 +99,7 @@ export const useGameJoin = () => {
       playAudio('success');
       navigate('/waiting-room');
     } catch (error) {
-      console.error('Error creating game:', error);
+      console.error('[HOST] Error creating game:', error);
       toast({
         title: t('common.error'),
         description: t('common.errorCreatingGame'),
@@ -87,14 +114,14 @@ export const useGameJoin = () => {
     e.preventDefault();
     
     if (!pin || !name.trim() || pin.length !== 4) {
-      console.log("Form validation failed:", { pin, name });
+      console.log("[PLAYER] Form validation failed:", { pin, name });
       return;
     }
     
     try {
       setLoading(true);
-      console.log('Joining game with PIN:', pin);
-      console.log('Player name:', name);
+      console.log('[PLAYER] Joining game with PIN:', pin);
+      console.log('[PLAYER] Player name:', name);
       
       // 1. recupera l'id partita a partire dal PIN
       const { data: gameRow, error: gErr } = await supabase
@@ -103,10 +130,10 @@ export const useGameJoin = () => {
         .eq('pin_code', pin)
         .single();
         
-      console.log('Game lookup result:', gameRow, gErr);
+      console.log('[PLAYER] Game lookup result:', gameRow, gErr);
         
       if (gErr || !gameRow) {
-        console.error('Invalid PIN or game not found:', gErr);
+        console.error('[PLAYER] Invalid PIN or game not found:', gErr);
         toast({
           title: t('common.error'),
           description: language === 'it' ? 'PIN non valido' : 'Invalid PIN',
@@ -117,13 +144,30 @@ export const useGameJoin = () => {
       }
 
       // 2. crea il player e assegna il suono buzzer
-      console.log('Creating player for game ID:', gameRow.id);
+      console.log('[PLAYER] Creating player for game ID:', gameRow.id);
       const player = await joinGame({
         gameId: gameRow.id,
         playerName: name
       });
 
-      console.log('Player created:', player);
+      logPlayerData(player, 'PLAYER_JOIN');
+      
+      // Double-check buzzer URL directly from database
+      if (!player.buzzer_sound_url) {
+        console.log('[PLAYER] No buzzer URL in response, checking database directly...');
+        const { data: playerCheck } = await supabase
+          .from('players')
+          .select('buzzer_sound_url')
+          .eq('id', player.id)
+          .single();
+          
+        console.log('[PLAYER] Database check result:', playerCheck);
+        
+        if (playerCheck && playerCheck.buzzer_sound_url) {
+          player.buzzer_sound_url = playerCheck.buzzer_sound_url;
+          console.log('[PLAYER] Updated buzzer URL from DB:', player.buzzer_sound_url);
+        }
+      }
 
       // 3. aggiorna stato globale e passa alla waiting-room
       dispatch({
@@ -138,7 +182,7 @@ export const useGameJoin = () => {
       playAudio('success');
       navigate('/waiting-room');
     } catch (error) {
-      console.error('Error joining game:', error);
+      console.error('[PLAYER] Error joining game:', error);
       toast({
         title: t('common.error'),
         description: t('common.errorJoiningGame'),
