@@ -23,7 +23,8 @@ export async function listBuzzers() {
       return fallbackBuzzerList();
     }
     
-    console.log('[LIST_BUZZERS] Buzzers found:', data.map(file => file.name));
+    // Log the actual filenames from storage for debugging
+    console.log('[LIST_BUZZERS] Actual buzzers found in storage:', data.map(file => file.name));
     return data;
   } catch (error) {
     console.error('[LIST_BUZZERS] Error in listBuzzers:', error);
@@ -32,15 +33,16 @@ export async function listBuzzers() {
   }
 }
 
-// Fallback function to provide some buzzer files if storage access fails
+// Updated fallback function with more generic naming in case we need it
 function fallbackBuzzerList() {
   console.log('[LIST_BUZZERS] Using fallback buzzer list');
   // These are dummy file objects that mimic the structure returned by storage.list()
+  // Note: In a real scenario, we should match the actual file naming pattern from storage
   return [
-    { name: 'buzzer1.mp3', id: 'fallback1' },
-    { name: 'buzzer2.mp3', id: 'fallback2' },
-    { name: 'buzzer3.mp3', id: 'fallback3' },
-    { name: 'buzzer4.mp3', id: 'fallback4' },
-    { name: 'buzzer5.mp3', id: 'fallback5' }
+    { name: 'default_buzzer1.mp3', id: 'fallback1' },
+    { name: 'default_buzzer2.mp3', id: 'fallback2' },
+    { name: 'default_buzzer3.mp3', id: 'fallback3' },
+    { name: 'default_buzzer4.mp3', id: 'fallback4' },
+    { name: 'default_buzzer5.mp3', id: 'fallback5' }
   ];
 }

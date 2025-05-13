@@ -67,7 +67,7 @@ const WaitingRoomPage = () => {
       console.log('[BUZZER_FIX] No buzzer found for player, attempting to fix...');
       const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
       
-      // Get a list of available sounds
+      // Get a list of available sounds with their actual filenames
       const { data: files, error: listError } = await supabase
         .storage
         .from('audio')
@@ -80,9 +80,10 @@ const WaitingRoomPage = () => {
       
       console.log('[BUZZER_FIX] Available buzzer sounds:', files.map(f => f.name));
       
-      // Pick a random sound
+      // Pick a random sound from the actual files
       const randomSound = files[Math.floor(Math.random() * files.length)];
-      const buzzerUrl = baseUrl + randomSound.name;
+      // Use encodeURIComponent to handle special characters in filenames
+      const buzzerUrl = baseUrl + encodeURIComponent(randomSound.name);
       console.log('[BUZZER_FIX] Assigning new buzzer URL:', buzzerUrl);
       
       // Update the player record
@@ -167,6 +168,13 @@ const WaitingRoomPage = () => {
         s.addEventListener('error', (e) => {
           console.error('[WAITING_ROOM] Error loading buzzer sound:', e);
           console.error('[WAITING_ROOM] Invalid buzzer URL:', state.currentPlayer?.buzzer_sound_url);
+          
+          // If loading fails, try to fix it
+          if (!fixAttempted) {
+            console.log('[WAITING_ROOM] Attempting to fix invalid buzzer URL...');
+            setFixAttempted(true);
+            checkAndFixBuzzer();
+          }
         });
       } catch (err) {
         console.error('[WAITING_ROOM] Exception creating Audio element:', err);

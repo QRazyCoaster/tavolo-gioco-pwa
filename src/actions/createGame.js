@@ -39,6 +39,7 @@ export async function createGame({ gameType, hostName }) {
     // 3. assegna un suono buzzer all'host
     let buzzerSound = null;
     try {
+      // Get the actual list of files from storage
       const files = await listBuzzers();
       console.log('[CREATE_GAME] Buzzers available:', files.length);
       
@@ -46,14 +47,14 @@ export async function createGame({ gameType, hostName }) {
         // Utilizziamo l'URL hardcoded per garantire la corretta formattazione
         const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
         
-        // Logging individual files for debugging
-        console.log('[CREATE_GAME] All buzzer files:', files.map(f => f.name));
+        // Logging individual files with their actual names for debugging
+        console.log('[CREATE_GAME] All actual buzzer files:', files.map(f => f.name));
         
-        // Costruiamo gli URL completi
-        const allURLs = files.map(f => baseUrl + f.name);
+        // Build URLs using the actual file names from storage
+        const allURLs = files.map(f => baseUrl + encodeURIComponent(f.name));
         console.log('[CREATE_GAME] All possible buzzer URLs:', allURLs);
         
-        // Assegnazione diretta dall'array di URL
+        // Randomly select a buzzer URL from the available ones
         buzzerSound = allURLs[Math.floor(Math.random() * allURLs.length)];
         console.log('[CREATE_GAME] Selected buzzer for host:', buzzerSound);
         
@@ -68,7 +69,7 @@ export async function createGame({ gameType, hostName }) {
           console.error('[CREATE_GAME] Error testing audio URL:', audioErr);
         }
         
-        // Aggiorna il player con il suono scelto - USING DIRECT UPDATE
+        // Update the player with the chosen sound - USING DIRECT UPDATE
         console.log('[CREATE_GAME] Updating player with buzzer URL:', { 
           playerId: player.id, 
           buzzerSound 
@@ -85,7 +86,7 @@ export async function createGame({ gameType, hostName }) {
         } else {
           console.log('[CREATE_GAME] Host buzzer sound updated successfully:', updateData);
           
-          // Verifica se l'aggiornamento è avvenuto correttamente
+          // Verify the update was successful
           const { data: checkData } = await supabase
             .from('players')
             .select('buzzer_sound_url')
@@ -101,17 +102,17 @@ export async function createGame({ gameType, hostName }) {
       }
     } catch (buzzErr) {
       console.error('[CREATE_GAME] Error assigning buzzer sound:', buzzErr);
-      // Continuiamo anche se fallisce l'assegnazione del suono
+      // Continue even if buzzer sound assignment fails
     }
 
-    // Assicurarci che is_host sia convertito a isHost per il frontend
-    // e che buzzer_sound_url sia disponibile
+    // Ensure is_host is converted to isHost for frontend
+    // and buzzer_sound_url is available
     return { 
       game, 
       hostPlayer: { 
         ...player, 
         isHost: player.is_host === true,
-        buzzer_sound_url: buzzerSound // Assicuriamoci di passare il buzzer URL al frontend
+        buzzer_sound_url: buzzerSound // Ensure buzzer URL is passed to frontend
       } 
     };
   } catch (error) {
