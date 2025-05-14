@@ -29,10 +29,10 @@ export const useHostJoin = () => {
       return;
     }
     
-    // Prevent duplicate form submissions
-    if (e.target && 'disabled' in e.target) {
+    // Prevent duplicate form submissions - fixed TypeScript error with proper type check
+    if (e.target && e.target instanceof HTMLFormElement) {
       console.log('[HOST] Preventing duplicate submission');
-      (e.target as HTMLFormElement).disabled = true;
+      e.target.disabled = true;
     }
     
     // Show loading immediately and prevent multiple submissions
