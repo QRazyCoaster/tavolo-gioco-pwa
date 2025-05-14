@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from '@/context/LanguageContext';
 import { playAudio } from '@/utils/audioUtils';
 import { 
@@ -27,12 +26,16 @@ const GamePinInput = ({ onSubmit }: GamePinInputProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isValid) {
+      console.log("[GamePinInput] Submitting PIN:", pin);
       playAudio('buttonClick');
       onSubmit(pin);
+    } else {
+      console.log("[GamePinInput] Invalid PIN, length:", pin.length);
     }
   };
 
   const handlePinChange = (value: string) => {
+    console.log("[GamePinInput] PIN changed:", value);
     setPin(value);
   };
 

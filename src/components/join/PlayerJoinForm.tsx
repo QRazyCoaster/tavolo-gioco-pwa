@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/context/LanguageContext';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -31,9 +31,29 @@ const PlayerJoinForm = ({
 }: PlayerJoinFormProps) => {
   const { t, language } = useLanguage();
   
+  // Debug info for form submission
+  useEffect(() => {
+    console.log('[PlayerJoinForm] Current state:', { 
+      pin, 
+      name, 
+      pinLength: pin.length,
+      nameLength: name.length,
+      loading,
+      formValid: pin.length === 4 && name.trim().length > 0
+    });
+  }, [pin, name, loading]);
+  
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('[PlayerJoinForm] Form submitted, will call onSubmit handler');
+    
+    // Call the actual submit handler
+    onSubmit(e);
+  };
+  
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-      <form onSubmit={onSubmit} className="flex flex-col space-y-6">
+      <form onSubmit={handleFormSubmit} className="flex flex-col space-y-6">
         <div>
           <label className="text-2xl font-semibold text-center block mb-4">
             {t('common.enterPin')}
