@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
@@ -8,7 +7,7 @@ import { playAudio } from '@/utils/audioUtils';
 import { Player } from '@/context/GameContext';
 import TriviaQuestion from './TriviaQuestion';
 import { useToast } from '@/hooks/use-toast';
-import { Award, Flag, GamepadIcon, Trophy } from "lucide-react";
+import { Award, Flag, GamepadIcon, PlusIcon, Trophy } from "lucide-react";
 
 // Tipo per definire una domanda di trivia
 interface TriviaQuestionType {
@@ -112,12 +111,11 @@ const TriviaGame = () => {
   const [questions] = useState<TriviaQuestionType[]>(mockTriviaQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [showAnswer, setShowAnswer] = useState<boolean>(false);
-  const [playerAnswering, setPlayerAnswering] = useState<Player | null>(null);
-  const [waitingForNarrator, setWaitingForNarrator] = useState<boolean>(false);
-  const [scoreHistory, setScoreHistory] = useState<{playerId: string, correct: boolean}[]>([]);
   const [roundNumber, setRoundNumber] = useState<number>(1);
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [timerActive, setTimerActive] = useState<boolean>(false);
+  const [waitingForNarrator, setWaitingForNarrator] = useState<boolean>(false);
+
+  // Nuova gestione dei giocatori prenotati per rispondere
+  const [queuedPlayers, setQueuedPlayers] = useState<Player[]>([]);
   
   const isHost = state.currentPlayer?.isHost || false;
   const currentQuestion = questions[currentQuestionIndex];
@@ -133,39 +131,9 @@ const TriviaGame = () => {
     }
   }, [isHost]);
   
-  // Timer per rispondere
-  useEffect(() => {
-    let timerId: NodeJS.Timeout | undefined;
-    
-    if (timerActive && timeLeft !== null && timeLeft > 0) {
-      timerId = setTimeout(() => {
-        setTimeLeft(prev => prev !== null ? prev - 1 : null);
-      }, 1000);
-    } else if (timerActive && timeLeft === 0) {
-      // Tempo scaduto
-      setTimerActive(false);
-      
-      if (playerAnswering) {
-        playAudio('error');
-        toast({
-          title: language === 'it' ? "Tempo scaduto!" : "Time's up!",
-          description: language === 'it' 
-            ? `${playerAnswering.name} non ha risposto in tempo` 
-            : `${playerAnswering.name} didn't answer in time`,
-          variant: "destructive"
-        });
-        setPlayerAnswering(null);
-      }
-    }
-    
-    return () => {
-      if (timerId) clearTimeout(timerId);
-    };
-  }, [timerActive, timeLeft, playerAnswering, toast, language]);
-  
   // Funzione per gestire il buzzer di un giocatore
   const handlePlayerBuzz = () => {
-    if (isHost || playerAnswering || waitingForNarrator) {
+    if (isHost || waitingForNarrator) {
       // L'host non può rispondere alle domande, solo fare il narratore
       return;
     }
@@ -177,88 +145,65 @@ const TriviaGame = () => {
       playAudio('notification');
     }
     
-    // Imposta questo giocatore come quello che sta rispondendo
-    if (state.currentPlayer) {
-      setPlayerAnswering(state.currentPlayer);
-      setTimeLeft(15); // 15 secondi per rispondere
-      setTimerActive(true);
+    // Aggiunge questo giocatore alla coda se non è già presente
+    if (state.currentPlayer && !queuedPlayers.some(p => p.id === state.currentPlayer?.id)) {
+      const newQueue = [...queuedPlayers, state.currentPlayer];
+      setQueuedPlayers(newQueue);
       
       // Notifica tutti i giocatori
       toast({
-        title: language === 'it' ? "Rispondi alla domanda!" : "Answer the question!",
+        title: language === 'it' ? "Giocatore in coda!" : "Player queued!",
         description: language === 'it' 
-          ? `${state.currentPlayer.name} sta rispondendo (15 secondi)` 
-          : `${state.currentPlayer.name} is answering (15 seconds)`
+          ? `${state.currentPlayer.name} si è prenotato per rispondere` 
+          : `${state.currentPlayer.name} is queued to answer`
       });
     }
   };
   
-  // Funzione per valutare la risposta
-  const handleJudgeAnswer = (correct: boolean) => {
-    if (!isHost || !playerAnswering) return;
+  // Funzione per il narratore che assegna un punto
+  const handleAssignPoint = (player: Player) => {
+    if (!isHost) return;
     
-    // Ferma il timer
-    setTimerActive(false);
-    setTimeLeft(null);
+    playAudio('success');
     
-    if (correct) {
-      playAudio('success');
-      
-      // Aggiorna il punteggio del giocatore
-      const newScore = (playerAnswering.score || 0) + 1;
-      dispatch({
-        type: 'UPDATE_SCORE',
-        payload: {
-          playerId: playerAnswering.id,
-          score: newScore
-        }
-      });
-      
-      // Aggiorna la cronologia dei punteggi
-      setScoreHistory(prev => [...prev, { playerId: playerAnswering.id, correct: true }]);
-      
-      toast({
-        title: language === 'it' ? "Risposta corretta!" : "Correct answer!",
-        description: language === 'it' 
-          ? `${playerAnswering.name} guadagna un punto (${newScore} totali)` 
-          : `${playerAnswering.name} earns a point (${newScore} total)`
-      });
-    } else {
+    // Aggiorna il punteggio del giocatore
+    const newScore = (player.score || 0) + 1;
+    dispatch({
+      type: 'UPDATE_SCORE',
+      payload: {
+        playerId: player.id,
+        score: newScore
+      }
+    });
+    
+    toast({
+      title: language === 'it' ? "Punto assegnato!" : "Point assigned!",
+      description: language === 'it' 
+        ? `${player.name} guadagna un punto (${newScore} totali)` 
+        : `${player.name} earns a point (${newScore} total)`
+    });
+    
+    // Rimuove il giocatore dalla coda
+    setQueuedPlayers(prev => prev.filter(p => p.id !== player.id));
+  };
+  
+  // Funzione per rimuovere un giocatore dalla coda senza assegnare punti
+  const handleRemovePlayerFromQueue = (playerId: string) => {
+    if (!isHost) return;
+    
+    const player = state.players.find(p => p.id === playerId);
+    if (player) {
       playAudio('error');
       
-      // Aggiorna la cronologia dei punteggi
-      setScoreHistory(prev => [...prev, { playerId: playerAnswering.id, correct: false }]);
-      
       toast({
-        title: language === 'it' ? "Risposta sbagliata" : "Wrong answer",
+        title: language === 'it' ? "Giocatore rimosso" : "Player removed",
         description: language === 'it' 
-          ? `Nessun punto per ${playerAnswering.name}` 
-          : `No points for ${playerAnswering.name}`
+          ? `${player.name} rimosso dalla coda` 
+          : `${player.name} removed from queue`
       });
     }
     
-    // Resetta lo stato per la prossima domanda
-    setPlayerAnswering(null);
-    setShowAnswer(false);
-    
-    // Passa alla domanda successiva
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setWaitingForNarrator(true);
-    } else {
-      // Ricomincia dall'inizio con un nuovo round
-      setCurrentQuestionIndex(0);
-      setWaitingForNarrator(true);
-      setRoundNumber(roundNumber + 1);
-      
-      // Fine delle domande del round
-      toast({
-        title: language === 'it' ? `Round ${roundNumber} completato!` : `Round ${roundNumber} completed!`,
-        description: language === 'it' 
-          ? "Un nuovo round sta per iniziare" 
-          : "A new round is about to begin"
-      });
-    }
+    setQueuedPlayers(prev => prev.filter(p => p.id !== playerId));
   };
   
   // Funzione per mostrare la risposta al narratore
@@ -274,6 +219,9 @@ const TriviaGame = () => {
     setWaitingForNarrator(false);
     playAudio('notification');
     
+    // Resetta la coda dei giocatori per la nuova domanda
+    setQueuedPlayers([]);
+    
     // Notifica gli altri giocatori
     toast({
       title: language === 'it' ? "Nuova domanda" : "New question",
@@ -283,14 +231,12 @@ const TriviaGame = () => {
     });
   };
   
-  // Funzione per saltare la domanda corrente
-  const handleSkipQuestion = () => {
+  // Funzione per passare alla domanda successiva
+  const handleNextQuestion = () => {
     if (!isHost) return;
     
-    setPlayerAnswering(null);
     setShowAnswer(false);
-    setTimerActive(false);
-    setTimeLeft(null);
+    setQueuedPlayers([]);
     
     // Passa alla domanda successiva
     if (currentQuestionIndex < questions.length - 1) {
@@ -304,11 +250,16 @@ const TriviaGame = () => {
     setWaitingForNarrator(true);
     
     toast({
-      title: language === 'it' ? "Domanda saltata" : "Question skipped",
+      title: language === 'it' ? "Prossima domanda" : "Next question",
       description: language === 'it' 
         ? "Passiamo alla prossima domanda" 
         : "Moving to the next question"
     });
+
+    // Mostra subito la domanda dopo aver cliccato "Prossima"
+    setTimeout(() => {
+      setWaitingForNarrator(false);
+    }, 500);
   };
   
   // Classifica dei giocatori (ordinata per punteggio)
@@ -360,7 +311,7 @@ const TriviaGame = () => {
         </Card>
       ) : (
         <div className="w-full max-w-lg">
-          {isHost && !playerAnswering && (
+          {isHost && (
             <div className="mb-4 flex justify-between items-center">
               <Button 
                 variant="outline"
@@ -373,19 +324,19 @@ const TriviaGame = () => {
               
               <Button 
                 variant="outline"
-                onClick={handleSkipQuestion}
-                className="bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                onClick={handleRevealAnswer}
+                className={`flex gap-2 items-center ${showAnswer ? "bg-blue-100" : ""}`}
               >
-                {language === 'it' ? "Salta Domanda" : "Skip Question"}
+                <Trophy size={16} />
+                {language === 'it' ? "Rivela Risposta" : "Reveal Answer"}
               </Button>
               
               <Button 
                 variant="outline"
-                onClick={handleRevealAnswer}
-                className="flex gap-2 items-center"
+                onClick={handleNextQuestion}
+                className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
               >
-                <Trophy size={16} />
-                {language === 'it' ? "Rivela Risposta" : "Reveal Answer"}
+                {language === 'it' ? "Prossima Domanda" : "Next Question"}
               </Button>
             </div>
           )}
@@ -395,98 +346,103 @@ const TriviaGame = () => {
             showAnswer={showAnswer && isHost}
             language={language}
           />
-          
-          {/* Timer per rispondere */}
-          {timerActive && timeLeft !== null && (
-            <div className="mt-4 w-full">
-              <div className="bg-gray-200 h-4 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-1000 ease-linear ${
-                    timeLeft > 10 ? "bg-green-500" : timeLeft > 5 ? "bg-yellow-500" : "bg-red-500"
-                  }`}
-                  style={{ width: `${(timeLeft / 15) * 100}%` }}
-                ></div>
-              </div>
-              <div className="text-center mt-1 text-sm font-semibold">
-                {timeLeft} {language === 'it' ? "secondi" : "seconds"}
+
+          {/* Visualizzazione della coda dei giocatori per il narratore */}
+          {isHost && queuedPlayers.length > 0 && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <h3 className="font-semibold mb-3 text-blue-800">
+                {language === 'it' ? "Giocatori prenotati:" : "Queued players:"}
+              </h3>
+              <div className="space-y-2">
+                {queuedPlayers.map((player, index) => (
+                  <div key={player.id} className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium">{player.name}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        className="flex items-center gap-1 bg-green-500 hover:bg-green-600"
+                        onClick={() => handleAssignPoint(player)}
+                      >
+                        <PlusIcon size={16} />
+                        <span>1</span>
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-red-500 border-red-200 hover:bg-red-50"
+                        onClick={() => handleRemovePlayerFromQueue(player.id)}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
           
-          {isHost && playerAnswering ? (
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <Button 
-                variant="default"
-                className="bg-green-500 hover:bg-green-600"
-                onClick={() => handleJudgeAnswer(true)}
-              >
-                {language === 'it' ? "Risposta Corretta" : "Correct Answer"}
-              </Button>
-              <Button
-                variant="default"
-                className="bg-red-500 hover:bg-red-600"
-                onClick={() => handleJudgeAnswer(false)}
-              >
-                {language === 'it' ? "Risposta Sbagliata" : "Wrong Answer"}
-              </Button>
-            </div>
-          ) : !isHost && !playerAnswering && !waitingForNarrator ? (
+          {/* Pulsante Buzzer per i giocatori */}
+          {!isHost && !waitingForNarrator && (
             <div className="mt-4">
               <Button 
                 variant="default"
-                className="w-full py-8 text-lg flex items-center justify-center gap-2"
+                className={`w-full py-8 text-lg flex items-center justify-center gap-2 ${
+                  queuedPlayers.some(p => p.id === state.currentPlayer?.id)
+                    ? "bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
+                    : ""
+                }`}
                 onClick={handlePlayerBuzz}
+                disabled={queuedPlayers.some(p => p.id === state.currentPlayer?.id)}
               >
                 <GamepadIcon size={24} />
-                {language === 'it' ? "BUZZER" : "BUZZ IN"}
+                {queuedPlayers.some(p => p.id === state.currentPlayer?.id)
+                  ? (language === 'it' ? "IN ATTESA" : "WAITING") 
+                  : (language === 'it' ? "BUZZER" : "BUZZ IN")}
               </Button>
-            </div>
-          ) : null}
-          
-          {playerAnswering && !isHost && playerAnswering.id === state.currentPlayer?.id && (
-            <div className="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded-md text-center">
-              <p className="text-yellow-800 font-bold">
-                {language === 'it' 
-                  ? `È il tuo turno di rispondere! (${timeLeft || 0} secondi)` 
-                  : `It's your turn to answer! (${timeLeft || 0} seconds)`}
-              </p>
-            </div>
-          )}
-          
-          {playerAnswering && !isHost && playerAnswering.id !== state.currentPlayer?.id && (
-            <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-md text-center">
-              <p className="text-gray-800">
-                {language === 'it' 
-                  ? `${playerAnswering.name} sta rispondendo... (${timeLeft || 0} secondi)` 
-                  : `${playerAnswering.name} is answering... (${timeLeft || 0} seconds)`}
-              </p>
             </div>
           )}
 
-          {/* Mostra gli ultimi risultati se ci sono */}
-          {!waitingForNarrator && scoreHistory.length > 0 && (
+          {/* Visualizzazione dello stato della coda per i giocatori */}
+          {!isHost && queuedPlayers.length > 0 && (
             <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md">
               <h3 className="font-semibold mb-2">
-                {language === 'it' ? "Ultime risposte:" : "Recent answers:"}
+                {language === 'it' ? "Giocatori in coda:" : "Players in queue:"}
               </h3>
-              <div className="space-y-2 max-h-24 overflow-y-auto">
-                {[...scoreHistory].reverse().slice(0, 5).map((record, idx) => {
-                  const player = state.players.find(p => p.id === record.playerId);
-                  return (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${record.correct ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                      <span>{player?.name || "Unknown"}: </span>
-                      <span className={record.correct ? 'text-green-600' : 'text-red-600'}>
-                        {record.correct 
-                          ? (language === 'it' ? "Corretta" : "Correct") 
-                          : (language === 'it' ? "Errata" : "Wrong")}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              <ol className="list-decimal pl-5 space-y-1">
+                {queuedPlayers.map((player) => (
+                  <li key={player.id} className={`
+                    ${player.id === state.currentPlayer?.id ? "font-bold text-blue-700" : ""}
+                  `}>
+                    {player.name} {player.id === state.currentPlayer?.id ? 
+                      (language === 'it' ? "(tu)" : "(you)") : ""}
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
+
+          {/* Classifica in tempo reale */}
+          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-md">
+            <h3 className="font-semibold mb-2">
+              {language === 'it' ? "Classifica:" : "Ranking:"}
+            </h3>
+            <div className="space-y-2">
+              {sortedPlayers.map((player, index) => (
+                <div key={player.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 w-5">{index + 1}.</span>
+                    <span>{player.name}</span>
+                  </div>
+                  <span className="font-semibold">{player.score || 0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
