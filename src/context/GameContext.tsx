@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 /* ──────────────── Player type ──────────────── */
 export interface Player {
@@ -45,7 +45,8 @@ type GameAction =
   | { type: 'UPDATE_SCORE'; payload: { playerId: string; score: number } }
   | { type: 'SET_CURRENT_PLAYER'; payload: Player | null }
   | { type: 'START_BACKGROUND_MUSIC' }
-  | { type: 'STOP_BACKGROUND_MUSIC' };
+  | { type: 'STOP_BACKGROUND_MUSIC' }
+  | { type: 'RESTORE_SESSION' };
 
 /* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -68,8 +69,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
     case 'ADD_PLAYER':
       return { ...state, players: [...state.players, action.payload] };
-      case 'ADD_PLAYER_LIST':
-  return { ...state, players: action.payload };
+    case 'ADD_PLAYER_LIST':
+      return { ...state, players: action.payload };
     case 'REMOVE_PLAYER':
       return { ...state, players: state.players.filter(p => p.id !== action.payload) };
     case 'SELECT_GAME':
@@ -77,6 +78,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_GAME':
       return { ...state, gameStarted: true };
     case 'END_GAME':
+      // Clear session storage on game end
+      sessionStorage.removeItem('gameStarted');
+      sessionStorage.removeItem('gameId');
+      sessionStorage.removeItem('pin');
+      sessionStorage.removeItem('selectedGame');
       return { ...state, gameStarted: false, selectedGame: null };
     case 'UPDATE_SCORE':
       return {
@@ -91,6 +97,25 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, backgroundMusicPlaying: true };
     case 'STOP_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: false };
+    case 'RESTORE_SESSION':
+      // Check if we have session data to restore from
+      const gameId = sessionStorage.getItem('gameId');
+      const pin = sessionStorage.getItem('pin');
+      const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
+      const selectedGame = sessionStorage.getItem('selectedGame') || 'trivia';
+      
+      // Only restore if we have valid session data
+      if (gameId && pin && gameStarted) {
+        console.log('GameContext - Restoring session:', { gameId, pin, gameStarted, selectedGame });
+        return {
+          ...state,
+          gameId,
+          pin,
+          gameStarted,
+          selectedGame
+        };
+      }
+      return state;
     default:
       return state;
   }
@@ -107,6 +132,18 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 /* ──────────────── Provider ──────────────── */
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+
+  // On initial load, try to restore from session storage
+  useEffect(() => {
+    const gameId = sessionStorage.getItem('gameId');
+    const pin = sessionStorage.getItem('pin');
+    const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
+    
+    if (gameId && pin && gameStarted && !state.gameId) {
+      console.log('GameProvider - Attempting to restore session');
+      dispatch({ type: 'RESTORE_SESSION' });
+    }
+  }, [state.gameId]);
 
   return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
 };

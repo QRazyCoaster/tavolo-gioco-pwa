@@ -19,7 +19,7 @@ const GamePage = () => {
     navigate('/');
   };
   
-  // Adding debug logs to see what values are causing redirection
+  // Fix: Improved session storage handling logic
   useEffect(() => {
     console.log('GamePage - Game state values:', {
       gameId: state.gameId,
@@ -29,42 +29,79 @@ const GamePage = () => {
       playersCount: state.players.length
     });
     
-    if (!state.gameId || !state.pin) {
-      console.log('GamePage - Missing gameId or pin, redirecting to home');
-      navigate('/');
-      return;
-    }
+    // Get session values first
+    const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
+    const sessionGameId = sessionStorage.getItem('gameId');
+    const sessionPin = sessionStorage.getItem('pin');
     
-    // Only redirect if the game hasn't been started - this allows refreshes
-    if (!state.gameStarted && !sessionStorage.getItem('gameStarted')) {
-      console.log('GamePage - Game not started, redirecting to home');
-      navigate('/');
-      return;
-    }
+    console.log('GamePage - Session storage values:', {
+      sessionGameStarted,
+      sessionGameId,
+      sessionPin
+    });
     
-    // Store game state in session storage to persist through refreshes
-    if (state.gameStarted) {
-      sessionStorage.setItem('gameStarted', 'true');
+    // If we have both state values and session values, prioritize state
+    if (state.gameId && state.pin) {
+      console.log('GamePage - Using game state from context');
+      
+      // Update session storage with current state
+      sessionStorage.setItem('gameStarted', state.gameStarted ? 'true' : 'false');
       sessionStorage.setItem('gameId', state.gameId);
       sessionStorage.setItem('pin', state.pin);
-    }
-  }, [state.gameId, state.pin, state.gameStarted, navigate]);
-  
-  // Recover from session storage if needed
-  useEffect(() => {
-    if (!state.gameStarted && sessionStorage.getItem('gameStarted') === 'true') {
-      const gameId = sessionStorage.getItem('gameId');
-      const pin = sessionStorage.getItem('pin');
       
-      if (gameId && pin) {
-        console.log('GamePage - Recovering game state from session storage');
-        // Don't dispatch if we already have a gameId (prevents loops)
-        if (!state.gameId) {
-          dispatch({ type: 'START_GAME' });
+      // Don't redirect, we have valid state
+      return;
+    }
+    
+    // If we don't have state but have session values, recover from session
+    if (!state.gameId && !state.pin && sessionGameStarted && sessionGameId && sessionPin) {
+      console.log('GamePage - Recovering from session storage');
+      
+      // Restore game from session
+      dispatch({ type: 'START_GAME' });
+      
+      // Only dispatch if needed (prevent loop)
+      if (!state.gameId) {
+        const restoredGameData = {
+          gameId: sessionGameId,
+          pin: sessionPin
+        };
+        
+        console.log('GamePage - Dispatching restored game data:', restoredGameData);
+        
+        // Set game ID and PIN
+        dispatch({ 
+          type: 'CREATE_GAME', 
+          payload: {
+            gameId: sessionGameId,
+            pin: sessionPin,
+            host: state.currentPlayer || {
+              id: 'recovered-host',
+              name: 'Host',
+              isHost: true,
+              score: 0
+            }
+          }
+        });
+        
+        // Select default game type if none
+        if (!state.selectedGame) {
+          dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
         }
       }
+      
+      // Don't redirect, we've recovered state
+      return;
     }
-  }, [state.gameStarted, state.gameId, dispatch]);
+    
+    // If no state in context or session storage, redirect to home
+    if ((!state.gameId || !state.pin) && (!sessionGameStarted || !sessionGameId || !sessionPin)) {
+      console.log('GamePage - No game state in context or session, redirecting to home');
+      navigate('/');
+      return;
+    }
+    
+  }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, navigate, dispatch]);
   
   // If still not ready, show loading
   if (!state.gameId || !state.pin) {

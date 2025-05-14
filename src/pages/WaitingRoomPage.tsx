@@ -198,10 +198,17 @@ const WaitingRoomPage = () => {
     
     dispatch({ type: 'START_GAME' });
     
-    // Store game state in session storage for persistence
+    // Fix: Store complete game data in session storage for persistence
     sessionStorage.setItem('gameStarted', 'true');
     sessionStorage.setItem('gameId', state.gameId || '');
     sessionStorage.setItem('pin', state.pin || '');
+    sessionStorage.setItem('selectedGame', state.selectedGame || 'trivia');
+    
+    console.log('WaitingRoomPage - Game started, stored in session:', {
+      gameId: state.gameId,
+      pin: state.pin,
+      selectedGame: state.selectedGame || 'trivia'
+    });
     
     playAudio('success');
     navigate('/game');
@@ -214,7 +221,27 @@ const WaitingRoomPage = () => {
   
   // Redirect if there's no game
   useEffect(() => {
-    if (!state.gameId || !state.pin) {
+    // Check session storage first
+    const sessionGameId = sessionStorage.getItem('gameId');
+    const sessionPin = sessionStorage.getItem('pin');
+    
+    // If no game in state but found in session, try to recover
+    if ((!state.gameId || !state.pin) && sessionGameId && sessionPin) {
+      console.log('WaitingRoomPage - Game found in session storage:', { sessionGameId, sessionPin });
+      
+      // Only recover if not already trying to recover
+      if (!state.gameId && !state.pin) {
+        // Don't recover if we've already started the game (to avoid loops)
+        const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
+        if (sessionGameStarted) {
+          console.log('WaitingRoomPage - Game already started, redirecting to game');
+          navigate('/game');
+          return;
+        }
+      }
+    } 
+    // No game in state or session, redirect to home
+    else if (!state.gameId || !state.pin) {
       console.log('WaitingRoomPage - Missing gameId or pin, redirecting to home');
       navigate('/');
     }
