@@ -20,6 +20,7 @@ const JoinGame = () => {
     handlePinChange,
     handleNameChange,
     handleHostNameSubmit,
+    handleHostNameChange,
     handlePlayerFormSubmit,
     handleBack
   } = useGameJoin();
@@ -35,7 +36,7 @@ const JoinGame = () => {
           pin={pin}
           name={name}
           loading={loading}
-          onNameChange={handleNameChange}
+          onNameChange={handleHostNameChange}
           onSubmit={handleHostNameSubmit}
         />
       );

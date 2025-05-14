@@ -1,43 +1,43 @@
 
-import React, { FormEvent } from 'react';
+import React from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import PlayerNameInput from '@/components/PlayerNameInput';
 
 interface HostPinDisplayProps {
   pin: string;
   name: string;
   loading: boolean;
-  onNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: FormEvent) => void;
+  onNameChange: (name: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
 const HostPinDisplay = ({ pin, name, loading, onNameChange, onSubmit }: HostPinDisplayProps) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  
+  const handleNameSubmit = (submittedName: string) => {
+    // First update the name
+    onNameChange(submittedName);
+    
+    // Then trigger form submission
+    // Create a synthetic form event
+    const formEvent = new Event('submit') as unknown as React.FormEvent;
+    onSubmit(formEvent);
+  };
   
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
+      <div className="flex justify-center items-center mb-6 text-center">
+        <div className="bg-blue-50 text-blue-800 p-3 rounded-lg mb-2 w-full">
+          <span className="block text-lg font-semibold mb-1">{t('common.pin')}: </span>
+          <span className="text-3xl font-bold tracking-wider">{pin}</span>
+        </div>
+      </div>
+      
       <div className="mt-2">
-        <form onSubmit={onSubmit}>
-          <div className="mb-4">
-            <label htmlFor="host-name" className="block text-xl font-semibold text-center mb-4">
-              {t('common.chooseName')}
-            </label>
-            <input
-              id="host-name"
-              type="text"
-              value={name}
-              onChange={onNameChange}
-              className="w-full px-4 py-2 border rounded-md text-center text-lg"
-              placeholder={language === 'it' ? 'Nome narratore' : 'Host name'}
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-primary text-white py-2 px-4 rounded-md disabled:opacity-50 mt-4"
-            disabled={!name.trim() || loading}
-          >
-            {loading ? (language === 'it' ? 'Attendi...' : 'Loading...') : (language === 'it' ? 'Continua' : 'Continue')}
-          </button>
-        </form>
+        <PlayerNameInput 
+          onSubmit={handleNameSubmit} 
+          initialValue={name} 
+        />
       </div>
     </div>
   );

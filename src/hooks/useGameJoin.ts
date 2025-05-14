@@ -8,7 +8,7 @@ import { usePlayerJoin } from './usePlayerJoin';
  */
 export const useGameJoin = () => {
   const core = useGameJoinCore();
-  const { handleHostNameSubmit } = useHostJoin();
+  const { handleHostNameSubmit, handleHostNameChange } = useHostJoin();
   const { handlePlayerFormSubmit } = usePlayerJoin();
   
   return {
@@ -20,6 +20,7 @@ export const useGameJoin = () => {
     handlePlayerRole: core.handlePlayerRole,
     handlePinChange: core.handlePinChange,
     handleNameChange: core.handleNameChange,
+    handleHostNameChange,
     handleHostNameSubmit,
     handlePlayerFormSubmit,
     handleBack: core.handleBack

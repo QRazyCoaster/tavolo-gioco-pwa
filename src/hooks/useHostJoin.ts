@@ -11,9 +11,14 @@ import { supabase } from '@/supabaseClient';
  */
 export const useHostJoin = () => {
   const { 
-    name, setLoading, dispatch, navigate, language
+    name, setName, setLoading, dispatch, navigate, language
   } = useGameJoinCore();
   const { toast } = useToast();
+
+  // New handler for name changes
+  const handleHostNameChange = (newName: string) => {
+    setName(newName);
+  };
 
   const handleHostNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,5 +75,5 @@ export const useHostJoin = () => {
     }
   };
 
-  return { handleHostNameSubmit };
+  return { handleHostNameSubmit, handleHostNameChange };
 };
