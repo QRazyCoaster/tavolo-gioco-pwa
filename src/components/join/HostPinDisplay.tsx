@@ -26,13 +26,6 @@ const HostPinDisplay = ({ pin, name, loading, onNameChange, onSubmit }: HostPinD
   
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
-      <div className="flex justify-center items-center mb-6 text-center">
-        <div className="bg-blue-50 text-blue-800 p-3 rounded-lg mb-2 w-full">
-          <span className="block text-lg font-semibold mb-1">{t('common.pin')}: </span>
-          <span className="text-3xl font-bold tracking-wider">{pin}</span>
-        </div>
-      </div>
-      
       <div className="mt-2">
         <PlayerNameInput 
           onSubmit={handleNameSubmit} 

@@ -61,6 +61,7 @@ export const useHostJoin = () => {
         }
       });
 
+      // Immediately navigate to waiting room after dispatch
       playAudio('success');
       navigate('/waiting-room');
     } catch (error) {

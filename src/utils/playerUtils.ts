@@ -1,4 +1,6 @@
 
+import { listBuzzers } from '@/actions/listBuzzers';
+
 /**
  * Helper function to log player data for debugging
  */
@@ -59,13 +61,10 @@ export const checkAndFixBuzzer = async (supabase: any, player: any, setFunction?
     const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
     
     // Get a list of available sounds with their actual filenames
-    const { data: files, error: listError } = await supabase
-      .storage
-      .from('audio')
-      .list('buzzers');
+    const files = await listBuzzers();
       
-    if (listError || !files || files.length === 0) {
-      console.error('[BUZZER_FIX] Could not fetch buzzer sounds:', listError);
+    if (!files || files.length === 0) {
+      console.error('[BUZZER_FIX] Could not fetch buzzer sounds');
       return false;
     }
     

@@ -54,14 +54,19 @@ export async function joinGame({ gameId, playerName }) {
         const used = usedRows?.map(r => r.buzzer_sound_url) || [];
         console.log('[JOIN_GAME] Used buzzers:', used);
         
-        // Build available buzzer list by comparing exact URLs
-        const availableFiles = [];
-        for (const file of files) {
-          const fileUrl = baseUrl + encodeURIComponent(file.name);
-          if (!used.includes(fileUrl)) {
-            availableFiles.push(file);
-          }
-        }
+        // Extract file names from used URLs
+        const usedFileNames = used.map(url => {
+          if (!url) return '';
+          const parts = url.split('/');
+          return decodeURIComponent(parts[parts.length - 1]);
+        });
+        
+        console.log('[JOIN_GAME] Used buzzer filenames:', usedFileNames);
+        
+        // Build available buzzer list by comparing exact filenames
+        const availableFiles = files.filter(file => 
+          !usedFileNames.includes(file.name)
+        );
         
         console.log('[JOIN_GAME] Available buzzer files after filtering:', availableFiles.length);
         console.log('[JOIN_GAME] Available buzzer filenames:', availableFiles.map(f => f.name));
