@@ -6,7 +6,6 @@ import { useLanguage } from '@/context/LanguageContext';
 import { playAudio } from '@/utils/audioUtils';
 import MusicToggle from '@/components/MusicToggle';
 import WaitingRoom from '@/components/WaitingRoom';
-import BuzzerFixButton from '@/components/waitingRoom/BuzzerFixButton';
 import { useBuzzerSetup } from '@/hooks/useBuzzerSetup';
 import { useGameSession } from '@/hooks/useGameSession';
 import { useGameStarter } from '@/components/waitingRoom/GameStarter';
@@ -22,12 +21,11 @@ declare global {
 const WaitingRoomPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [fixAttempted, setFixAttempted] = useState(false);
   const { state } = useGame();
 
   // Custom hooks
   const { validSession } = useGameSession();
-  useBuzzerSetup(fixAttempted, setFixAttempted);
+  useBuzzerSetup(false, () => {}); // Keep using the hook but without the UI
   const { handleStartGame } = useGameStarter();
   
   // Debug session validation
@@ -61,12 +59,6 @@ const WaitingRoomPage = () => {
         </div>
         
         <WaitingRoom onStartGame={handleStartGame} />
-        
-        {/* Add buzzer fix button component */}
-        <BuzzerFixButton 
-          fixAttempted={fixAttempted} 
-          setFixAttempted={setFixAttempted} 
-        />
         
         <div className="mt-6 text-center">
           <Button 
