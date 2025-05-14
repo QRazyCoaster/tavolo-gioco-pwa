@@ -4,11 +4,14 @@ export async function listBuzzers() {
   try {
     console.log('[LIST_BUZZERS] Listing buzzer sounds from storage…');
 
-    // 1 – List everything inside the buzzers folder
+    // 1 – List everything inside the buzzers folder
     const { data, error } = await supabase
       .storage
       .from('audio')
       .list('buzzers', { sortBy: { column: 'name', order: 'asc' } });
+
+    // ── RAW RESPONSE DEBUG ──
+    console.log('[LIST_BUZZERS] raw listing response:', { data, error });
 
     if (error) {
       console.error('[LIST_BUZZERS] Error listing buzzers:', error);
@@ -20,7 +23,7 @@ export async function listBuzzers() {
       return [];
     }
 
-    // 2 – Keep only files whose names end in .mp3/.wav/.ogg  (case‑insensitive)
+    // 2 – Keep only files whose names end in .mp3/.wav/.ogg (case-insensitive)
     const audioFiles = data.filter(file =>
       /\.(mp3|wav|ogg)$/i.test(file.name)
     );
