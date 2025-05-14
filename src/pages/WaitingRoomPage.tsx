@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -25,10 +25,11 @@ const WaitingRoomPage = () => {
 
   // Custom hooks
   const { validSession } = useGameSession();
-  useBuzzerSetup(false, () => {}); // Keep using the hook but without the UI
+  // Pass dummy state setter that won't cause rerenders
+  useBuzzerSetup(false, () => {});
   const { handleStartGame } = useGameStarter();
   
-  // Debug session validation
+  // Debug session validation only once
   useEffect(() => {
     console.log('[WaitingRoomPage] Session check:', { 
       validSession,
