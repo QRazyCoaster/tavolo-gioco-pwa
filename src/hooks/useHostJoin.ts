@@ -17,14 +17,22 @@ export const useHostJoin = () => {
 
   // New handler for name changes
   const handleHostNameChange = (newName: string) => {
+    console.log('[useHostJoin] Name changed to:', newName);
     setName(newName);
   };
 
   const handleHostNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!name.trim()) {
       console.log('[HOST] Name is empty, not submitting');
       return;
+    }
+    
+    // Prevent duplicate form submissions
+    if (e.target && 'disabled' in e.target) {
+      console.log('[HOST] Preventing duplicate submission');
+      (e.target as HTMLFormElement).disabled = true;
     }
     
     // Show loading immediately and prevent multiple submissions
@@ -69,14 +77,14 @@ export const useHostJoin = () => {
         }
       });
 
-      console.log('[HOST] State updated, preparing to navigate...');
-      
       // Play success sound before navigation
+      console.log('[HOST] State updated, playing success sound...');
       playAudio('success');
       
-      // Use a direct timeout-free navigation
-      console.log('[HOST] Navigating to waiting room...');
-      navigate('/waiting-room');
+      // Force immediate navigation
+      console.log('[HOST] FORCE NAVIGATING to waiting room now...');
+      window.location.href = '/waiting-room';
+      
     } catch (error) {
       console.error('[HOST] Error creating game:', error);
       toast({
@@ -84,7 +92,6 @@ export const useHostJoin = () => {
         description: language === 'it' ? 'Errore durante la creazione del gioco' : 'Error creating game',
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
