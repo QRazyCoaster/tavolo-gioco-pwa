@@ -19,11 +19,17 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   // Let's make sure we correctly identify if current player is the host
   const isHost = state.currentPlayer?.isHost === true;
 
+  // Handle starting the game
+  const handleStartGame = () => {
+    playAudio('buttonClick');
+    onStartGame();
+  };
+
   /* ───────────── fetch + realtime players ───────────── */
   useEffect(() => {
     if (!state.gameId) return;
 
-    // fetch iniziale di tutti i giocatori
+    // Initial fetch of all players
     supabase
       .from('players')
       .select('*')
@@ -43,13 +49,13 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             return {
               id: player.id,
               name: player.name,
-              isHost: player.is_host === true, // Conversione esplicita a boolean
+              isHost: player.is_host === true, // Explicit conversion to boolean
               score: player.score || 0,
               buzzer_sound_url: player.buzzer_sound_url
             };
           });
           
-          // Aggiorna il giocatore corrente se è nell'elenco
+          // Update current player if in the list
           if (state.currentPlayer) {
             const updatedCurrentPlayer = mappedPlayers.find(p => p.id === state.currentPlayer?.id);
             if (updatedCurrentPlayer) {
@@ -62,7 +68,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         }
       });
 
-    // subscribe agli INSERT in tempo reale
+    // Subscribe to real-time player joins
     const channel = supabase
       .channel('players:' + state.gameId)
       .on(
@@ -74,7 +80,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           const newPlayer: Player = {
             id: payload.new.id,
             name: payload.new.name,
-            isHost: payload.new.is_host === true, // Conversione esplicita a boolean
+            isHost: payload.new.is_host === true, // Explicit conversion to boolean
             score: payload.new.score || 0,
             buzzer_sound_url: payload.new.buzzer_sound_url
           };
@@ -88,11 +94,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
     };
   }, [state.gameId, dispatch, state.currentPlayer]);
   /* ──────────────────────────────────────────────────── */
-
-  const handleStartGame = () => {
-    playAudio('buttonClick');
-    onStartGame();
-  };
 
   return (
     <div className="flex flex-col items-center justify-center w-full">
