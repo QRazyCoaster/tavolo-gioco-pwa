@@ -1,38 +1,65 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '@/context/GameContext';
 
 export const useGameSession = () => {
   const navigate = useNavigate();
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
+  const [validationComplete, setValidationComplete] = useState(false);
+  const [isValid, setIsValid] = useState(false);
   
   useEffect(() => {
+    console.log('[useGameSession] Starting session check');
+    
     // Check session storage first
     const sessionGameId = sessionStorage.getItem('gameId');
     const sessionPin = sessionStorage.getItem('pin');
     
-    // If no game in state but found in session, try to recover
-    if ((!state.gameId || !state.pin) && sessionGameId && sessionPin) {
-      console.log('WaitingRoomPage - Game found in session storage:', { sessionGameId, sessionPin });
+    // We have a game in context, session is valid
+    if (state.gameId && state.pin) {
+      console.log('[useGameSession] Game found in state:', { 
+        gameId: state.gameId, 
+        pin: state.pin 
+      });
+      setIsValid(true);
+      setValidationComplete(true);
+      return;
+    }
+    
+    // No game in state but found in session, try to recover
+    if (sessionGameId && sessionPin) {
+      console.log('[useGameSession] Game found in session storage:', { 
+        sessionGameId, 
+        sessionPin 
+      });
       
-      // Only recover if not already trying to recover
-      if (!state.gameId && !state.pin) {
-        // Don't recover if we've already started the game (to avoid loops)
-        const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
-        if (sessionGameStarted) {
-          console.log('WaitingRoomPage - Game already started, redirecting to game');
-          navigate('/game');
-          return;
+      // Try to restore from session
+      dispatch({ type: 'RESTORE_SESSION' });
+      
+      // Give it a moment to update state
+      setTimeout(() => {
+        if (state.gameId) {
+          console.log('[useGameSession] Successfully restored from session');
+          setIsValid(true);
+        } else {
+          console.log('[useGameSession] Failed to restore from session, redirecting');
+          navigate('/');
         }
-      }
+        setValidationComplete(true);
+      }, 100);
     } 
     // No game in state or session, redirect to home
-    else if (!state.gameId || !state.pin) {
-      console.log('WaitingRoomPage - Missing gameId or pin, redirecting to home');
+    else {
+      console.log('[useGameSession] Missing gameId or pin, redirecting to home');
+      setIsValid(false);
+      setValidationComplete(true);
       navigate('/');
     }
-  }, [state.gameId, state.pin, navigate]);
+  }, [state.gameId, state.pin, navigate, dispatch]);
   
-  return { validSession: !!(state.gameId && state.pin) };
+  return { 
+    validSession: isValid || !validationComplete, 
+    validationComplete 
+  };
 };

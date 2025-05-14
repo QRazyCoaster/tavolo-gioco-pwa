@@ -77,13 +77,18 @@ export const useHostJoin = () => {
         }
       });
 
+      // Save game details to session storage for persistence
+      console.log('[HOST] Saving game details to session storage...');
+      sessionStorage.setItem('gameId', game.id);
+      sessionStorage.setItem('pin', game.pin_code);
+      
       // Play success sound before navigation
       console.log('[HOST] State updated, playing success sound...');
       playAudio('success');
       
-      // Force immediate navigation
-      console.log('[HOST] FORCE NAVIGATING to waiting room now...');
-      window.location.href = '/waiting-room';
+      // Use React Router's navigate instead of forcing window location
+      console.log('[HOST] Navigating to waiting room using React Router...');
+      navigate('/waiting-room');
       
     } catch (error) {
       console.error('[HOST] Error creating game:', error);

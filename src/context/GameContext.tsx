@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 /* ──────────────── Player type ──────────────── */
@@ -52,6 +51,14 @@ type GameAction =
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'CREATE_GAME':
+      // When creating a game, also store in sessionStorage for persistence
+      sessionStorage.setItem('gameId', action.payload.gameId);
+      sessionStorage.setItem('pin', action.payload.pin);
+      console.log('GameContext - CREATE_GAME: Storing session data', {
+        gameId: action.payload.gameId,
+        pin: action.payload.pin
+      });
+      
       return {
         ...state,
         gameId: action.payload.gameId,
@@ -105,13 +112,13 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const selectedGame = sessionStorage.getItem('selectedGame');
       
       // Ripristina solo se abbiamo dati di sessione validi
-      if (gameId && pin && gameStarted) {
+      if (gameId && pin) {
         console.log('GameContext - Ripristino sessione:', { gameId, pin, gameStarted, selectedGame });
         return {
           ...state,
           gameId,
           pin,
-          gameStarted,
+          gameStarted: gameStarted || false,
           selectedGame: selectedGame || state.selectedGame
         };
       }
@@ -137,10 +144,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const gameId = sessionStorage.getItem('gameId');
     const pin = sessionStorage.getItem('pin');
-    const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
     
-    if (gameId && pin && gameStarted && !state.gameId) {
-      console.log('GameProvider - Tentativo di ripristino della sessione');
+    if (gameId && pin && !state.gameId) {
+      console.log('GameProvider - Tentativo di ripristino della sessione', { gameId, pin });
       dispatch({ type: 'RESTORE_SESSION' });
     }
   }, []);
