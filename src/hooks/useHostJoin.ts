@@ -22,11 +22,16 @@ export const useHostJoin = () => {
 
   const handleHostNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      console.log('[HOST] Name is empty, not submitting');
+      return;
+    }
+    
+    // Show loading immediately
+    setLoading(true);
+    console.log('[HOST] Creating game with name:', name);
     
     try {
-      setLoading(true);
-      console.log('[HOST] Creating game with name:', name);
       const { game, hostPlayer } = await createGame({
         gameType: 'trivia',
         hostName: name
@@ -35,7 +40,7 @@ export const useHostJoin = () => {
       console.log('[HOST] Game created:', game);
       logPlayerData(hostPlayer, 'HOST_CREATE');
 
-      // Double-check buzzer URL directly from database
+      // Check buzzer URL directly from database
       if (!hostPlayer.buzzer_sound_url) {
         console.log('[HOST] No buzzer URL in response, checking database directly...');
         const { data: playerCheck } = await supabase
@@ -52,6 +57,7 @@ export const useHostJoin = () => {
         }
       }
 
+      // Update game state
       dispatch({
         type: 'CREATE_GAME',
         payload: {
@@ -61,8 +67,9 @@ export const useHostJoin = () => {
         }
       });
 
-      // Immediately navigate to waiting room after dispatch
+      // Play success sound and navigate
       playAudio('success');
+      console.log('[HOST] Navigation to waiting room...');
       navigate('/waiting-room');
     } catch (error) {
       console.error('[HOST] Error creating game:', error);

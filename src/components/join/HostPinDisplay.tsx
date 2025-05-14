@@ -11,17 +11,18 @@ interface HostPinDisplayProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
-const HostPinDisplay = ({ pin, name, loading, onNameChange, onSubmit }: HostPinDisplayProps) => {
+const HostPinDisplay = ({ name, loading, onNameChange, onSubmit }: HostPinDisplayProps) => {
   const { t } = useLanguage();
   
   const handleNameSubmit = (submittedName: string) => {
     // First update the name
     onNameChange(submittedName);
     
-    // Then trigger form submission
-    // Create a synthetic form event
-    const formEvent = new Event('submit') as unknown as React.FormEvent;
-    onSubmit(formEvent);
+    // Then trigger form submission with a small delay to ensure name is set
+    setTimeout(() => {
+      const formEvent = new Event('submit') as unknown as React.FormEvent;
+      onSubmit(formEvent);
+    }, 10);
   };
   
   return (

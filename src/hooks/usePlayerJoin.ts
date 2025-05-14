@@ -24,12 +24,13 @@ export const usePlayerJoin = () => {
       return;
     }
     
+    // Show loading state immediately
+    setLoading(true);
+    console.log('[PLAYER] Joining game with PIN:', pin);
+    console.log('[PLAYER] Player name:', name);
+    
     try {
-      setLoading(true);
-      console.log('[PLAYER] Joining game with PIN:', pin);
-      console.log('[PLAYER] Player name:', name);
-      
-      // 1. recupera l'id partita a partire dal PIN
+      // 1. First retrieve the game ID from the PIN
       const { data: gameRow, error: gErr } = await supabase
         .from('games')
         .select('id')
@@ -46,10 +47,11 @@ export const usePlayerJoin = () => {
           variant: "destructive",
         });
         setShowPinError(true);
+        setLoading(false);
         return;
       }
 
-      // 2. crea il player e assegna il suono buzzer
+      // 2. Create player and assign buzzer sound
       console.log('[PLAYER] Creating player for game ID:', gameRow.id);
       const player = await joinGame({
         gameId: gameRow.id,
@@ -75,7 +77,7 @@ export const usePlayerJoin = () => {
         }
       }
 
-      // 3. aggiorna stato globale e passa alla waiting-room
+      // 3. Update global state and navigate to waiting-room
       dispatch({
         type: 'JOIN_GAME',
         payload: {
@@ -85,7 +87,9 @@ export const usePlayerJoin = () => {
         }
       });
 
+      // Play success sound and navigate
       playAudio('success');
+      console.log('[PLAYER] Navigation to waiting room...');
       navigate('/waiting-room');
     } catch (error) {
       console.error('[PLAYER] Error joining game:', error);
