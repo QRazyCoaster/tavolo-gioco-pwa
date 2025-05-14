@@ -1,28 +1,23 @@
-
 import { useGameJoinCore } from './useGameJoinCore';
 import { useHostJoin } from './useHostJoin';
 import { usePlayerJoin } from './usePlayerJoin';
 
 /**
- * Main hook for game joining functionality, combines core, host and player hooks
+ * Main hook for game‑joining functionality
+ * – creates ONE core instance
+ * – passes that same instance into the host‑ and player‑specific hooks
  */
 export const useGameJoin = () => {
   const core = useGameJoinCore();
-  const { handleHostNameSubmit, handleHostNameChange } = useHostJoin();
-  const { handlePlayerFormSubmit } = usePlayerJoin();
-  
+
+  // role‑specific helpers, fed with the same core
+  const { handleHostNameSubmit, handleHostNameChange } = useHostJoin(core);
+  const { handlePlayerFormSubmit } = usePlayerJoin(core);
+
   return {
-    pin: core.pin,
-    name: core.name,
-    isHost: core.isHost,
-    loading: core.loading,
-    showPinError: core.showPinError,
-    handlePlayerRole: core.handlePlayerRole,
-    handlePinChange: core.handlePinChange,
-    handleNameChange: core.handleNameChange,
+    ...core,                   // pin, name, loading, etc.
     handleHostNameChange,
     handleHostNameSubmit,
-    handlePlayerFormSubmit,
-    handleBack: core.handleBack
+    handlePlayerFormSubmit
   };
 };

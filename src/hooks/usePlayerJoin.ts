@@ -1,19 +1,26 @@
-
 import { supabase } from '@/supabaseClient';
 import { joinGame } from '@/actions/joinGame';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
-import { useGameJoinCore } from './useGameJoinCore';
 import { logPlayerData } from '@/utils/playerUtils';
+import { useGameJoinCore } from './useGameJoinCore';
+
+type Core = ReturnType<typeof useGameJoinCore>;  // convenience type
 
 /**
- * Hook for handling player-specific game join logic
+ * Player‑specific logic.
+ * Receives the shared core instance from useGameJoin().
  */
-export const usePlayerJoin = () => {
-  const { 
-    pin, name, setLoading, setShowPinError,
-    dispatch, navigate, language
-  } = useGameJoinCore();
+export const usePlayerJoin = (core: Core) => {
+  const {
+    pin,
+    name,
+    setLoading,
+    setShowPinError,
+    dispatch,
+    navigate,
+    language
+  } = core;
   const { toast } = useToast();
 
   const handlePlayerFormSubmit = async (e: React.FormEvent) => {
