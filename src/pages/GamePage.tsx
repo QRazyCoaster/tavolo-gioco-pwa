@@ -4,14 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { playAudio } from '@/utils/audioUtils';
 import TriviaGame from '@/components/games/TriviaGame';
+import { useToast } from '@/hooks/use-toast';
 
 const GamePage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
+  const { toast } = useToast();
   
   const handleEndGame = () => {
     dispatch({ type: 'END_GAME' });
@@ -19,7 +20,7 @@ const GamePage = () => {
     navigate('/');
   };
   
-  // Fix: Improved session storage handling logic
+  // Migliorata la logica di gestione dello stato della sessione
   useEffect(() => {
     console.log('GamePage - Game state values:', {
       gameId: state.gameId,
@@ -29,86 +30,93 @@ const GamePage = () => {
       playersCount: state.players.length
     });
     
-    // Get session values first
+    // Ottieni prima i valori della sessione
     const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
     const sessionGameId = sessionStorage.getItem('gameId');
     const sessionPin = sessionStorage.getItem('pin');
+    const sessionSelectedGame = sessionStorage.getItem('selectedGame');
     
     console.log('GamePage - Session storage values:', {
       sessionGameStarted,
       sessionGameId,
-      sessionPin
+      sessionPin,
+      sessionSelectedGame
     });
     
-    // If we have both state values and session values, prioritize state
-    if (state.gameId && state.pin) {
-      console.log('GamePage - Using game state from context');
+    // Se abbiamo i valori dello stato e della sessione, prioritizziamo lo stato
+    if (state.gameId && state.pin && state.gameStarted) {
+      console.log('GamePage - Utilizzo lo stato del gioco dal contesto');
       
-      // Update session storage with current state
-      sessionStorage.setItem('gameStarted', state.gameStarted ? 'true' : 'false');
+      // Aggiorna la sessionStorage con lo stato corrente
+      sessionStorage.setItem('gameStarted', 'true');
       sessionStorage.setItem('gameId', state.gameId);
       sessionStorage.setItem('pin', state.pin);
-      
-      // Don't redirect, we have valid state
-      return;
-    }
-    
-    // If we don't have state but have session values, recover from session
-    if (!state.gameId && !state.pin && sessionGameStarted && sessionGameId && sessionPin) {
-      console.log('GamePage - Recovering from session storage');
-      
-      // Restore game from session
-      dispatch({ type: 'START_GAME' });
-      
-      // Only dispatch if needed (prevent loop)
-      if (!state.gameId) {
-        const restoredGameData = {
-          gameId: sessionGameId,
-          pin: sessionPin
-        };
-        
-        console.log('GamePage - Dispatching restored game data:', restoredGameData);
-        
-        // Set game ID and PIN
-        dispatch({ 
-          type: 'CREATE_GAME', 
-          payload: {
-            gameId: sessionGameId,
-            pin: sessionPin,
-            host: state.currentPlayer || {
-              id: 'recovered-host',
-              name: 'Host',
-              isHost: true,
-              score: 0
-            }
-          }
-        });
-        
-        // Select default game type if none
-        if (!state.selectedGame) {
-          dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
-        }
+      if (state.selectedGame) {
+        sessionStorage.setItem('selectedGame', state.selectedGame);
+      } else {
+        // Imposta un gioco predefinito se non è stato selezionato
+        dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
+        sessionStorage.setItem('selectedGame', 'trivia');
       }
       
-      // Don't redirect, we've recovered state
+      // Non reindirizzare, abbiamo uno stato valido
       return;
     }
     
-    // If no state in context or session storage, redirect to home
-    if ((!state.gameId || !state.pin) && (!sessionGameStarted || !sessionGameId || !sessionPin)) {
-      console.log('GamePage - No game state in context or session, redirecting to home');
+    // Se non abbiamo lo stato ma abbiamo i valori di sessione, recuperiamo dalla sessione
+    if ((!state.gameId || !state.pin || !state.gameStarted) && 
+        sessionGameStarted && sessionGameId && sessionPin) {
+      console.log('GamePage - Recupero dallo storage di sessione');
+      
+      // Ripristina il gioco dalla sessione
+      dispatch({ type: 'RESTORE_SESSION' });
+      
+      // Assicurati che il gioco sia avviato
+      if (!state.gameStarted) {
+        dispatch({ type: 'START_GAME' });
+      }
+      
+      // Imposta il tipo di gioco se necessario
+      if (!state.selectedGame && sessionSelectedGame) {
+        dispatch({ type: 'SELECT_GAME', payload: sessionSelectedGame });
+      } else if (!state.selectedGame) {
+        dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
+      }
+      
+      toast({
+        title: language === 'it' ? "Sessione ripristinata" : "Session restored",
+        description: language === 'it' 
+          ? "Sessione di gioco ripristinata con successo" 
+          : "Game session successfully restored"
+      });
+      
+      // Non reindirizzare, abbiamo recuperato lo stato
+      return;
+    }
+    
+    // Se non c'è stato nel contesto o nella sessionStorage, reindirizza alla home
+    if ((!state.gameId || !state.pin || !state.gameStarted) && 
+        (!sessionGameStarted || !sessionGameId || !sessionPin)) {
+      console.log('GamePage - Nessuno stato di gioco nel contesto o nella sessione, reindirizzo alla home');
+      toast({
+        title: language === 'it' ? "Sessione non valida" : "Invalid session",
+        description: language === 'it' 
+          ? "Nessuna sessione di gioco attiva trovata" 
+          : "No active game session found",
+        variant: "destructive"
+      });
       navigate('/');
       return;
     }
     
-  }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, navigate, dispatch]);
+  }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, navigate, dispatch, language, toast]);
   
-  // If still not ready, show loading
-  if (!state.gameId || !state.pin) {
+  // Se ancora non pronto, mostra il caricamento
+  if (!state.gameId || !state.pin || !state.gameStarted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl font-medium mb-4">Caricamento del gioco...</p>
+          <p className="text-xl font-medium mb-4">{language === 'it' ? "Caricamento del gioco..." : "Loading game..."}</p>
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
@@ -119,6 +127,8 @@ const GamePage = () => {
   
   // Renderizza il gioco in base al tipo selezionato
   const renderGame = () => {
+    console.log('GamePage - Rendering game:', state.selectedGame);
+    
     switch (state.selectedGame) {
       case 'trivia':
         return <TriviaGame />;

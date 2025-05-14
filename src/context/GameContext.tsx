@@ -7,7 +7,7 @@ export interface Player {
   name: string;
   isHost: boolean;
   score?: number;
-  buzzer_sound_url?: string;   // ← nuovo campo
+  buzzer_sound_url?: string;
 }
 
 /* ──────────────── Game state ──────────────── */
@@ -78,12 +78,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_GAME':
       return { ...state, gameStarted: true };
     case 'END_GAME':
-      // Clear session storage on game end
+      // Pulisci la sessionStorage quando termina il gioco
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
       sessionStorage.removeItem('selectedGame');
-      return { ...state, gameStarted: false, selectedGame: null };
+      return { ...state, gameStarted: false, selectedGame: null, gameId: null, pin: null };
     case 'UPDATE_SCORE':
       return {
         ...state,
@@ -98,21 +98,21 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'STOP_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: false };
     case 'RESTORE_SESSION':
-      // Check if we have session data to restore from
+      // Controlla se abbiamo dati di sessione da ripristinare
       const gameId = sessionStorage.getItem('gameId');
       const pin = sessionStorage.getItem('pin');
       const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
-      const selectedGame = sessionStorage.getItem('selectedGame') || 'trivia';
+      const selectedGame = sessionStorage.getItem('selectedGame');
       
-      // Only restore if we have valid session data
+      // Ripristina solo se abbiamo dati di sessione validi
       if (gameId && pin && gameStarted) {
-        console.log('GameContext - Restoring session:', { gameId, pin, gameStarted, selectedGame });
+        console.log('GameContext - Ripristino sessione:', { gameId, pin, gameStarted, selectedGame });
         return {
           ...state,
           gameId,
           pin,
           gameStarted,
-          selectedGame
+          selectedGame: selectedGame || state.selectedGame
         };
       }
       return state;
@@ -133,17 +133,17 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // On initial load, try to restore from session storage
+  // Al caricamento iniziale, prova a ripristinare dalla sessionStorage
   useEffect(() => {
     const gameId = sessionStorage.getItem('gameId');
     const pin = sessionStorage.getItem('pin');
     const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
     
     if (gameId && pin && gameStarted && !state.gameId) {
-      console.log('GameProvider - Attempting to restore session');
+      console.log('GameProvider - Tentativo di ripristino della sessione');
       dispatch({ type: 'RESTORE_SESSION' });
     }
-  }, [state.gameId]);
+  }, []);
 
   return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
 };
