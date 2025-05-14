@@ -1,21 +1,22 @@
+import { supabase } from '@/supabaseClient';
+import { joinGame } from '@/actions/joinGame';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
-import { createGame } from '@/actions/createGame';
 import { logPlayerData } from '@/utils/playerUtils';
-import { supabase } from '@/supabaseClient';
 import { useGameJoinCore } from './useGameJoinCore';
 
 type Core = ReturnType<typeof useGameJoinCore>;  // convenience type
 
 /**
- * Host‑specific logic.
+ * Player‑specific logic.
  * Receives the shared core instance from useGameJoin().
  */
-export const useHostJoin = (core: Core) => {
+export const usePlayerJoin = (core: Core) => {
   const {
+    pin,
     name,
-    setName,
     setLoading,
+    setShowPinError,
     dispatch,
     navigate,
     language
