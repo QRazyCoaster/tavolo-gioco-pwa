@@ -24,13 +24,14 @@ export const usePlayerJoin = () => {
       return;
     }
     
-    // Show loading state immediately
+    // Show loading state immediately to prevent double-clicks
     setLoading(true);
     console.log('[PLAYER] Joining game with PIN:', pin);
     console.log('[PLAYER] Player name:', name);
     
     try {
       // 1. First retrieve the game ID from the PIN
+      console.log('[PLAYER] Retrieving game ID from PIN...');
       const { data: gameRow, error: gErr } = await supabase
         .from('games')
         .select('id')
@@ -58,6 +59,7 @@ export const usePlayerJoin = () => {
         playerName: name
       });
 
+      console.log('[PLAYER] Player created successfully:', player);
       logPlayerData(player, 'PLAYER_JOIN');
       
       // Double-check buzzer URL directly from database
@@ -77,7 +79,8 @@ export const usePlayerJoin = () => {
         }
       }
 
-      // 3. Update global state and navigate to waiting-room
+      // 3. Update global state and prepare for navigation
+      console.log('[PLAYER] Updating game state...');
       dispatch({
         type: 'JOIN_GAME',
         payload: {
@@ -87,9 +90,11 @@ export const usePlayerJoin = () => {
         }
       });
 
-      // Play success sound and navigate
+      // Play success sound before navigation
       playAudio('success');
-      console.log('[PLAYER] Navigation to waiting room...');
+      
+      // Navigate immediately without any delays
+      console.log('[PLAYER] Navigating to waiting room...');
       navigate('/waiting-room');
     } catch (error) {
       console.error('[PLAYER] Error joining game:', error);

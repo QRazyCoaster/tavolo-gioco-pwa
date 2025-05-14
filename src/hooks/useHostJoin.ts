@@ -27,17 +27,18 @@ export const useHostJoin = () => {
       return;
     }
     
-    // Show loading immediately
+    // Show loading immediately and prevent multiple submissions
     setLoading(true);
     console.log('[HOST] Creating game with name:', name);
     
     try {
+      console.log('[HOST] API call to createGame starting...');
       const { game, hostPlayer } = await createGame({
         gameType: 'trivia',
         hostName: name
       });
 
-      console.log('[HOST] Game created:', game);
+      console.log('[HOST] Game created successfully:', game);
       logPlayerData(hostPlayer, 'HOST_CREATE');
 
       // Check buzzer URL directly from database
@@ -58,6 +59,7 @@ export const useHostJoin = () => {
       }
 
       // Update game state
+      console.log('[HOST] Updating game state...');
       dispatch({
         type: 'CREATE_GAME',
         payload: {
@@ -67,9 +69,13 @@ export const useHostJoin = () => {
         }
       });
 
-      // Play success sound and navigate
+      console.log('[HOST] State updated, preparing to navigate...');
+      
+      // Play success sound before navigation
       playAudio('success');
-      console.log('[HOST] Navigation to waiting room...');
+      
+      // Use a direct timeout-free navigation
+      console.log('[HOST] Navigating to waiting room...');
       navigate('/waiting-room');
     } catch (error) {
       console.error('[HOST] Error creating game:', error);

@@ -15,14 +15,17 @@ const HostPinDisplay = ({ name, loading, onNameChange, onSubmit }: HostPinDispla
   const { t } = useLanguage();
   
   const handleNameSubmit = (submittedName: string) => {
+    console.log('[HostPinDisplay] Name submitted:', submittedName);
+    
     // First update the name
     onNameChange(submittedName);
     
-    // Then trigger form submission with a small delay to ensure name is set
-    setTimeout(() => {
-      const formEvent = new Event('submit') as unknown as React.FormEvent;
-      onSubmit(formEvent);
-    }, 10);
+    // Create a synthetic form event
+    const formEvent = new Event('submit') as unknown as React.FormEvent;
+    
+    // Submit immediately to avoid any delay
+    console.log('[HostPinDisplay] Triggering form submission');
+    onSubmit(formEvent);
   };
   
   return (
