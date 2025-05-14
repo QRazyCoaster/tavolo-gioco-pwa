@@ -21,9 +21,25 @@ export async function listBuzzers() {
       return fallbackBuzzerList();
     }
     
+    // Filter out any folders and non-audio files
+    const audioFiles = data.filter(file => 
+      !file.id.endsWith('/') && 
+      (file.name.toLowerCase().endsWith('.mp3') || 
+       file.name.toLowerCase().endsWith('.wav') || 
+       file.name.toLowerCase().endsWith('.ogg'))
+    );
+    
     // Log the actual filenames from storage for debugging
-    console.log('[LIST_BUZZERS] Actual buzzers found in storage:', data.map(file => file.name));
-    return data;
+    console.log('[LIST_BUZZERS] Actual buzzers found in storage:', 
+                audioFiles.map(file => file.name));
+                
+    // If no audio files found, return fallback
+    if (audioFiles.length === 0) {
+      console.warn('[LIST_BUZZERS] No audio files in the bucket, using fallback');
+      return fallbackBuzzerList();
+    }
+    
+    return audioFiles;
   } catch (error) {
     console.error('[LIST_BUZZERS] Error in listBuzzers:', error);
     return fallbackBuzzerList();
