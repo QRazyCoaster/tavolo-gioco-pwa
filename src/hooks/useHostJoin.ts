@@ -1,18 +1,25 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
 import { createGame } from '@/actions/createGame';
-import { useGameJoinCore } from './useGameJoinCore';
 import { logPlayerData } from '@/utils/playerUtils';
 import { supabase } from '@/supabaseClient';
+import { useGameJoinCore } from './useGameJoinCore';
+
+type Core = ReturnType<typeof useGameJoinCore>;  // convenience type
 
 /**
- * Hook for handling host-specific game join logic
+ * Host‑specific logic.
+ * Receives the shared core instance from useGameJoin().
  */
-export const useHostJoin = () => {
-  const { 
-    name, setName, setLoading, dispatch, navigate, language
-  } = useGameJoinCore();
+export const useHostJoin = (core: Core) => {
+  const {
+    name,
+    setName,
+    setLoading,
+    dispatch,
+    navigate,
+    language
+  } = core;
   const { toast } = useToast();
 
   // New handler for name changes
