@@ -19,15 +19,65 @@ const GamePage = () => {
     navigate('/');
   };
   
-  // Redirect if there's no game
+  // Adding debug logs to see what values are causing redirection
   useEffect(() => {
-    if (!state.gameId || !state.pin || !state.gameStarted) {
+    console.log('GamePage - Game state values:', {
+      gameId: state.gameId,
+      pin: state.pin,
+      gameStarted: state.gameStarted,
+      selectedGame: state.selectedGame,
+      playersCount: state.players.length
+    });
+    
+    if (!state.gameId || !state.pin) {
+      console.log('GamePage - Missing gameId or pin, redirecting to home');
       navigate('/');
+      return;
+    }
+    
+    // Only redirect if the game hasn't been started - this allows refreshes
+    if (!state.gameStarted && !sessionStorage.getItem('gameStarted')) {
+      console.log('GamePage - Game not started, redirecting to home');
+      navigate('/');
+      return;
+    }
+    
+    // Store game state in session storage to persist through refreshes
+    if (state.gameStarted) {
+      sessionStorage.setItem('gameStarted', 'true');
+      sessionStorage.setItem('gameId', state.gameId);
+      sessionStorage.setItem('pin', state.pin);
     }
   }, [state.gameId, state.pin, state.gameStarted, navigate]);
   
-  if (!state.gameId || !state.pin || !state.gameStarted) {
-    return null;
+  // Recover from session storage if needed
+  useEffect(() => {
+    if (!state.gameStarted && sessionStorage.getItem('gameStarted') === 'true') {
+      const gameId = sessionStorage.getItem('gameId');
+      const pin = sessionStorage.getItem('pin');
+      
+      if (gameId && pin) {
+        console.log('GamePage - Recovering game state from session storage');
+        // Don't dispatch if we already have a gameId (prevents loops)
+        if (!state.gameId) {
+          dispatch({ type: 'START_GAME' });
+        }
+      }
+    }
+  }, [state.gameStarted, state.gameId, dispatch]);
+  
+  // If still not ready, show loading
+  if (!state.gameId || !state.pin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl font-medium mb-4">Caricamento del gioco...</p>
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   // Renderizza il gioco in base al tipo selezionato

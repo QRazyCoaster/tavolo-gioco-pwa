@@ -191,7 +191,18 @@ const WaitingRoomPage = () => {
       dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
     }
     
+    // Set the selected game if it's not set (default to trivia)
+    if (!state.selectedGame) {
+      dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
+    }
+    
     dispatch({ type: 'START_GAME' });
+    
+    // Store game state in session storage for persistence
+    sessionStorage.setItem('gameStarted', 'true');
+    sessionStorage.setItem('gameId', state.gameId || '');
+    sessionStorage.setItem('pin', state.pin || '');
+    
     playAudio('success');
     navigate('/game');
   };
@@ -202,8 +213,14 @@ const WaitingRoomPage = () => {
   };
   
   // Redirect if there's no game
+  useEffect(() => {
+    if (!state.gameId || !state.pin) {
+      console.log('WaitingRoomPage - Missing gameId or pin, redirecting to home');
+      navigate('/');
+    }
+  }, [state.gameId, state.pin, navigate]);
+  
   if (!state.gameId || !state.pin) {
-    navigate('/');
     return null;
   }
   
