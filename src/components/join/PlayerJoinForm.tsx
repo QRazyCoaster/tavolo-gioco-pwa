@@ -9,6 +9,7 @@ import {
   InputOTPSlot 
 } from "@/components/ui/input-otp";
 import { Input } from "@/components/ui/input";
+import { playAudio } from '@/utils/audioUtils';
 
 interface PlayerJoinFormProps {
   pin: string;
@@ -46,10 +47,15 @@ const PlayerJoinForm = ({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('[PlayerJoinForm] Form submitted, will call onSubmit handler');
+    playAudio('buttonClick');
     
     // Call the actual submit handler
     onSubmit(e);
   };
+  
+  const isFormValid = pin.length === 4 && name.trim().length > 0 && !loading;
+  
+  console.log('[PlayerJoinForm] Rendering with form validity:', isFormValid);
   
   return (
     <div className="w-full bg-white/80 backdrop-blur-sm rounded-lg p-6 mb-6">
@@ -103,7 +109,8 @@ const PlayerJoinForm = ({
           type="submit"
           className="w-full h-14 text-xl" 
           variant="default" 
-          disabled={!pin || !name.trim() || pin.length !== 4 || loading}
+          disabled={!isFormValid}
+          onClick={() => console.log('[PlayerJoinForm] Join button clicked')}
         >
           {loading ? 
             (language === 'it' ? 'Attendi...' : 'Loading...') : 
