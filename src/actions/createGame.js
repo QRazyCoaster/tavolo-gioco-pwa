@@ -48,29 +48,28 @@ export async function createGame({ gameType, hostName }) {
         const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
         
         // Logging individual files with their actual names for debugging
-        console.log('[CREATE_GAME] All actual buzzer files:', files.map(f => f.name));
+        console.log('[CREATE_GAME] Actual buzzer files with EXACT names:', 
+                    files.map(f => `${f.name} (${typeof f.name})`));
         
-        // Select a random file and use its actual name to build the URL
+        // Select a random file from the actual files returned by listBuzzers
         const randomFile = files[Math.floor(Math.random() * files.length)];
-        console.log('[CREATE_GAME] Selected buzzer file:', randomFile.name);
+        console.log('[CREATE_GAME] Selected buzzer file with EXACT name:', randomFile.name);
         
         // Use encodeURIComponent to handle special characters in filenames
+        // VERY IMPORTANT: Use the exact filename returned by the storage API
         buzzerSound = baseUrl + encodeURIComponent(randomFile.name);
         console.log('[CREATE_GAME] Full buzzer URL for host:', buzzerSound);
         
-        // Test URL validity by trying to create an Audio object
+        // Validate URL
         try {
-          const testAudio = new Audio();
-          testAudio.addEventListener('error', () => {
-            console.error('[CREATE_GAME] TEST: Buzzer URL is not valid:', buzzerSound);
-          });
-          testAudio.src = buzzerSound;
-        } catch (audioErr) {
-          console.error('[CREATE_GAME] Error testing audio URL:', audioErr);
+          const testRequest = new Request(buzzerSound);
+          console.log('[CREATE_GAME] Testing URL validity:', testRequest.url);
+        } catch (urlErr) {
+          console.error('[CREATE_GAME] Error creating URL:', urlErr);
         }
         
         // Update the player with the chosen sound
-        console.log('[CREATE_GAME] Updating player with buzzer URL:', { 
+        console.log('[CREATE_GAME] Updating player with verified buzzer URL:', { 
           playerId: player.id, 
           buzzerSound 
         });

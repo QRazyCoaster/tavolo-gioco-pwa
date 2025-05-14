@@ -28,7 +28,7 @@ export async function joinGame({ gameId, playerName }) {
     // 2. elenco di tutti i suoni nel bucket
     let buzzerSound = null;
     try {
-      // Get actual buzzer files from storage
+      // Get actual buzzer files from storage with their exact names
       const files = await listBuzzers();
       console.log('[JOIN_GAME] Buzzers fetched:', files ? files.length : 0);
       
@@ -37,7 +37,8 @@ export async function joinGame({ gameId, playerName }) {
         const baseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzers/';
         
         // Logging individual files with their actual names for debugging
-        console.log('[JOIN_GAME] All available buzzer files:', files.map(f => f.name));
+        console.log('[JOIN_GAME] All available buzzer files with EXACT names:', 
+                    files.map(f => `${f.name} (${typeof f.name})`));
 
         // 3. suoni già usati in questa partita
         const { data: usedRows, error: usedError } = await supabase
@@ -53,7 +54,7 @@ export async function joinGame({ gameId, playerName }) {
         const used = usedRows?.map(r => r.buzzer_sound_url) || [];
         console.log('[JOIN_GAME] Used buzzers:', used);
         
-        // Build available buzzer list - CRUCIALLY filtering out already used ones
+        // Build available buzzer list by comparing exact URLs
         const availableFiles = [];
         for (const file of files) {
           const fileUrl = baseUrl + encodeURIComponent(file.name);
@@ -65,7 +66,7 @@ export async function joinGame({ gameId, playerName }) {
         console.log('[JOIN_GAME] Available buzzer files after filtering:', availableFiles.length);
         console.log('[JOIN_GAME] Available buzzer filenames:', availableFiles.map(f => f.name));
 
-        // Assign a sound
+        // Assign a sound - very carefully selecting the exact file object
         let selectedFile;
         if (availableFiles.length > 0) {
           selectedFile = availableFiles[Math.floor(Math.random() * availableFiles.length)];
