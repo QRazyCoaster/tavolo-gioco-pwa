@@ -197,6 +197,14 @@ const translations: Translations = {
     en: 'Choose Language',
     it: 'Scegli Lingua',
   },
+  'common.chooseName': {
+    en: 'Choose your name',
+    it: 'Scegli il tuo nome',
+  },
+  'common.join': {
+    en: 'Join',
+    it: 'Unisciti',
+  },
   'rules.title': {
     en: 'Game Rules',
     it: 'Regole del Gioco',
@@ -269,3 +277,4 @@ export const useLanguage = (): LanguageContextType => {
   }
   return context;
 };
+
