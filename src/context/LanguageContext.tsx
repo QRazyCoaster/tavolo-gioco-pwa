@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Export the Language type so it can be imported elsewhere
@@ -183,6 +184,18 @@ const translations: Translations = {
   'common.endGame': {
     en: 'Exit Game',
     it: 'Esci dal Gioco',
+  },
+  'common.playMusic': {
+    en: 'Play Music',
+    it: 'Attiva Musica',
+  },
+  'common.muteMusic': {
+    en: 'Mute Music',
+    it: 'Disattiva Musica',
+  },
+  'common.chooseLanguage': {
+    en: 'Choose Language',
+    it: 'Scegli Lingua',
   },
   'rules.title': {
     en: 'Game Rules',
