@@ -32,14 +32,15 @@ export const useGameStarter = () => {
       try {
         console.log(`[GameStarter] Updating game ${state.gameId} to active status with game type: ${game}`);
         
-        // Update the game status and game_type to trigger realtime notifications for all players
-        const { error } = await supabase
+        // IMPORTANT: Make sure we're properly setting status to 'active'
+        const { data, error } = await supabase
           .from('games')
           .update({ 
             status: 'active',
             game_type: game 
           })
-          .eq('id', state.gameId);
+          .eq('id', state.gameId)
+          .select();
         
         if (error) {
           console.error('[GameStarter] Error updating game status:', error);
@@ -51,7 +52,7 @@ export const useGameStarter = () => {
           return;
         }
         
-        console.log(`[GameStarter] Game ${state.gameId} successfully marked as active`);
+        console.log(`[GameStarter] Game ${state.gameId} successfully marked as active:`, data);
         
         // Play success sound
         playAudio('success');

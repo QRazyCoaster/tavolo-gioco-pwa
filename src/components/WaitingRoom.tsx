@@ -29,6 +29,43 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
 
     console.log(`[WaitingRoom] Setting up subscriptions for game ${state.gameId}`);
 
+    // First, check if the game is already active when component mounts
+    supabase
+      .from('games')
+      .select('status, game_type')
+      .eq('id', state.gameId)
+      .single()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[WaitingRoom] Error checking initial game status:', error);
+          return;
+        }
+        
+        console.log('[WaitingRoom] Initial game status check:', data);
+        
+        // If game is already active, redirect immediately
+        if (data && data.status === 'active') {
+          console.log('[WaitingRoom] Game already active, redirecting player');
+          
+          // Update state
+          dispatch({ type: 'START_GAME' });
+          sessionStorage.setItem('gameStarted', 'true');
+          
+          if (data.game_type) {
+            dispatch({ type: 'SELECT_GAME', payload: data.game_type });
+            sessionStorage.setItem('selectedGame', data.game_type);
+          }
+          
+          // Navigate to appropriate page
+          const gameType = data.game_type || sessionStorage.getItem('selectedGame') || 'trivia';
+          if (gameType === 'trivia') {
+            navigate('/trivia');
+          } else {
+            navigate('/game');
+          }
+        }
+      });
+
     // Fetch all players once
     supabase
       .from('players')
@@ -82,18 +119,18 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       )
       .subscribe();
 
-    // Subscribe to game updates - checking for status changes
+    // Subscribe to game updates - enhanced reliability for status detection
     const gameChannel = supabase
       .channel(`game:${state.gameId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
         payload => {
-          console.log('[WaitingRoom] Game updated:', payload.new);
+          console.log('[WaitingRoom] Game updated detected:', payload.new);
           
-          // Check if game has been marked as active
+          // Specifically check for active status
           if (payload.new.status === 'active') {
-            console.log('[WaitingRoom] Game started detected, redirecting player');
+            console.log('[WaitingRoom] Game status changed to active, redirecting player');
             
             // Update local state
             dispatch({ type: 'START_GAME' });
@@ -118,16 +155,16 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             // Determine which game to navigate to
             const gameType = payload.new.game_type || sessionStorage.getItem('selectedGame') || 'trivia';
             
-            // Add a short delay to ensure the toast is seen and state is updated
+            // Add a short delay to ensure the toast is seen
             setTimeout(() => {
               if (gameType === 'trivia') {
-                console.log('[WaitingRoom] Navigating to /trivia');
+                console.log('[WaitingRoom] Player navigating to /trivia');
                 navigate('/trivia');
               } else {
-                console.log('[WaitingRoom] Navigating to /game');
+                console.log('[WaitingRoom] Player navigating to /game');
                 navigate('/game');
               }
-            }, 500);
+            }, 800);
           }
         }
       )
