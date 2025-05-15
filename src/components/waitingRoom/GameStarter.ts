@@ -28,10 +28,12 @@ export const useGameStarter = () => {
     // Update the database to notify all players that the game has started
     if (state.gameId) {
       try {
+        console.log(`[GameStarter] Attempting to update game ${state.gameId} status to started with game type: ${game}`);
         const { error } = await supabase
           .from('games')
           .update({ 
-            started: true,
+            status: 'active',  // Update 'status' column instead of 'started'
+            started: true,     // Keep this for backward compatibility
             game_type: game 
           })
           .eq('id', state.gameId);
@@ -47,6 +49,22 @@ export const useGameStarter = () => {
         }
         
         console.log(`[GameStarter] Game ${state.gameId} marked as started with game type: ${game}`);
+        
+        // Play success sound
+        playAudio('success');
+        
+        // Show notification toast
+        toast({
+          title: "Game Starting",
+          description: "Get ready to play!",
+        });
+        
+        // Navigate to the appropriate game page
+        if (game === 'trivia') {
+          navigate('/trivia');
+        } else {
+          navigate('/game');
+        }
       } catch (error) {
         console.error('[GameStarter] Error updating game status:', error);
         toast({
@@ -54,24 +72,14 @@ export const useGameStarter = () => {
           description: "There was a problem starting the game. Please try again.",
           variant: "destructive"
         });
-        return;
       }
-    }
-    
-    // Play success sound
-    playAudio('success');
-    
-    // Show notification toast
-    toast({
-      title: "Game Starting",
-      description: "Get ready to play!",
-    });
-    
-    // Navigate to the appropriate game page
-    if (game === 'trivia') {
-      navigate('/trivia');
     } else {
-      navigate('/game');
+      console.error('[GameStarter] Cannot start game: No gameId in state');
+      toast({
+        title: "Error starting game",
+        description: "Game session not found. Please try rejoining the game.",
+        variant: "destructive"
+      });
     }
     
   }, [navigate, toast, dispatch, state.gameId]);

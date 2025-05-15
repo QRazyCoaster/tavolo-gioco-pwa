@@ -32,8 +32,19 @@ const TriviaGamePage = () => {
   } = useTriviaGame();
   
   useEffect(() => {
-    // Verifica se la sessione di gioco è valida
-    if (!state.gameId || !state.pin || !state.gameStarted) {
+    console.log('[TriviaGamePage] Checking session validity', {
+      gameId: state.gameId,
+      pin: state.pin,
+      gameStarted: state.gameStarted,
+      fromSession: {
+        gameId: sessionStorage.getItem('gameId'),
+        pin: sessionStorage.getItem('pin'),
+        gameStarted: sessionStorage.getItem('gameStarted')
+      }
+    });
+    
+    // Verify if the game session is valid
+    if (!state.gameId || !state.pin) {
       toast({
         title: language === 'it' ? "Sessione non valida" : "Invalid session",
         description: language === 'it' 
@@ -45,10 +56,30 @@ const TriviaGamePage = () => {
       return;
     }
     
-    // Imposta il tipo di gioco se non è già impostato
+    // Check if game is started
+    if (!state.gameStarted && sessionStorage.getItem('gameStarted') !== 'true') {
+      toast({
+        title: language === 'it' ? "Gioco non iniziato" : "Game not started",
+        description: language === 'it'
+          ? "Torna alla sala d'attesa"
+          : "Return to the waiting room",
+        variant: "destructive"
+      });
+      navigate('/waiting-room');
+      return;
+    }
+    
+    // Set the game type if not already set
     if (!state.selectedGame) {
-      dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
-      sessionStorage.setItem('selectedGame', 'trivia');
+      const savedGame = sessionStorage.getItem('selectedGame');
+      if (savedGame) {
+        console.log(`[TriviaGamePage] Setting game type from session: ${savedGame}`);
+        dispatch({ type: 'SELECT_GAME', payload: savedGame });
+      } else {
+        console.log('[TriviaGamePage] No game type found, defaulting to trivia');
+        dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
+        sessionStorage.setItem('selectedGame', 'trivia');
+      }
     }
   }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, navigate, dispatch, language, toast]);
   
@@ -56,8 +87,8 @@ const TriviaGamePage = () => {
     navigate('/waiting-room');
   };
   
-  // Se la sessione non è valida, non renderizzare nulla
-  if (!state.gameId || !state.pin || !state.gameStarted) {
+  // If the session validation is still in progress, show a loading state
+  if (!state.gameId || !state.pin) {
     return null;
   }
   
@@ -83,7 +114,7 @@ const TriviaGamePage = () => {
           </div>
         </div>
         
-        {/* Vista del narratore o del giocatore in base al ruolo */}
+        {/* Narrator or player view based on role */}
         {isNarrator ? (
           <NarratorView
             currentQuestion={currentQuestion}

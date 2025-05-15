@@ -22,7 +22,12 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   const isHost = state.currentPlayer?.isHost === true;
 
   useEffect(() => {
-    if (!state.gameId) return;
+    if (!state.gameId) {
+      console.log('[WaitingRoom] No gameId found, cannot subscribe to updates');
+      return;
+    }
+
+    console.log(`[WaitingRoom] Setting up subscriptions for game ${state.gameId}`);
 
     // Fetch all players once
     supabase
@@ -30,7 +35,16 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       .select('*')
       .eq('game_id', state.gameId)
       .then(({ data, error }) => {
-        if (error || !data) return;
+        if (error) {
+          console.error('[WaitingRoom] Error fetching players:', error);
+          return;
+        }
+        if (!data) {
+          console.log('[WaitingRoom] No player data received');
+          return;
+        }
+        
+        console.log(`[WaitingRoom] Fetched ${data.length} players`);
         const mapped = data.map(p => ({
           id: p.id,
           name: p.name,
@@ -55,6 +69,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'players', filter: `game_id=eq.${state.gameId}` },
         payload => {
+          console.log('[WaitingRoom] New player joined:', payload.new);
           const p: Player = {
             id: payload.new.id,
             name: payload.new.name,
@@ -67,7 +82,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       )
       .subscribe();
 
-    // Subscribe to game updates
+    // Subscribe to game updates - checking both 'started' and 'status' fields
     const gameChannel = supabase
       .channel(`game:${state.gameId}`)
       .on(
@@ -76,7 +91,8 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         payload => {
           console.log('[WaitingRoom] Game updated:', payload.new);
           
-          if (payload.new.started === true) {
+          // Check for active status or started=true
+          if (payload.new.status === 'active' || payload.new.started === true) {
             console.log('[WaitingRoom] Game started detected, redirecting all players');
             
             // Update local state
@@ -92,7 +108,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             toast({
               title: language === 'it' ? "Il gioco sta iniziando" : "Game is starting",
               description: language === 'it' ? "Preparati a giocare!" : "Get ready to play!",
-              duration: 3000,
+              duration: 5000,
             });
             
             // Play sound
@@ -104,11 +120,13 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             // Important: Add a small delay to ensure the toast is seen and the state is updated
             setTimeout(() => {
               if (gameType === 'trivia') {
+                console.log('[WaitingRoom] Navigating to /trivia');
                 navigate('/trivia');
               } else {
+                console.log('[WaitingRoom] Navigating to /game');
                 navigate('/game');
               }
-            }, 500);
+            }, 1000);
           }
         }
       )
@@ -122,6 +140,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   }, [state.gameId, dispatch, state.currentPlayer, navigate, toast, language]);
 
   const handleStartGame = () => {
+    console.log('[WaitingRoom] Start game button clicked');
     playAudio('buttonClick');
     onStartGame();
   };
