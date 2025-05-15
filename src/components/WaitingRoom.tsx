@@ -82,7 +82,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       )
       .subscribe();
 
-    // Subscribe to game updates - checking only 'status' field
+    // Subscribe to game updates - checking for status changes
     const gameChannel = supabase
       .channel(`game:${state.gameId}`)
       .on(
@@ -91,14 +91,15 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         payload => {
           console.log('[WaitingRoom] Game updated:', payload.new);
           
-          // Check for active status only
+          // Check if game has been marked as active
           if (payload.new.status === 'active') {
-            console.log('[WaitingRoom] Game started detected, redirecting all players');
+            console.log('[WaitingRoom] Game started detected, redirecting player');
             
             // Update local state
             dispatch({ type: 'START_GAME' });
             sessionStorage.setItem('gameStarted', 'true');
             
+            // Store selected game type
             if (payload.new.game_type) {
               dispatch({ type: 'SELECT_GAME', payload: payload.new.game_type });
               sessionStorage.setItem('selectedGame', payload.new.game_type);
@@ -114,10 +115,10 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             // Play sound
             playAudio('success');
             
-            // Redirect to appropriate page
+            // Determine which game to navigate to
             const gameType = payload.new.game_type || sessionStorage.getItem('selectedGame') || 'trivia';
             
-            // Important: Add a small delay to ensure the toast is seen and the state is updated
+            // Add a short delay to ensure the toast is seen and state is updated
             setTimeout(() => {
               if (gameType === 'trivia') {
                 console.log('[WaitingRoom] Navigating to /trivia');
@@ -126,7 +127,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
                 console.log('[WaitingRoom] Navigating to /game');
                 navigate('/game');
               }
-            }, 1000);
+            }, 500);
           }
         }
       )
@@ -137,7 +138,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       supabase.removeChannel(playersChannel);
       supabase.removeChannel(gameChannel);
     };
-  }, [state.gameId, dispatch, state.currentPlayer, navigate, toast, language]);
+  }, [state.gameId, dispatch, navigate, toast, language, state.currentPlayer]);
 
   const handleStartGame = () => {
     console.log('[WaitingRoom] Start game button clicked');

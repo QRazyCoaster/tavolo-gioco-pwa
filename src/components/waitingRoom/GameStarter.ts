@@ -12,6 +12,8 @@ export const useGameStarter = () => {
   const { dispatch, state } = useGame();
 
   const handleStartGame = useCallback(async (selectedGame?: string) => {
+    console.log(`[GameStarter] Starting game with type: ${selectedGame || 'default'}`);
+
     // Set gameStarted in state and sessionStorage
     sessionStorage.setItem('gameStarted', 'true');
     dispatch({ type: 'START_GAME' });
@@ -28,9 +30,9 @@ export const useGameStarter = () => {
     // Update the database to notify all players that the game has started
     if (state.gameId) {
       try {
-        console.log(`[GameStarter] Attempting to update game ${state.gameId} status to active with game type: ${game}`);
+        console.log(`[GameStarter] Updating game ${state.gameId} to active status with game type: ${game}`);
         
-        // We're only updating the 'status' field and 'game_type', not 'started'
+        // Update the game status and game_type to trigger realtime notifications for all players
         const { error } = await supabase
           .from('games')
           .update({ 
@@ -49,7 +51,7 @@ export const useGameStarter = () => {
           return;
         }
         
-        console.log(`[GameStarter] Game ${state.gameId} marked as active with game type: ${game}`);
+        console.log(`[GameStarter] Game ${state.gameId} successfully marked as active`);
         
         // Play success sound
         playAudio('success');
@@ -62,8 +64,10 @@ export const useGameStarter = () => {
         
         // Navigate to the appropriate game page
         if (game === 'trivia') {
+          console.log('[GameStarter] Host navigating to /trivia');
           navigate('/trivia');
         } else {
+          console.log('[GameStarter] Host navigating to /game');
           navigate('/game');
         }
       } catch (error) {
