@@ -29,12 +29,33 @@ const Index = () => {
     return () => stopBackgroundMusic();                         // cleanup on unmount
   }, []);
 
-  /* pause music if tab hidden / screen off */
+  /* handle visibility changes more thoroughly for mobile devices */
   useEffect(() => {
-    const v = () => document.hidden && stopBackgroundMusic();
-    document.addEventListener('visibilitychange', v);
-    return () => document.removeEventListener('visibilitychange', v);
-  }, []);
+    const handleVisibilityChange = () => {
+      if (document.hidden && musicStarted) {
+        stopBackgroundMusic();
+        dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', () => {
+      if (musicStarted) {
+        stopBackgroundMusic();
+        dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+      }
+    });
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', () => {
+        if (musicStarted) {
+          stopBackgroundMusic();
+          dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+        }
+      });
+    };
+  }, [musicStarted, dispatch]);
 
   const handleLanguage = (lang: Language) => {
     setLanguage(lang);

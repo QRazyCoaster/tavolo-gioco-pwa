@@ -14,15 +14,15 @@ const GameSelectionPage = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
   
-  // Effetto per avviare la musica di sottofondo all'accesso alla pagina
+  // Effect to manage background music when the page is mounted
   useEffect(() => {
-    // Fermiamo qualsiasi riproduzione precedente per sicurezza
+    // Stop any previous playback to be safe
     stopBackgroundMusic();
-    // Avviamo la musica indipendentemente dallo stato precedente
+    // Start the music and update state
     playBackgroundMusic('backgroundMusic', 0.2);
     dispatch({ type: 'START_BACKGROUND_MUSIC' });
     
-    // Pulizia quando si lascia la pagina
+    // Cleanup function to handle different scenarios
     return () => {
       if (!state.backgroundMusicPlaying) {
         stopBackgroundMusic();

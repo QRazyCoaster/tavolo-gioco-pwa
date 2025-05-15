@@ -1,3 +1,4 @@
+
 /* -------- module‑level singletons -------- */
 let buttonClickBuffer: AudioBuffer | null = null;
 let audioCtx: AudioContext | null = null;
@@ -67,11 +68,50 @@ export const playBackgroundMusic = (name: string, vol = 0.2) => {
   backgroundMusicInstance.loop = true;
   backgroundMusicInstance.volume = vol;
   backgroundMusicInstance.play().catch(() => {});
+  
+  // Set up mobile-specific event listeners for background music
+  setupMobileAudioHandlers();
 };
+
 export const stopBackgroundMusic = () => {
   if (backgroundMusicInstance) {
     backgroundMusicInstance.pause();
     backgroundMusicInstance.currentTime = 0;
     backgroundMusicInstance = null;
+  }
+};
+
+/* -------- mobile-specific audio handlers -------- */
+const setupMobileAudioHandlers = () => {
+  // Page Visibility API - works when user switches tabs or minimizes browser
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  
+  // iOS/Safari specific events
+  window.addEventListener('pagehide', stopBackgroundMusic);
+  window.addEventListener('beforeunload', stopBackgroundMusic);
+  
+  // For iOS devices when app goes to background
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('pause', stopBackgroundMusic, false);
+    document.addEventListener('resign', stopBackgroundMusic, false);
+  }
+  
+  // Handle when audio session is interrupted (phone calls, Siri, etc.)
+  if (backgroundMusicInstance) {
+    backgroundMusicInstance.addEventListener('pause', () => {
+      console.log('Background music paused externally');
+    });
+  }
+};
+
+// Handle document visibility changes
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    console.log('Page hidden, stopping background music');
+    stopBackgroundMusic();
+  } else if (!document.hidden && backgroundMusicInstance === null) {
+    // Don't auto-restart music as this could be annoying
+    // If you want to restart, you would call playBackgroundMusic here
+    console.log('Page visible again, music remains stopped');
   }
 };
