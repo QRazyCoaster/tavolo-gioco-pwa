@@ -3,40 +3,43 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
+import { useGame } from '@/context/GameContext';
 
 export const useGameStarter = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { dispatch } = useGame();
 
   const handleStartGame = useCallback((selectedGame?: string) => {
-    // Salva che il gioco è iniziato
+    // Set gameStarted in state and sessionStorage
     sessionStorage.setItem('gameStarted', 'true');
+    dispatch({ type: 'START_GAME' });
     
-    // Se è stato selezionato un gioco specifico, salvalo
+    // If a specific game was selected, save it
     if (selectedGame) {
       sessionStorage.setItem('selectedGame', selectedGame);
+      dispatch({ type: 'SELECT_GAME', payload: selectedGame });
     }
     
-    // Riproduce un audio all'avvio del gioco
+    // Play success sound
     playAudio('success');
     
-    // Mostra una notifica toast
+    // Show notification toast
     toast({
       title: "Game Starting",
       description: "Get ready to play!",
     });
     
-    // Reindirizza alla pagina di gioco appropriata
+    // Navigate to the appropriate game page
     const game = selectedGame || sessionStorage.getItem('selectedGame') || 'trivia';
     
-    // Naviga alla pagina specifica del gioco se disponibile, altrimenti alla pagina generica
     if (game === 'trivia') {
       navigate('/trivia');
     } else {
       navigate('/game');
     }
     
-  }, [navigate, toast]);
+  }, [navigate, toast, dispatch]);
 
   return { handleStartGame };
 };

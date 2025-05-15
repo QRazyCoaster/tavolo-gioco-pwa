@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -17,7 +18,7 @@ const GameSelectionPage = () => {
   const { toast } = useToast();
   const { handleStartGame } = useGameStarter();
   
-  // Verifica se la sessione è valida
+  // Verify the session is valid
   useEffect(() => {
     const gameId = state.gameId || sessionStorage.getItem('gameId');
     const pin = state.pin || sessionStorage.getItem('pin');
@@ -35,10 +36,12 @@ const GameSelectionPage = () => {
   }, [state.gameId, state.pin, navigate, language, toast]);
   
   const handleSelectGame = (gameId: string) => {
+    // Update game selection in state and session storage
     dispatch({ type: 'SELECT_GAME', payload: gameId });
+    sessionStorage.setItem('selectedGame', gameId);
     playAudio('buttonClick');
     
-    // Avvia il gioco con il gioco selezionato
+    // Start the game with the selected game
     handleStartGame(gameId);
   };
   

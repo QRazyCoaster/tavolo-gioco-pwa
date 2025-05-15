@@ -15,12 +15,14 @@ export const useGameSession = () => {
     // Check session storage first
     const sessionGameId = sessionStorage.getItem('gameId');
     const sessionPin = sessionStorage.getItem('pin');
+    const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
     
     // We have a game in context, session is valid
     if (state.gameId && state.pin) {
       console.log('[useGameSession] Game found in state:', { 
         gameId: state.gameId, 
-        pin: state.pin 
+        pin: state.pin,
+        gameStarted: state.gameStarted
       });
       setIsValid(true);
       setValidationComplete(true);
@@ -31,7 +33,8 @@ export const useGameSession = () => {
     if (sessionGameId && sessionPin) {
       console.log('[useGameSession] Game found in session storage:', { 
         sessionGameId, 
-        sessionPin 
+        sessionPin,
+        gameStarted
       });
       
       // Try to restore from session
@@ -56,7 +59,7 @@ export const useGameSession = () => {
       setValidationComplete(true);
       navigate('/');
     }
-  }, [state.gameId, state.pin, navigate, dispatch]);
+  }, [state.gameId, state.pin, state.gameStarted, navigate, dispatch]);
   
   return { 
     validSession: isValid || !validationComplete, 
