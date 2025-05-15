@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useLanguage, Language } from '@/context/LanguageContext';
@@ -64,7 +65,8 @@ const Index = () => {
       setMusicStarted(true);
     }
     
-    navigate('/games');
+    // Change this to go to the join page instead of the games page
+    navigate('/join');
   };
 
   return (

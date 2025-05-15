@@ -3,12 +3,15 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLanguage, Language } from '@/context/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 
 const LanguageSelector = () => {
   const { setLanguage, t } = useLanguage();
+  const navigate = useNavigate();
 
   const handleChangeLanguage = (lang: Language) => {
     setLanguage(lang);
+    navigate('/join');
   };
 
   return (

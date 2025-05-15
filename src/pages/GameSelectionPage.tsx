@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { availableGames } from '@/utils/gameUtils';
 import { playAudio } from '@/utils/audioUtils';
 import { useToast } from '@/hooks/use-toast';
-import { useGameStarter } from '@/components/waitingRoom/GameStarter';
 import { ArrowLeft, GamepadIcon } from 'lucide-react';
 
 const GameSelectionPage = () => {
@@ -16,7 +15,6 @@ const GameSelectionPage = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
   const { toast } = useToast();
-  const { handleStartGame } = useGameStarter();
   
   // Verify the session is valid
   useEffect(() => {
@@ -41,8 +39,8 @@ const GameSelectionPage = () => {
     sessionStorage.setItem('selectedGame', gameId);
     playAudio('buttonClick');
     
-    // Start the game with the selected game
-    handleStartGame(gameId);
+    // Return to waiting room instead of directly starting game
+    navigate('/waiting-room');
   };
   
   const handleBack = () => {
