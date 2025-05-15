@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,14 +7,18 @@ import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
 import { supabase } from '@/supabaseClient';
 import { Player } from '@/context/GameContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface WaitingRoomProps {
   onStartGame: () => void;
 }
 
 const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { state, dispatch } = useGame();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const isHost = state.currentPlayer?.isHost === true;
 
   useEffect(() => {
@@ -44,7 +49,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       });
 
     // Subscribe to new players
-    const channel = supabase
+    const playersChannel = supabase
       .channel(`players:${state.gameId}`)
       .on(
         'postgres_changes',
@@ -62,10 +67,51 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       )
       .subscribe();
 
+    // Subscribe to game updates
+    const gameChannel = supabase
+      .channel(`game:${state.gameId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
+        payload => {
+          console.log('[WaitingRoom] Game updated:', payload.new);
+          
+          if (payload.new.started === true) {
+            // Il gioco è iniziato, aggiorna lo stato locale
+            dispatch({ type: 'START_GAME' });
+            sessionStorage.setItem('gameStarted', 'true');
+            
+            if (payload.new.game_type) {
+              dispatch({ type: 'SELECT_GAME', payload: payload.new.game_type });
+              sessionStorage.setItem('selectedGame', payload.new.game_type);
+            }
+            
+            // Notifica all'utente
+            toast({
+              title: language === 'it' ? "Il gioco sta iniziando" : "Game is starting",
+              description: language === 'it' ? "Preparati a giocare!" : "Get ready to play!",
+            });
+            
+            // Riproduci suono
+            playAudio('success');
+            
+            // Reindirizza alla pagina appropriata
+            const gameType = payload.new.game_type || sessionStorage.getItem('selectedGame') || 'trivia';
+            if (gameType === 'trivia') {
+              navigate('/trivia');
+            } else {
+              navigate('/game');
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(playersChannel);
+      supabase.removeChannel(gameChannel);
     };
-  }, [state.gameId, dispatch, state.currentPlayer]);
+  }, [state.gameId, dispatch, state.currentPlayer, navigate, toast, language]);
 
   const handleStartGame = () => {
     playAudio('buttonClick');
