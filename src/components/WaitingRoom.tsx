@@ -82,7 +82,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       )
       .subscribe();
 
-    // Subscribe to game updates - checking both 'started' and 'status' fields
+    // Subscribe to game updates - checking only 'status' field
     const gameChannel = supabase
       .channel(`game:${state.gameId}`)
       .on(
@@ -91,8 +91,8 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         payload => {
           console.log('[WaitingRoom] Game updated:', payload.new);
           
-          // Check for active status or started=true
-          if (payload.new.status === 'active' || payload.new.started === true) {
+          // Check for active status only
+          if (payload.new.status === 'active') {
             console.log('[WaitingRoom] Game started detected, redirecting all players');
             
             // Update local state

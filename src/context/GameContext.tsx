@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 /* ──────────────── Player type ──────────────── */
@@ -85,7 +86,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_GAME':
       return { ...state, gameStarted: true };
     case 'END_GAME':
-      // Pulisci la sessionStorage quando termina il gioco
+      // Clear sessionStorage when the game ends
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
@@ -105,15 +106,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'STOP_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: false };
     case 'RESTORE_SESSION':
-      // Controlla se abbiamo dati di sessione da ripristinare
+      // Check for session data to restore
       const gameId = sessionStorage.getItem('gameId');
       const pin = sessionStorage.getItem('pin');
       const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
       const selectedGame = sessionStorage.getItem('selectedGame');
       
-      // Ripristina solo se abbiamo dati di sessione validi
+      // Only restore if we have valid session data
       if (gameId && pin) {
-        console.log('GameContext - Ripristino sessione:', { gameId, pin, gameStarted, selectedGame });
+        console.log('GameContext - Restoring session:', { gameId, pin, gameStarted, selectedGame });
         return {
           ...state,
           gameId,

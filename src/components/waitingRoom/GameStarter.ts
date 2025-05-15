@@ -28,12 +28,13 @@ export const useGameStarter = () => {
     // Update the database to notify all players that the game has started
     if (state.gameId) {
       try {
-        console.log(`[GameStarter] Attempting to update game ${state.gameId} status to started with game type: ${game}`);
+        console.log(`[GameStarter] Attempting to update game ${state.gameId} status to active with game type: ${game}`);
+        
+        // We're only updating the 'status' field and 'game_type', not 'started'
         const { error } = await supabase
           .from('games')
           .update({ 
-            status: 'active',  // Update 'status' column instead of 'started'
-            started: true,     // Keep this for backward compatibility
+            status: 'active',
             game_type: game 
           })
           .eq('id', state.gameId);
@@ -48,7 +49,7 @@ export const useGameStarter = () => {
           return;
         }
         
-        console.log(`[GameStarter] Game ${state.gameId} marked as started with game type: ${game}`);
+        console.log(`[GameStarter] Game ${state.gameId} marked as active with game type: ${game}`);
         
         // Play success sound
         playAudio('success');
