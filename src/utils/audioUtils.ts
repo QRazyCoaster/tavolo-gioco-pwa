@@ -1,4 +1,3 @@
-
 /**
  * Audio utilities for game sounds
  */
@@ -13,13 +12,14 @@ type AudioType =
   | 'buzzer'
   | 'chime'
   | 'tick'
-  | 'background';
+  | 'background'
+  | 'backgroundMusic';
 
 // Cache per gli oggetti audio precaricati
 const audioCache: Record<string, HTMLAudioElement> = {};
 
 // Mappatura dei tipi audio ai loro percorsi file
-const audioMappings: Record<AudioType, string> = {
+const audioMappings: Record<string, string> = {
   buttonClick: '/audio/click.mp3',
   notification: '/audio/notification.mp3',
   success: '/audio/success.mp3',
@@ -29,22 +29,43 @@ const audioMappings: Record<AudioType, string> = {
   chime: '/audio/chime.mp3',
   tick: '/audio/tick.mp3',
   background: '/audio/background-music.mp3',
+  backgroundMusic: '/audio/background-music.mp3',
 };
 
 /**
  * Precarica un audio per utilizzo successivo
  */
-export const preloadAudio = (type: AudioType): void => {
+export const preloadAudio = (type?: AudioType): void => {
   try {
-    if (!audioCache[type]) {
-      const audio = new Audio(audioMappings[type]);
-      audio.load();
-      audioCache[type] = audio;
-      console.log(`✅ Audio preloaded: ${type}`);
+    if (type) {
+      if (!audioCache[type]) {
+        const audio = new Audio(audioMappings[type]);
+        audio.load();
+        audioCache[type] = audio;
+        console.log(`✅ Audio preloaded: ${type}`);
+      }
+    } else {
+      // Preload all audio if no type specified
+      preloadAllAudio();
     }
   } catch (error) {
-    console.error(`❌ Error preloading audio ${type}:`, error);
+    console.error(`❌ Error preloading audio ${type || 'all'}:`, error);
   }
+};
+
+/**
+ * Precarica il suono del click del pulsante
+ */
+export const preloadButtonClickSound = (): Promise<void> => {
+  return new Promise((resolve) => {
+    try {
+      preloadAudio('buttonClick');
+      resolve();
+    } catch (error) {
+      console.error('❌ Error preloading button click sound:', error);
+      resolve();
+    }
+  });
 };
 
 /**
@@ -52,8 +73,13 @@ export const preloadAudio = (type: AudioType): void => {
  */
 export const preloadAllAudio = (): void => {
   Object.keys(audioMappings).forEach((type) => {
-    preloadAudio(type as AudioType);
+    if (!audioCache[type]) {
+      const audio = new Audio(audioMappings[type]);
+      audio.load();
+      audioCache[type] = audio;
+    }
   });
+  console.log('✅ All audio preloaded');
 };
 
 /**
@@ -90,6 +116,13 @@ export const playAudio = (type: AudioType, options?: { volume?: number; loop?: b
   } catch (error) {
     console.error(`❌ Error playing audio ${type}:`, error);
   }
+};
+
+/**
+ * Riproduce il buffer del click per feedback immediato
+ */
+export const playClickBuffer = (): void => {
+  playAudio('buttonClick', { volume: 0.5 });
 };
 
 /**
@@ -149,16 +182,54 @@ export const isAudioPlaying = (type: AudioType): boolean => {
   }
 };
 
+/**
+ * Riproduce la musica di sottofondo
+ */
+export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume: number = 0.2): void => {
+  try {
+    const audio = audioCache[type] || new Audio(audioMappings[type]);
+    
+    if (!audioCache[type]) {
+      audioCache[type] = audio;
+    }
+    
+    audio.volume = volume;
+    audio.loop = true;
+    
+    // Prevent multiple instances playing
+    audio.currentTime = 0;
+    
+    audio.play().catch(error => {
+      console.error(`❌ Error playing background music:`, error);
+    });
+    
+    localStorage.setItem('backgroundMusicEnabled', 'true');
+    
+  } catch (error) {
+    console.error(`❌ Error playing background music:`, error);
+  }
+};
+
+/**
+ * Ferma la musica di sottofondo
+ */
+export const stopBackgroundMusic = (): void => {
+  stopAudio('backgroundMusic');
+  localStorage.setItem('backgroundMusicEnabled', 'false');
+};
+
 // Aggiungi gestori di eventi per la visibilità della pagina e la chiusura
 const handleVisibilityChange = () => {
   if (document.hidden) {
     // La pagina è nascosta, ferma tutti gli audio in background
     pauseAudio('background');
+    pauseAudio('backgroundMusic');
   } else {
     // La pagina è di nuovo visibile, verifica se dobbiamo riprendere la musica
     const shouldPlayMusic = localStorage.getItem('backgroundMusicEnabled') === 'true';
     if (shouldPlayMusic) {
       resumeAudio('background');
+      resumeAudio('backgroundMusic');
     }
   }
 };
@@ -174,7 +245,19 @@ window.addEventListener('beforeunload', () => {
 });
 
 // Eventi specifici per mobile per gestire la riproduzione audio
-window.addEventListener('pagehide', () => pauseAudio('background'));
-window.addEventListener('beforeunload', () => pauseAudio('background'));
-document.addEventListener('pause', () => pauseAudio('background')); // Per WebKit su iOS
-document.addEventListener('resign', () => pauseAudio('background')); // Per alcune app WebView
+window.addEventListener('pagehide', () => {
+  pauseAudio('background');
+  pauseAudio('backgroundMusic');
+});
+window.addEventListener('beforeunload', () => {
+  pauseAudio('background');
+  pauseAudio('backgroundMusic');
+});
+document.addEventListener('pause', () => {
+  pauseAudio('background');
+  pauseAudio('backgroundMusic');
+}); // Per WebKit su iOS
+document.addEventListener('resign', () => {
+  pauseAudio('background');
+  pauseAudio('backgroundMusic');
+}); // Per alcune app WebView

@@ -1,12 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useLanguage, Language } from '@/context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import {
   preloadAudio,
-  preloadButtonClickSound,
-  playClickBuffer,
+  playAudio,
   playBackgroundMusic,
   stopBackgroundMusic,
 } from '@/utils/audioUtils';
@@ -23,7 +21,6 @@ const Index = () => {
   useEffect(() => {
     (async () => {
       await preloadAudio();
-      await preloadButtonClickSound();
       setReady(true);
     })();
     return () => stopBackgroundMusic();                         // cleanup on unmount
@@ -59,7 +56,7 @@ const Index = () => {
 
   const handleLanguage = (lang: Language) => {
     setLanguage(lang);
-    playClickBuffer();                                          // instant click
+    playAudio('buttonClick');                                  // instant click
     
     if (ready) {
       playBackgroundMusic('backgroundMusic', 0.2);

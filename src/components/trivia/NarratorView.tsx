@@ -65,7 +65,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     toast({
       title: language === 'it' ? "Risposta esatta!" : "Correct answer!",
       description: language === 'it' ? "+10 punti" : "+10 points",
-      variant: "success",
+      variant: "default", // Changed from "success" to "default"
     });
   };
   
