@@ -14,6 +14,7 @@ import GamePage from "./pages/GamePage";
 import NotFound from "./pages/NotFound";
 import GameSelectionPage from "./pages/GameSelectionPage";
 import RulesPage from "./pages/RulesPage";
+import TriviaGamePage from "./pages/TriviaGamePage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/create" element={<CreateGame />} />
               <Route path="/waiting-room" element={<WaitingRoomPage />} />
               <Route path="/game" element={<GamePage />} />
+              <Route path="/trivia" element={<TriviaGamePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

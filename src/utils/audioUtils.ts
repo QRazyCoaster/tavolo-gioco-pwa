@@ -1,117 +1,180 @@
 
-/* -------- module‑level singletons -------- */
-let buttonClickBuffer: AudioBuffer | null = null;
-let audioCtx: AudioContext | null = null;
-const audioCache: { [key: string]: HTMLAudioElement } = {};
-let backgroundMusicInstance: HTMLAudioElement | null = null;
-let audioPreloaded = false; // NEW — global guard
+/**
+ * Audio utilities for game sounds
+ */
 
-/* -------- file map -------- */
-export const gameAudioFiles = {
-  buttonClick: 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/button-click.mp3',
-  correct:     'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/correct.mp3',
-  wrong:       'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/wrong.mp3',
-  countdown:   'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/countdown.mp3',
-  success:     'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/success.mp3',
-  buzzer:      'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/buzzer.mp3',
-  notification:'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/notification.mp3',
-  backgroundMusic:
-               'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/background-music.mp3',
+// Tipologie di audio supportate
+type AudioType = 
+  | 'buttonClick'
+  | 'notification'
+  | 'success'
+  | 'error' 
+  | 'gameStart'
+  | 'buzzer'
+  | 'chime'
+  | 'tick'
+  | 'background';
+
+// Cache per gli oggetti audio precaricati
+const audioCache: Record<string, HTMLAudioElement> = {};
+
+// Mappatura dei tipi audio ai loro percorsi file
+const audioMappings: Record<AudioType, string> = {
+  buttonClick: '/audio/click.mp3',
+  notification: '/audio/notification.mp3',
+  success: '/audio/success.mp3',
+  error: '/audio/error.mp3',
+  gameStart: '/audio/game-start.mp3',
+  buzzer: '/audio/buzzer.mp3',
+  chime: '/audio/chime.mp3',
+  tick: '/audio/tick.mp3',
+  background: '/audio/background-music.mp3',
 };
 
-/* -------- preload all HTMLAudio elements (once) -------- */
-export const preloadAudio = async () => {
-  if (audioPreloaded) return;          // guard against duplicates
-  audioPreloaded = true;
-
-  await Promise.all(
-    Object.entries(gameAudioFiles).map(async ([key, url]) => {
-      const el = new Audio(url);
-      el.preload = 'auto';
-      el.load();                       // just queues the download
-      audioCache[key] = el;
-    })
-  );
-  console.log('✅ HTMLAudio elements cached');
-};
-
-/* -------- Safari‑friendly decoded buffer for click -------- */
-export const preloadButtonClickSound = async () => {
-  if (buttonClickBuffer) return;       // already decoded
-  audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const arrBuf = await (await fetch(gameAudioFiles.buttonClick)).arrayBuffer();
-  buttonClickBuffer = await audioCtx.decodeAudioData(arrBuf);
-  console.log('✅ Button click decoded');
-};
-export const playClickBuffer = () => {
-  if (!audioCtx || !buttonClickBuffer) return;
-  const src = audioCtx.createBufferSource();
-  src.buffer = buttonClickBuffer;
-  src.connect(audioCtx.destination);
-  src.start(0);
-};
-
-/* -------- simple helpers -------- */
-export const playAudio = (name: string) => {
-  const base = audioCache[name];
-  if (!base) return console.warn('Missing audio', name);
-  const a = base.cloneNode() as HTMLAudioElement;
-  a.volume = 1;
-  a.play().catch(() => {});
-};
-
-export const playBackgroundMusic = (name: string, vol = 0.2) => {
-  if (backgroundMusicInstance) backgroundMusicInstance.pause();
-  const base = audioCache[name];
-  if (!base) return console.warn('Missing bgm', name);
-  backgroundMusicInstance = base.cloneNode() as HTMLAudioElement;
-  backgroundMusicInstance.loop = true;
-  backgroundMusicInstance.volume = vol;
-  backgroundMusicInstance.play().catch(() => {});
-  
-  // Set up mobile-specific event listeners for background music
-  setupMobileAudioHandlers();
-};
-
-export const stopBackgroundMusic = () => {
-  if (backgroundMusicInstance) {
-    backgroundMusicInstance.pause();
-    backgroundMusicInstance.currentTime = 0;
-    backgroundMusicInstance = null;
+/**
+ * Precarica un audio per utilizzo successivo
+ */
+export const preloadAudio = (type: AudioType): void => {
+  try {
+    if (!audioCache[type]) {
+      const audio = new Audio(audioMappings[type]);
+      audio.load();
+      audioCache[type] = audio;
+      console.log(`✅ Audio preloaded: ${type}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error preloading audio ${type}:`, error);
   }
 };
 
-/* -------- mobile-specific audio handlers -------- */
-const setupMobileAudioHandlers = () => {
-  // Page Visibility API - works when user switches tabs or minimizes browser
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  
-  // iOS/Safari specific events
-  window.addEventListener('pagehide', stopBackgroundMusic);
-  window.addEventListener('beforeunload', stopBackgroundMusic);
-  
-  // For iOS devices when app goes to background
-  if (typeof document.addEventListener === 'function') {
-    document.addEventListener('pause', stopBackgroundMusic, false);
-    document.addEventListener('resign', stopBackgroundMusic, false);
-  }
-  
-  // Handle when audio session is interrupted (phone calls, Siri, etc.)
-  if (backgroundMusicInstance) {
-    backgroundMusicInstance.addEventListener('pause', () => {
-      console.log('Background music paused externally');
+/**
+ * Precarica tutti gli audio disponibili
+ */
+export const preloadAllAudio = (): void => {
+  Object.keys(audioMappings).forEach((type) => {
+    preloadAudio(type as AudioType);
+  });
+};
+
+/**
+ * Riproduce un audio
+ */
+export const playAudio = (type: AudioType, options?: { volume?: number; loop?: boolean }): void => {
+  try {
+    let audio = audioCache[type];
+    
+    // Se non è in cache, lo crea al volo
+    if (!audio) {
+      audio = new Audio(audioMappings[type]);
+      audioCache[type] = audio;
+    }
+    
+    // Imposta il volume se specificato
+    if (options?.volume !== undefined) {
+      audio.volume = options.volume;
+    }
+    
+    // Imposta se deve riprodursi in loop
+    if (options?.loop !== undefined) {
+      audio.loop = options.loop;
+    }
+    
+    // Reimposta l'audio prima della riproduzione
+    audio.currentTime = 0;
+    
+    // Riproduci l'audio
+    audio.play().catch(error => {
+      console.error(`❌ Error playing audio ${type}:`, error);
     });
+    
+  } catch (error) {
+    console.error(`❌ Error playing audio ${type}:`, error);
   }
 };
 
-// Handle document visibility changes
+/**
+ * Ferma un audio in riproduzione
+ */
+export const stopAudio = (type: AudioType): void => {
+  try {
+    const audio = audioCache[type];
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  } catch (error) {
+    console.error(`❌ Error stopping audio ${type}:`, error);
+  }
+};
+
+/**
+ * Pausa un audio in riproduzione
+ */
+export const pauseAudio = (type: AudioType): void => {
+  try {
+    const audio = audioCache[type];
+    if (audio) {
+      audio.pause();
+    }
+  } catch (error) {
+    console.error(`❌ Error pausing audio ${type}:`, error);
+  }
+};
+
+/**
+ * Riprende un audio in pausa
+ */
+export const resumeAudio = (type: AudioType): void => {
+  try {
+    const audio = audioCache[type];
+    if (audio) {
+      audio.play().catch(error => {
+        console.error(`❌ Error resuming audio ${type}:`, error);
+      });
+    }
+  } catch (error) {
+    console.error(`❌ Error resuming audio ${type}:`, error);
+  }
+};
+
+/**
+ * Verifica se un audio è in riproduzione
+ */
+export const isAudioPlaying = (type: AudioType): boolean => {
+  try {
+    const audio = audioCache[type];
+    return audio ? !audio.paused : false;
+  } catch {
+    return false;
+  }
+};
+
+// Aggiungi gestori di eventi per la visibilità della pagina e la chiusura
 const handleVisibilityChange = () => {
   if (document.hidden) {
-    console.log('Page hidden, stopping background music');
-    stopBackgroundMusic();
-  } else if (!document.hidden && backgroundMusicInstance === null) {
-    // Don't auto-restart music as this could be annoying
-    // If you want to restart, you would call playBackgroundMusic here
-    console.log('Page visible again, music remains stopped');
+    // La pagina è nascosta, ferma tutti gli audio in background
+    pauseAudio('background');
+  } else {
+    // La pagina è di nuovo visibile, verifica se dobbiamo riprendere la musica
+    const shouldPlayMusic = localStorage.getItem('backgroundMusicEnabled') === 'true';
+    if (shouldPlayMusic) {
+      resumeAudio('background');
+    }
   }
 };
+
+// Evento quando la pagina viene nascosta (cambio app/scheda, blocco telefono)
+document.addEventListener('visibilitychange', handleVisibilityChange);
+
+// Evento quando la pagina sta per essere scaricata/chiusa
+window.addEventListener('beforeunload', () => {
+  Object.keys(audioCache).forEach(key => {
+    stopAudio(key as AudioType);
+  });
+});
+
+// Eventi specifici per mobile per gestire la riproduzione audio
+window.addEventListener('pagehide', () => pauseAudio('background'));
+window.addEventListener('beforeunload', () => pauseAudio('background'));
+document.addEventListener('pause', () => pauseAudio('background')); // Per WebKit su iOS
+document.addEventListener('resign', () => pauseAudio('background')); // Per alcune app WebView

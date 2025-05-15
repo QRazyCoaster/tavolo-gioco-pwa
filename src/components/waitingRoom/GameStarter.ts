@@ -1,41 +1,42 @@
 
-import { useGame } from '@/context/GameContext';
-import { playAudio, stopBackgroundMusic } from '@/utils/audioUtils';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { playAudio } from '@/utils/audioUtils';
 
 export const useGameStarter = () => {
-  const { state, dispatch } = useGame();
   const navigate = useNavigate();
-  
-  const handleStartGame = () => {
-    // Stop background music when game starts
-    if (state.backgroundMusicPlaying) {
-      stopBackgroundMusic();
-      dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-    }
-    
-    // Set the selected game if it's not set (default to trivia)
-    if (!state.selectedGame) {
-      dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
-    }
-    
-    dispatch({ type: 'START_GAME' });
-    
-    // Fix: Store complete game data in session storage for persistence
+  const { toast } = useToast();
+
+  const handleStartGame = useCallback((selectedGame?: string) => {
+    // Salva che il gioco è iniziato
     sessionStorage.setItem('gameStarted', 'true');
-    sessionStorage.setItem('gameId', state.gameId || '');
-    sessionStorage.setItem('pin', state.pin || '');
-    sessionStorage.setItem('selectedGame', state.selectedGame || 'trivia');
     
-    console.log('WaitingRoomPage - Game started, stored in session:', {
-      gameId: state.gameId,
-      pin: state.pin,
-      selectedGame: state.selectedGame || 'trivia'
+    // Se è stato selezionato un gioco specifico, salvalo
+    if (selectedGame) {
+      sessionStorage.setItem('selectedGame', selectedGame);
+    }
+    
+    // Riproduce un audio all'avvio del gioco
+    playAudio('success');
+    
+    // Mostra una notifica toast
+    toast({
+      title: "Game Starting",
+      description: "Get ready to play!",
     });
     
-    playAudio('success');
-    navigate('/game');
-  };
-  
+    // Reindirizza alla pagina di gioco appropriata
+    const game = selectedGame || sessionStorage.getItem('selectedGame') || 'trivia';
+    
+    // Naviga alla pagina specifica del gioco se disponibile, altrimenti alla pagina generica
+    if (game === 'trivia') {
+      navigate('/trivia');
+    } else {
+      navigate('/game');
+    }
+    
+  }, [navigate, toast]);
+
   return { handleStartGame };
 };

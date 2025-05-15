@@ -1,120 +1,96 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
-import { playAudio, playBackgroundMusic, stopBackgroundMusic } from '@/utils/audioUtils';
-import { BookText, Wine } from "lucide-react";
-import MusicToggle from '@/components/MusicToggle';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { availableGames } from '@/utils/gameUtils';
+import { playAudio } from '@/utils/audioUtils';
+import { useToast } from '@/hooks/use-toast';
+import { useGameStarter } from '@/components/waitingRoom/GameStarter';
+import { ArrowLeft, GamepadIcon } from 'lucide-react';
 
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
+  const { toast } = useToast();
+  const { handleStartGame } = useGameStarter();
   
-  // Effect to manage background music when the page is mounted
+  // Verifica se la sessione è valida
   useEffect(() => {
-    // Stop any previous playback to be safe
-    stopBackgroundMusic();
-    // Start the music and update state
-    playBackgroundMusic('backgroundMusic', 0.2);
-    dispatch({ type: 'START_BACKGROUND_MUSIC' });
+    const gameId = state.gameId || sessionStorage.getItem('gameId');
+    const pin = state.pin || sessionStorage.getItem('pin');
     
-    // Cleanup function to handle different scenarios
-    return () => {
-      if (!state.backgroundMusicPlaying) {
-        stopBackgroundMusic();
-      }
-    };
-  }, []);
+    if (!gameId || !pin) {
+      toast({
+        title: language === 'it' ? "Sessione non valida" : "Invalid session",
+        description: language === 'it' 
+          ? "Devi prima creare o partecipare a un gioco" 
+          : "You need to create or join a game first",
+        variant: "destructive"
+      });
+      navigate('/');
+    }
+  }, [state.gameId, state.pin, navigate, language, toast]);
   
-  const handleGameSelect = (gameId: string) => {
+  const handleSelectGame = (gameId: string) => {
+    dispatch({ type: 'SELECT_GAME', payload: gameId });
     playAudio('buttonClick');
     
-    dispatch({
-      type: 'SELECT_GAME',
-      payload: gameId
-    });
-    
-    // Navigate to rules page instead of join
-    navigate('/rules');
+    // Avvia il gioco con il gioco selezionato
+    handleStartGame(gameId);
   };
   
-  const handleBackToLanguage = () => {
+  const handleBack = () => {
+    navigate('/waiting-room');
     playAudio('buttonClick');
-    navigate('/');
   };
   
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ 
-        backgroundImage: `url('/lovable-uploads/3513380f-9e72-4df5-a6b6-1cdbe36f3f30.png')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
-      <div className="w-full max-w-md flex flex-col items-center">
-        <div className="text-center mb-8 w-full flex justify-between items-center">
-          {/* Removed common.chooseGame text here */}
-          <div className="w-1/3"></div> {/* Empty div for layout balance */}
-          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
-        </div>
-        
-        <div className="w-full space-y-4">
-          <Card 
-            className="bg-white/80 backdrop-blur-sm p-5 hover:bg-white/90 transition-colors cursor-pointer"
-            onClick={() => handleGameSelect('trivia')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <BookText size={28} className="text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold">
-                  {language === 'it' ? 'Trivia' : 'Trivia'}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {language === 'it' 
-                    ? 'Sfida le tue conoscenze con domande di cultura generale' 
-                    : 'Test your knowledge with general knowledge questions'}
-                </p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card 
-            className="bg-white/80 backdrop-blur-sm p-5 hover:bg-white/90 transition-colors cursor-pointer"
-            onClick={() => handleGameSelect('bottlegame')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <Wine size={28} className="text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold">
-                  {language === 'it' ? 'Gioco della Bottiglia' : 'Bottle Game'}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {language === 'it' 
-                    ? 'Divertimento classico con la bottiglia che gira' 
-                    : 'Classic fun with the spinning bottle'}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-        
-        <div className="mt-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+      <div className="w-full max-w-md">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-primary">Tavolo Gioco</h1>
           <Button 
-            variant="outline" 
-            onClick={handleBackToLanguage}
-            className="bg-white/80 backdrop-blur-sm"
+            variant="ghost" 
+            onClick={handleBack}
           >
-            {t('common.back')}
+            <ArrowLeft size={20} />
           </Button>
+        </div>
+        
+        <h2 className="text-2xl font-semibold mb-6 text-center">
+          {language === 'it' ? 'Seleziona un gioco' : 'Select a game'}
+        </h2>
+        
+        <div className="space-y-4">
+          {availableGames.map((game) => (
+            <Card 
+              key={game.id}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => handleSelectGame(game.id)}
+            >
+              <CardContent className="p-6 flex items-center">
+                <div className="bg-primary/10 p-3 rounded-full mr-4">
+                  <GamepadIcon className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">
+                    {language === 'it' ? game.nameIt : game.nameEn}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {language === 'it' ? game.descriptionIt : game.descriptionEn}
+                  </p>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {language === 'it' 
+                      ? `${game.minPlayers}-${game.maxPlayers} giocatori` 
+                      : `${game.minPlayers}-${game.maxPlayers} players`}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>
