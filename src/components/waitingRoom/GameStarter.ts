@@ -22,13 +22,13 @@ export const useGameStarter = () => {
       dispatch({ type: 'SELECT_GAME', payload: selectedGame });
     }
     
-    // Determina quale gioco avviare
+    // Determine which game to start
     const game = selectedGame || sessionStorage.getItem('selectedGame') || 'trivia';
     
-    // Aggiorna il database per notificare tutti i giocatori che il gioco è iniziato
+    // Update the database to notify all players that the game has started
     if (state.gameId) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('games')
           .update({ 
             started: true,
@@ -36,9 +36,25 @@ export const useGameStarter = () => {
           })
           .eq('id', state.gameId);
         
+        if (error) {
+          console.error('[GameStarter] Error updating game status:', error);
+          toast({
+            title: "Error starting game",
+            description: "There was a problem starting the game. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         console.log(`[GameStarter] Game ${state.gameId} marked as started with game type: ${game}`);
       } catch (error) {
         console.error('[GameStarter] Error updating game status:', error);
+        toast({
+          title: "Error starting game",
+          description: "There was a problem starting the game. Please try again.",
+          variant: "destructive"
+        });
+        return;
       }
     }
     

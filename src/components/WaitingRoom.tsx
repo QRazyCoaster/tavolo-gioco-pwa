@@ -77,7 +77,9 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           console.log('[WaitingRoom] Game updated:', payload.new);
           
           if (payload.new.started === true) {
-            // Il gioco è iniziato, aggiorna lo stato locale
+            console.log('[WaitingRoom] Game started detected, redirecting all players');
+            
+            // Update local state
             dispatch({ type: 'START_GAME' });
             sessionStorage.setItem('gameStarted', 'true');
             
@@ -86,28 +88,34 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
               sessionStorage.setItem('selectedGame', payload.new.game_type);
             }
             
-            // Notifica all'utente
+            // Notify user
             toast({
               title: language === 'it' ? "Il gioco sta iniziando" : "Game is starting",
               description: language === 'it' ? "Preparati a giocare!" : "Get ready to play!",
+              duration: 3000,
             });
             
-            // Riproduci suono
+            // Play sound
             playAudio('success');
             
-            // Reindirizza alla pagina appropriata
+            // Redirect to appropriate page
             const gameType = payload.new.game_type || sessionStorage.getItem('selectedGame') || 'trivia';
-            if (gameType === 'trivia') {
-              navigate('/trivia');
-            } else {
-              navigate('/game');
-            }
+            
+            // Important: Add a small delay to ensure the toast is seen and the state is updated
+            setTimeout(() => {
+              if (gameType === 'trivia') {
+                navigate('/trivia');
+              } else {
+                navigate('/game');
+              }
+            }, 500);
           }
         }
       )
       .subscribe();
 
     return () => {
+      console.log('[WaitingRoom] Cleaning up subscriptions');
       supabase.removeChannel(playersChannel);
       supabase.removeChannel(gameChannel);
     };
