@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from "@/components/ui/button";
 import { Player } from '@/context/GameContext';
@@ -38,6 +38,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 }) => {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const [showPendingAnswers, setShowPendingAnswers] = useState<boolean>(true);
 
   // Timer effects
   useEffect(() => {
@@ -63,12 +64,16 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   useEffect(() => {
     console.log("Current player answers in NarratorView:", playerAnswers);
     console.log("Current player answering:", playerInfo?.name || "None");
+    if (playerAnswers.length > 0 && !showPendingAnswers) {
+      setShowPendingAnswers(true);
+    }
   }, [playerAnswers, playerInfo]);
 
   // Handle correct answer
   const handleCorrectAnswer = () => {
     if (!currentPlayerAnswering) return;
     playAudio('success');
+    setShowPendingAnswers(false);
     onCorrectAnswer(currentPlayerAnswering.playerId);
     
     toast({
@@ -107,7 +112,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
       />
       
       {/* Current Player Answering */}
-      {currentPlayerAnswering && playerInfo ? (
+      {showPendingAnswers && currentPlayerAnswering && playerInfo ? (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in">
           <div className="text-center mb-3">
             <h3 className="font-bold text-xl text-blue-800">
@@ -176,7 +181,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
       )}
       
       {/* Next Question Button - only show when no players are left to answer */}
-      {playerAnswers.length === 0 && (
+      {(playerAnswers.length === 0 || !showPendingAnswers) && (
         <Button 
           onClick={onNextQuestion}
           className="w-full mb-4 bg-blue-600 hover:bg-blue-700"

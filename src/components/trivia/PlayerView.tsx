@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { Button } from "@/components/ui/button";
@@ -32,13 +32,21 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const { toast } = useToast();
   const [isPressed, setIsPressed] = useState(false);
   
+  useEffect(() => {
+    // Reset pressed state when changing questions or rounds
+    setIsPressed(hasAnswered);
+  }, [questionNumber, roundNumber, hasAnswered]);
+  
   // Ordina i giocatori per punteggio (dal più alto al più basso)
   const sortedPlayers = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
   
   const handleBuzzerPress = () => {
-    if (hasAnswered || isCurrentPlayerNarrator) return;
+    if (hasAnswered || isCurrentPlayerNarrator) {
+      console.log('Cannot buzz: already answered or narrator', { hasAnswered, isCurrentPlayerNarrator });
+      return;
+    }
     
-    console.log('Player pressed buzzer button - hasAnswered:', hasAnswered);
+    console.log('Player pressed buzzer button - player:', state.currentPlayer?.name);
     setIsPressed(true);
     
     // Play the player's custom buzzer sound if available
@@ -136,7 +144,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
               <div 
                 key={player.id} 
                 className={`flex justify-between items-center py-2 border-b last:border-0 ${
-                  player.id === player.id ? 'font-medium' : ''
+                  player.id === state.currentPlayer?.id ? 'font-medium bg-blue-50' : ''
                 }`}
               >
                 <div className="flex items-center">

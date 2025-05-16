@@ -34,6 +34,7 @@ const TriviaGamePage = () => {
   useEffect(() => {
     console.log('[TriviaGamePage] Game state:', {
       isNarrator,
+      hasPlayerAnswered,
       playerAnswers,
       currentQuestion
     });
@@ -76,7 +77,7 @@ const TriviaGamePage = () => {
         sessionStorage.setItem('selectedGame', 'trivia');
       }
     }
-  }, [isNarrator, playerAnswers, currentQuestion]);
+  }, [isNarrator, playerAnswers, currentQuestion, state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
   
   const handleBackToLobby = () => {
     navigate('/waiting-room');

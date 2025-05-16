@@ -5,71 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
 
 // Domande demo per test (da sostituire con quelle da Supabase)
-const mockQuestions: TriviaQuestion[] = [
-  {
-    id: '1',
-    categoryId: 'science',
-    textEn: 'What is the chemical symbol for gold?',
-    textIt: 'Qual è il simbolo chimico dell\'oro?',
-    answerEn: 'Au',
-    answerIt: 'Au',
-    difficulty: 'easy',
-  },
-  {
-    id: '2',
-    categoryId: 'geography',
-    textEn: 'Which is the largest ocean on Earth?',
-    textIt: 'Qual è l\'oceano più grande della Terra?',
-    answerEn: 'Pacific Ocean',
-    answerIt: 'Oceano Pacifico',
-    difficulty: 'easy',
-  },
-  {
-    id: '3',
-    categoryId: 'history',
-    textEn: 'In which year did Christopher Columbus first reach the Americas?',
-    textIt: 'In quale anno Cristoforo Colombo raggiunse per la prima volta le Americhe?',
-    answerEn: '1492',
-    answerIt: '1492',
-    difficulty: 'medium',
-  },
-  {
-    id: '4',
-    categoryId: 'arts',
-    textEn: 'Who painted the Mona Lisa?',
-    textIt: 'Chi ha dipinto la Gioconda?',
-    answerEn: 'Leonardo da Vinci',
-    answerIt: 'Leonardo da Vinci',
-    difficulty: 'easy',
-  },
-  {
-    id: '5',
-    categoryId: 'sports',
-    textEn: 'Which country won the FIFA World Cup in 2018?',
-    textIt: 'Quale paese ha vinto la Coppa del Mondo FIFA nel 2018?',
-    answerEn: 'France',
-    answerIt: 'Francia',
-    difficulty: 'medium',
-  },
-  {
-    id: '6',
-    categoryId: 'entertainment',
-    textEn: 'Which actor played Jack Dawson in the movie "Titanic"?',
-    textIt: 'Quale attore ha interpretato Jack Dawson nel film "Titanic"?',
-    answerEn: 'Leonardo DiCaprio',
-    answerIt: 'Leonardo DiCaprio',
-    difficulty: 'easy',
-  },
-  {
-    id: '7',
-    categoryId: 'technology',
-    textEn: 'Who is known as the co-founder of Microsoft?',
-    textIt: 'Chi è conosciuto come il co-fondatore di Microsoft?',
-    answerEn: 'Bill Gates',
-    answerIt: 'Bill Gates',
-    difficulty: 'easy',
-  }
-];
+// ... keep existing code (mockQuestions array)
 
 // Durata del timer in secondi
 const QUESTION_TIMER = 90;
@@ -113,7 +49,14 @@ export const useTriviaGame = () => {
   
   // Gestisce la prenotazione di un giocatore per rispondere
   const handlePlayerBuzzer = useCallback(() => {
-    if (!state.currentPlayer || isNarrator || hasPlayerAnswered) return;
+    if (!state.currentPlayer || isNarrator || hasPlayerAnswered) {
+      console.log('Cannot buzz: player conditions not met', { 
+        currentPlayer: !!state.currentPlayer, 
+        isNarrator, 
+        hasAnswered: hasPlayerAnswered 
+      });
+      return;
+    }
     
     console.log('Player buzzer pressed:', state.currentPlayer.name);
     
@@ -127,21 +70,23 @@ export const useTriviaGame = () => {
     }
     
     // Create the new player answer object
-    const newPlayerAnswer = {
+    const newPlayerAnswer: PlayerAnswer = {
       playerId: state.currentPlayer.id,
       playerName: state.currentPlayer.name,
       timestamp: Date.now()
     };
     
     // Add player to answeredPlayers set
-    setAnsweredPlayers(prev => new Set([...prev, state.currentPlayer!.id]));
+    setAnsweredPlayers(prev => {
+      const newSet = new Set(prev);
+      newSet.add(state.currentPlayer!.id);
+      return newSet;
+    });
     
     // Update the currentRound with the new player answer
     setCurrentRound(prev => {
-      console.log('Adding player to answers:', state.currentPlayer!.name);
       const updatedAnswers = [...prev.playerAnswers, newPlayerAnswer];
       console.log('Updated player answers array:', updatedAnswers);
-      
       return {
         ...prev,
         playerAnswers: updatedAnswers
@@ -201,28 +146,8 @@ export const useTriviaGame = () => {
     // lasciando gli altri in coda per rispondere
     setCurrentRound(prev => {
       const updatedPlayerAnswers = prev.playerAnswers.filter(ans => ans.playerId !== playerId);
+      console.log('Player removed after wrong answer, remaining players:', updatedPlayerAnswers);
       
-      // Se non ci sono più giocatori in coda, passa alla prossima domanda
-      if (updatedPlayerAnswers.length === 0) {
-        // Se siamo all'ultima domanda, resetta solo le risposte
-        if (prev.currentQuestionIndex >= prev.questions.length - 1) {
-          return {
-            ...prev,
-            playerAnswers: [],
-            timeLeft: QUESTION_TIMER
-          };
-        }
-        
-        // Altrimenti, passa alla prossima domanda
-        return {
-          ...prev,
-          currentQuestionIndex: prev.currentQuestionIndex + 1,
-          playerAnswers: [],
-          timeLeft: QUESTION_TIMER
-        };
-      }
-      
-      // Se ci sono ancora giocatori in coda, mostra il prossimo
       return {
         ...prev,
         playerAnswers: updatedPlayerAnswers
