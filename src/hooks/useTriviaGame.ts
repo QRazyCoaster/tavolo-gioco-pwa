@@ -71,7 +71,7 @@ export const useTriviaGame = () => {
   });
   
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
-  const [showPendingAnswers, setShowPendingAnswers] = useState<boolean>(true);
+  const [showPendingAnswers, setShowPendingAnswers] = useState<boolean>(false);
   
   // Determina se il giocatore corrente è il narratore
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
@@ -95,18 +95,11 @@ export const useTriviaGame = () => {
     return () => clearInterval(timer);
   }, [isNarrator]);
   
-  // Debug logging for player answers
+  // Force show pending answers whenever we have answers
   useEffect(() => {
-    if (currentRound.playerAnswers.length > 0) {
-      console.log('[useTriviaGame] Player answers updated:', currentRound.playerAnswers);
-      console.log('[useTriviaGame] Current player answering:', 
-        currentRound.playerAnswers[0]?.playerName || "None");
-      
-      // Ensure showPendingAnswers is true when we have player answers
-      if (!showPendingAnswers) {
-        console.log('[useTriviaGame] Setting showPendingAnswers to true');
-        setShowPendingAnswers(true);
-      }
+    if (currentRound.playerAnswers.length > 0 && !showPendingAnswers) {
+      console.log('[useTriviaGame] Setting showPendingAnswers to true due to playerAnswers:', currentRound.playerAnswers);
+      setShowPendingAnswers(true);
     }
   }, [currentRound.playerAnswers, showPendingAnswers]);
   
@@ -146,28 +139,24 @@ export const useTriviaGame = () => {
       return newSet;
     });
     
-    // Update the currentRound with the new player answer
+    // Critical fix: Update the playerAnswers array directly in a synchronous way
     setCurrentRound(prev => {
-      // Ensure we're not adding duplicates
       const playerAlreadyAnswered = prev.playerAnswers.some(p => p.playerId === state.currentPlayer?.id);
       if (playerAlreadyAnswered) {
-        console.log('[useTriviaGame] Player already answered, not adding again');
         return prev;
       }
       
       const updatedAnswers = [...prev.playerAnswers, newPlayerAnswer];
-      console.log('[useTriviaGame] Updated player answers array:', updatedAnswers);
-      
-      // Force update the showPendingAnswers state
-      if (updatedAnswers.length > 0) {
-        setShowPendingAnswers(true);
-      }
+      console.log('[useTriviaGame] New player answers array:', updatedAnswers);
       
       return {
         ...prev,
         playerAnswers: updatedAnswers
       };
     });
+    
+    // Explicitly set showPendingAnswers to true right away
+    setShowPendingAnswers(true);
     
   }, [state.currentPlayer, isNarrator, hasPlayerAnswered]);
   

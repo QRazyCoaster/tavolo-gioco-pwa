@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from "@/components/ui/button";
 import { Player } from '@/context/GameContext';
@@ -64,18 +64,18 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     ? players.find(p => p.id === currentPlayerAnswering.playerId) 
     : null;
 
-  // Debug logging for player answers
+  // Debug logging and force showPendingAnswers if we have answers
   useEffect(() => {
-    console.log("[NarratorView] Current player answers:", playerAnswers);
-    console.log("[NarratorView] Current player answering:", playerInfo?.name || "None");
+    console.log("[NarratorView] Player answers:", playerAnswers);
     console.log("[NarratorView] showPendingAnswers:", showPendingAnswers);
+    console.log("[NarratorView] Current player:", playerInfo?.name || "None");
     
-    // If we have player answers but aren't showing them, make sure to show them
+    // Always force showPendingAnswers true when we have player answers
     if (playerAnswers.length > 0 && !showPendingAnswers) {
-      console.log("[NarratorView] Setting showPendingAnswers to true because playerAnswers.length > 0");
+      console.log("[NarratorView] Setting showPendingAnswers to true because we have player answers");
       setShowPendingAnswers(true);
     }
-  }, [playerAnswers, playerInfo, showPendingAnswers, setShowPendingAnswers]);
+  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, playerInfo]);
 
   // Handle correct answer
   const handleCorrectAnswer = () => {

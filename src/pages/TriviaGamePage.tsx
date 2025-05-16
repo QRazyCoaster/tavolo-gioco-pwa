@@ -34,21 +34,8 @@ const TriviaGamePage = () => {
     handleNextQuestion
   } = useTriviaGame();
   
+  // Session validation effect
   useEffect(() => {
-    console.log('[TriviaGamePage] Game state:', {
-      isNarrator,
-      hasPlayerAnswered,
-      playerAnswers: playerAnswers.length,
-      playerAnswersData: playerAnswers,
-      currentQuestion: currentQuestion?.id,
-      gameId: state.gameId,
-      pin: state.pin,
-      gameStarted: state.gameStarted,
-      sessionGameStarted: sessionStorage.getItem('gameStarted'),
-      selectedGame: state.selectedGame,
-      sessionSelectedGame: sessionStorage.getItem('selectedGame')
-    });
-    
     // Short delay to ensure the state is loaded
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -102,14 +89,14 @@ const TriviaGamePage = () => {
     return () => clearTimeout(timer);
   }, [isNarrator, playerAnswers, currentQuestion, state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
   
+  // Debug and player answers effect
   useEffect(() => {
-    // Debug logging for player answers at the page level
-    console.log('[TriviaGamePage] Current playerAnswers:', playerAnswers);
+    console.log('[TriviaGamePage] Player answers updated:', playerAnswers);
     console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
     
-    // Force the showPendingAnswers to be true when playerAnswers.length > 0
+    // Force showPendingAnswers to true when there are player answers
     if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
-      console.log('[TriviaGamePage] Forcing showPendingAnswers to true');
+      console.log('[TriviaGamePage] Setting showPendingAnswers to true');
       setShowPendingAnswers(true);
     }
   }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator]);
@@ -134,17 +121,11 @@ const TriviaGamePage = () => {
     );
   }
   
-  console.log('[TriviaGamePage] Rendering view. isNarrator:', isNarrator);
+  console.log('[TriviaGamePage] Rendering view. isNarrator:', isNarrator, 'playerAnswers:', playerAnswers.length);
   
   // If the session validation is still in progress, show a loading state
   if (!state.gameId || !state.pin) {
     return null;
-  }
-  
-  // Debug logging to check what's being passed to NarratorView
-  if (isNarrator) {
-    console.log('[TriviaGamePage] Rendering NarratorView with playerAnswers:', playerAnswers);
-    console.log('[TriviaGamePage] currentQuestion:', currentQuestion);
   }
   
   return (
