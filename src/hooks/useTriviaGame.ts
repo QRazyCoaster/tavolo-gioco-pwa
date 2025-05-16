@@ -116,6 +116,17 @@ export const useTriviaGame = () => {
   const handlePlayerBuzzer = useCallback(() => {
     if (!state.currentPlayer || isNarrator || hasPlayerAnswered) return;
     
+    console.log('Player buzzer pressed:', state.currentPlayer.name);
+    
+    // Play buzzer sound immediately
+    if (window.myBuzzer) {
+      window.myBuzzer.play().catch(() => {
+        playAudio('buzzer');
+      });
+    } else {
+      playAudio('buzzer');
+    }
+    
     // Aggiungi il giocatore alla lista dei prenotati
     setCurrentRound(prev => ({
       ...prev,

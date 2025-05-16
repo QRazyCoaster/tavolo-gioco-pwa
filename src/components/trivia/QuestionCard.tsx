@@ -65,7 +65,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
             )}
           </CardContent>
           
-          {/* Back Side (Answer) */}
+          {/* Back Side (Answer) - Now part of the card */}
           <CardContent 
             className={`p-6 flex flex-col items-center justify-center w-full h-full rotate-y-180 ${
               !showAnswer ? 'backface-hidden' : ''
