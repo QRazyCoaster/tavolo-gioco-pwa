@@ -1,9 +1,12 @@
+
 /**
  * Audio utilities for game sounds
  */
+import { supabase } from '@/supabaseClient';
+import { getBuzzerUrl } from './buzzerUtils';
 
 // Types of supported audio
-type AudioType = 
+export type AudioType = 
   | 'buttonClick'
   | 'notification'
   | 'success'
@@ -18,8 +21,14 @@ type AudioType =
 // Cache for preloaded audio objects
 const audioCache: Record<string, HTMLAudioElement> = {};
 
-// Mapping audio types to file paths - Use absolute paths starting with /
-const audioMappings: Record<string, string> = {
+// Source of audio - either local or Supabase
+type AudioSource = 'local' | 'supabase';
+
+// Default audio source - this can be configured at runtime
+let audioSource: AudioSource = 'supabase';
+
+// Mapping audio types to file paths for local files
+const localAudioMappings: Record<string, string> = {
   buttonClick: '/audio/button-click.mp3',
   notification: '/audio/notification.mp3',
   success: '/audio/success.mp3',
@@ -33,23 +42,58 @@ const audioMappings: Record<string, string> = {
 };
 
 /**
+ * Get the URL for an audio file
+ */
+export const getAudioUrl = (type: AudioType): string => {
+  try {
+    // For all non-Supabase audio (when using local files)
+    if (audioSource === 'local') {
+      return localAudioMappings[type];
+    }
+    
+    // Use Supabase storage URLs
+    const { data } = supabase
+      .storage
+      .from('audio')
+      .getPublicUrl(type === 'buzzer' ? 'buzzers/buzzer.mp3' : `${type}.mp3`);
+    
+    return data.publicUrl;
+  } catch (error) {
+    console.error(`Error getting audio URL for ${type}:`, error);
+    // Fallback to local files if Supabase fails
+    return localAudioMappings[type];
+  }
+};
+
+/**
+ * Set the audio source (local or Supabase)
+ */
+export const setAudioSource = (source: AudioSource): void => {
+  audioSource = source;
+  console.log(`Audio source set to: ${source}`);
+};
+
+/**
  * Simplified preload function that won't block rendering
  */
 export const preloadAudio = (type?: AudioType): void => {
   try {
     if (type) {
       if (!audioCache[type]) {
-        const audio = new Audio(audioMappings[type]);
+        const url = getAudioUrl(type);
+        const audio = new Audio(url);
         audioCache[type] = audio;
-        console.log(`Preloaded audio: ${type}`);
+        console.log(`Preloaded audio: ${type} from ${url}`);
       }
     } else {
       // Preload all audio files in background
-      Object.keys(audioMappings).forEach(key => {
+      Object.keys(localAudioMappings).forEach(key => {
         if (!audioCache[key]) {
-          const audio = new Audio(audioMappings[key]);
+          const audioType = key as AudioType;
+          const url = getAudioUrl(audioType);
+          const audio = new Audio(url);
           audioCache[key] = audio;
-          console.log(`Preloaded audio: ${key}`);
+          console.log(`Preloaded audio: ${key} from ${url}`);
         }
       });
     }
@@ -68,7 +112,8 @@ export const playAudio = (type: AudioType, options?: { volume?: number; loop?: b
     // If not in cache, create it on the fly
     if (!audio) {
       console.log(`Creating new audio for ${type}`);
-      audio = new Audio(audioMappings[type]);
+      const url = getAudioUrl(type);
+      audio = new Audio(url);
       audioCache[type] = audio;
     }
     
@@ -116,7 +161,8 @@ export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume:
     let audio = audioCache[type];
     if (!audio) {
       console.log('Creating new background music audio');
-      audio = new Audio(audioMappings[type]);
+      const url = getAudioUrl(type);
+      audio = new Audio(url);
       audioCache[type] = audio;
     }
     
