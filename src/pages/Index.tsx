@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useLanguage, Language } from '@/context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import { playAudio, playBackgroundMusic } from '@/utils/audioUtils';
+import { playAudio, playBackgroundMusic, preloadAudio } from '@/utils/audioUtils';
 import { useGame } from '@/context/GameContext';
 
 const Index = () => {
@@ -11,24 +11,28 @@ const Index = () => {
   const navigate = useNavigate();
   const { dispatch } = useGame();
 
+  // Preload audio files when component mounts
   useEffect(() => {
-    // Try to start background music when the page loads
-    try {
-      playBackgroundMusic('backgroundMusic', 0.2);
-      dispatch({ type: 'START_BACKGROUND_MUSIC' });
-    } catch (error) {
-      console.error('Failed to play background music:', error);
-    }
-  }, [dispatch]);
+    console.log('Index: Preloading audio files');
+    preloadAudio(); // Preload all audio files
+  }, []);
 
   const handleLanguage = (lang: Language) => {
     setLanguage(lang);
     
     try {
-      // Play button click sound
+      // First play button click sound
       playAudio('buttonClick');
+      
+      // Then play background music
+      console.log('Index: Starting background music after language selection');
+      playBackgroundMusic('backgroundMusic', 0.2);
+      dispatch({ type: 'START_BACKGROUND_MUSIC' });
+      
+      // Store the music state
+      localStorage.setItem('backgroundMusicEnabled', 'true');
     } catch (error) {
-      console.error('Failed to play button click:', error);
+      console.error('Failed to play sounds:', error);
     }
     
     // Navigate to join page

@@ -42,6 +42,7 @@ export const preloadAudio = (type?: AudioType): void => {
       if (!audioCache[type]) {
         const audio = new Audio(audioMappings[type]);
         audioCache[type] = audio;
+        console.log(`Preloaded audio: ${type}`);
       }
     } else {
       // Preload all audio files in background
@@ -49,6 +50,7 @@ export const preloadAudio = (type?: AudioType): void => {
         if (!audioCache[key]) {
           const audio = new Audio(audioMappings[key]);
           audioCache[key] = audio;
+          console.log(`Preloaded audio: ${key}`);
         }
       });
     }
@@ -66,6 +68,7 @@ export const playAudio = (type: AudioType, options?: { volume?: number; loop?: b
     
     // If not in cache, create it on the fly
     if (!audio) {
+      console.log(`Creating new audio for ${type}`);
       audio = new Audio(audioMappings[type]);
       audioCache[type] = audio;
     }
@@ -84,6 +87,7 @@ export const playAudio = (type: AudioType, options?: { volume?: number; loop?: b
     audio.currentTime = 0;
     
     // Play audio
+    console.log(`Attempting to play audio: ${type}`);
     const playPromise = audio.play();
     
     // Handle play promise rejection
@@ -105,19 +109,32 @@ export const playAudio = (type: AudioType, options?: { volume?: number; loop?: b
  */
 export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume: number = 0.2): void => {
   try {
-    const audio = audioCache[type] || new Audio(audioMappings[type]);
+    console.log('Attempting to play background music');
     
-    if (!audioCache[type]) {
+    // Create audio context to help overcome autoplay restrictions
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    let audio = audioCache[type];
+    if (!audio) {
+      console.log('Creating new background music audio');
+      audio = new Audio(audioMappings[type]);
       audioCache[type] = audio;
     }
     
     audio.volume = volume;
     audio.loop = true;
     
+    console.log('Playing background music');
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch(error => {
         console.error(`Error playing background music:`, error);
+        // On autoplay restriction, we'll need user interaction
+        document.addEventListener('click', function audioUnlockHandler() {
+          console.log('User interaction detected, trying to play again');
+          audio.play().catch(e => console.error('Still failed to play:', e));
+          document.removeEventListener('click', audioUnlockHandler);
+        }, { once: true });
       });
     }
     
@@ -132,6 +149,7 @@ export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume:
  */
 export const stopBackgroundMusic = (): void => {
   try {
+    console.log('Stopping background music');
     const audio = audioCache['backgroundMusic'];
     if (audio) {
       audio.pause();

@@ -13,6 +13,7 @@ const RoleSelector = ({ onSelectRole }: RoleSelectorProps) => {
   const { t, language } = useLanguage();
   
   const handleRoleSelect = (isHost: boolean) => {
+    console.log(`RoleSelector: Selected role - ${isHost ? 'Host' : 'Player'}`);
     try {
       playAudio('buttonClick');
     } catch (error) {

@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { playAudio } from '@/utils/audioUtils';
+import { playAudio, stopBackgroundMusic } from '@/utils/audioUtils';
 import { useGame } from '@/context/GameContext';
 import { supabase } from '@/supabaseClient';
 
@@ -23,6 +23,11 @@ export const useGameStarter = () => {
       sessionStorage.setItem('selectedGame', selectedGame);
       dispatch({ type: 'SELECT_GAME', payload: selectedGame });
     }
+    
+    // Stop background music as game is starting
+    console.log('GameStarter: Stopping background music as game is starting');
+    stopBackgroundMusic();
+    dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
     
     // Determine which game to start
     const game = selectedGame || sessionStorage.getItem('selectedGame') || 'trivia';
