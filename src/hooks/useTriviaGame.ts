@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { TriviaQuestion, PlayerAnswer, Round } from '@/types/trivia';
@@ -8,37 +9,47 @@ import { playAudio } from '@/utils/audioUtils';
 const mockQuestions: TriviaQuestion[] = [
   {
     id: '1',
-    question: 'What is the capital of France?',
-    answer: 'Paris',
-    category: 'Geography',
+    textEn: 'What is the capital of France?',
+    textIt: 'Qual è la capitale della Francia?',
+    answerEn: 'Paris',
+    answerIt: 'Parigi',
+    categoryId: 'geography',
     difficulty: 'easy'
   },
   {
     id: '2',
-    question: 'Who painted the Mona Lisa?',
-    answer: 'Leonardo da Vinci',
-    category: 'Art',
+    textEn: 'Who painted the Mona Lisa?',
+    textIt: 'Chi ha dipinto la Monna Lisa?',
+    answerEn: 'Leonardo da Vinci',
+    answerIt: 'Leonardo da Vinci',
+    categoryId: 'art',
     difficulty: 'easy'
   },
   {
     id: '3',
-    question: 'What is the chemical symbol for water?',
-    answer: 'H2O',
-    category: 'Science',
+    textEn: 'What is the chemical symbol for water?',
+    textIt: 'Qual è il simbolo chimico dell\'acqua?',
+    answerEn: 'H2O',
+    answerIt: 'H2O',
+    categoryId: 'science',
     difficulty: 'easy'
   },
   {
     id: '4',
-    question: 'What planet is known as the Red Planet?',
-    answer: 'Mars',
-    category: 'Astronomy',
+    textEn: 'What planet is known as the Red Planet?',
+    textIt: 'Quale pianeta è conosciuto come il Pianeta Rosso?',
+    answerEn: 'Mars',
+    answerIt: 'Marte',
+    categoryId: 'astronomy',
     difficulty: 'easy'
   },
   {
     id: '5',
-    question: 'Who wrote "Romeo and Juliet"?',
-    answer: 'William Shakespeare',
-    category: 'Literature',
+    textEn: 'Who wrote "Romeo and Juliet"?',
+    textIt: 'Chi ha scritto "Romeo e Giulietta"?',
+    answerEn: 'William Shakespeare',
+    answerIt: 'William Shakespeare',
+    categoryId: 'literature',
     difficulty: 'easy'
   }
 ];
