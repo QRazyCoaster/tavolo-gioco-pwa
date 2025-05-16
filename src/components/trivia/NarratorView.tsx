@@ -10,6 +10,7 @@ import QuestionCard from './QuestionCard';
 import QuestionInfo from './QuestionInfo';
 import PlayerRankings from './PlayerRankings';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import PlayerAnswerList from './PlayerAnswerList';
 
 interface NarratorViewProps {
   currentQuestion: TriviaQuestion;
@@ -71,6 +72,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     
     // If we have player answers but aren't showing them, make sure to show them
     if (playerAnswers.length > 0 && !showPendingAnswers) {
+      console.log("[NarratorView] Setting showPendingAnswers to true because playerAnswers.length > 0");
       setShowPendingAnswers(true);
     }
   }, [playerAnswers, playerInfo, showPendingAnswers, setShowPendingAnswers]);

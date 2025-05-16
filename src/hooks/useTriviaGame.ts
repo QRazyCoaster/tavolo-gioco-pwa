@@ -104,6 +104,7 @@ export const useTriviaGame = () => {
       
       // Ensure showPendingAnswers is true when we have player answers
       if (!showPendingAnswers) {
+        console.log('[useTriviaGame] Setting showPendingAnswers to true');
         setShowPendingAnswers(true);
       }
     }
@@ -147,8 +148,21 @@ export const useTriviaGame = () => {
     
     // Update the currentRound with the new player answer
     setCurrentRound(prev => {
+      // Ensure we're not adding duplicates
+      const playerAlreadyAnswered = prev.playerAnswers.some(p => p.playerId === state.currentPlayer?.id);
+      if (playerAlreadyAnswered) {
+        console.log('[useTriviaGame] Player already answered, not adding again');
+        return prev;
+      }
+      
       const updatedAnswers = [...prev.playerAnswers, newPlayerAnswer];
       console.log('[useTriviaGame] Updated player answers array:', updatedAnswers);
+      
+      // Force update the showPendingAnswers state
+      if (updatedAnswers.length > 0) {
+        setShowPendingAnswers(true);
+      }
+      
       return {
         ...prev,
         playerAnswers: updatedAnswers
@@ -159,6 +173,8 @@ export const useTriviaGame = () => {
   
   // Gestisce la risposta corretta di un giocatore
   const handleCorrectAnswer = useCallback((playerId: string) => {
+    console.log('[useTriviaGame] Handling correct answer for player:', playerId);
+    
     // Assegna 10 punti al giocatore
     dispatch({
       type: 'UPDATE_SCORE',
@@ -170,6 +186,8 @@ export const useTriviaGame = () => {
     
     // Passa alla domanda successiva
     setCurrentRound(prev => {
+      console.log('[useTriviaGame] Moving to next question after correct answer');
+      
       // Se siamo all'ultima domanda, rimaniamo su quella
       if (prev.currentQuestionIndex >= prev.questions.length - 1) {
         return {
@@ -196,6 +214,8 @@ export const useTriviaGame = () => {
   
   // Gestisce la risposta errata di un giocatore
   const handleWrongAnswer = useCallback((playerId: string) => {
+    console.log('[useTriviaGame] Handling wrong answer for player:', playerId);
+    
     // Sottrai 5 punti al giocatore
     dispatch({
       type: 'UPDATE_SCORE',
@@ -221,9 +241,12 @@ export const useTriviaGame = () => {
   
   // Gestisce il passaggio manuale alla domanda successiva
   const handleNextQuestion = useCallback(() => {
+    console.log('[useTriviaGame] Moving to next question manually');
+    
     setCurrentRound(prev => {
       // Se siamo all'ultima domanda, rimaniamo su quella
       if (prev.currentQuestionIndex >= prev.questions.length - 1) {
+        console.log('[useTriviaGame] Already at last question, resetting answers');
         return {
           ...prev,
           playerAnswers: [],
@@ -232,6 +255,7 @@ export const useTriviaGame = () => {
       }
       
       // Altrimenti, passa alla prossima domanda
+      console.log('[useTriviaGame] Moving to next question', prev.currentQuestionIndex + 1);
       return {
         ...prev,
         currentQuestionIndex: prev.currentQuestionIndex + 1,

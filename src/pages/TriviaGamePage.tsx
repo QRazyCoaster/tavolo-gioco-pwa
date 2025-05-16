@@ -38,8 +38,9 @@ const TriviaGamePage = () => {
     console.log('[TriviaGamePage] Game state:', {
       isNarrator,
       hasPlayerAnswered,
-      playerAnswers,
-      currentQuestion,
+      playerAnswers: playerAnswers.length,
+      playerAnswersData: playerAnswers,
+      currentQuestion: currentQuestion?.id,
       gameId: state.gameId,
       pin: state.pin,
       gameStarted: state.gameStarted,
@@ -104,7 +105,14 @@ const TriviaGamePage = () => {
   useEffect(() => {
     // Debug logging for player answers at the page level
     console.log('[TriviaGamePage] Current playerAnswers:', playerAnswers);
-  }, [playerAnswers]);
+    console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
+    
+    // Force the showPendingAnswers to be true when playerAnswers.length > 0
+    if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
+      console.log('[TriviaGamePage] Forcing showPendingAnswers to true');
+      setShowPendingAnswers(true);
+    }
+  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator]);
   
   const handleBackToLobby = () => {
     navigate('/waiting-room');
@@ -136,6 +144,7 @@ const TriviaGamePage = () => {
   // Debug logging to check what's being passed to NarratorView
   if (isNarrator) {
     console.log('[TriviaGamePage] Rendering NarratorView with playerAnswers:', playerAnswers);
+    console.log('[TriviaGamePage] currentQuestion:', currentQuestion);
   }
   
   return (
