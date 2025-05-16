@@ -22,6 +22,10 @@ export const useGameStarter = () => {
     if (selectedGame) {
       sessionStorage.setItem('selectedGame', selectedGame);
       dispatch({ type: 'SELECT_GAME', payload: selectedGame });
+    } else {
+      // Default to trivia if no game type is specified
+      sessionStorage.setItem('selectedGame', 'trivia');
+      dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
     }
     
     // Stop background music as game is starting
@@ -71,12 +75,16 @@ export const useGameStarter = () => {
           description: "Get ready to play!",
         });
         
-        // Navigate to the appropriate game page
-        if (game === 'trivia') {
-          navigate('/trivia');
-        } else {
-          navigate('/game');
-        }
+        // Add a short delay before navigation to ensure state updates are processed
+        setTimeout(() => {
+          // Navigate to the appropriate game page
+          console.log(`GameStarter: Navigating to /${game}`);
+          if (game === 'trivia') {
+            navigate('/trivia');
+          } else {
+            navigate('/game');
+          }
+        }, 500);
       } catch (error) {
         console.error('Error updating game status:', error);
         toast({

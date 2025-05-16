@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
@@ -15,6 +15,7 @@ const TriviaGamePage = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   
   const {
     currentRound,
@@ -36,11 +37,23 @@ const TriviaGamePage = () => {
       isNarrator,
       hasPlayerAnswered,
       playerAnswers,
-      currentQuestion
+      currentQuestion,
+      gameId: state.gameId,
+      pin: state.pin,
+      gameStarted: state.gameStarted,
+      sessionGameStarted: sessionStorage.getItem('gameStarted'),
+      selectedGame: state.selectedGame,
+      sessionSelectedGame: sessionStorage.getItem('selectedGame')
     });
+    
+    // Short delay to ensure the state is loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
     
     // Verify if the game session is valid
     if (!state.gameId || !state.pin) {
+      console.error('[TriviaGamePage] Invalid session - gameId or pin missing');
       toast({
         title: language === 'it' ? "Sessione non valida" : "Invalid session",
         description: language === 'it' 
@@ -52,8 +65,10 @@ const TriviaGamePage = () => {
       return;
     }
     
-    // Check if game is started
-    if (!state.gameStarted && sessionStorage.getItem('gameStarted') !== 'true') {
+    // Restore game info from session storage if needed
+    const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
+    if (!state.gameStarted && !sessionGameStarted) {
+      console.error('[TriviaGamePage] Game not started');
       toast({
         title: language === 'it' ? "Gioco non iniziato" : "Game not started",
         description: language === 'it'
@@ -63,6 +78,9 @@ const TriviaGamePage = () => {
       });
       navigate('/waiting-room');
       return;
+    } else if (!state.gameStarted && sessionGameStarted) {
+      console.log('[TriviaGamePage] Setting game started from session storage');
+      dispatch({ type: 'START_GAME' });
     }
     
     // Set the game type if not already set
@@ -77,11 +95,31 @@ const TriviaGamePage = () => {
         sessionStorage.setItem('selectedGame', 'trivia');
       }
     }
+    
+    return () => clearTimeout(timer);
   }, [isNarrator, playerAnswers, currentQuestion, state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
   
   const handleBackToLobby = () => {
     navigate('/waiting-room');
   };
+  
+  // Show a loading state while validating session
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse flex space-x-2 mb-4 justify-center">
+            <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+            <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+            <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+          </div>
+          <p className="text-gray-600">{language === 'it' ? 'Caricamento...' : 'Loading...'}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('[TriviaGamePage] Rendering view. isNarrator:', isNarrator);
   
   // If the session validation is still in progress, show a loading state
   if (!state.gameId || !state.pin) {

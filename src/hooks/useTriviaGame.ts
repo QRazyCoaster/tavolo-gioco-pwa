@@ -5,7 +5,43 @@ import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
 
 // Domande demo per test (da sostituire con quelle da Supabase)
-// ... keep existing code (mockQuestions array)
+const mockQuestions: TriviaQuestion[] = [
+  {
+    id: '1',
+    question: 'What is the capital of France?',
+    answer: 'Paris',
+    category: 'Geography',
+    difficulty: 'easy'
+  },
+  {
+    id: '2',
+    question: 'Who painted the Mona Lisa?',
+    answer: 'Leonardo da Vinci',
+    category: 'Art',
+    difficulty: 'easy'
+  },
+  {
+    id: '3',
+    question: 'What is the chemical symbol for water?',
+    answer: 'H2O',
+    category: 'Science',
+    difficulty: 'easy'
+  },
+  {
+    id: '4',
+    question: 'What planet is known as the Red Planet?',
+    answer: 'Mars',
+    category: 'Astronomy',
+    difficulty: 'easy'
+  },
+  {
+    id: '5',
+    question: 'Who wrote "Romeo and Juliet"?',
+    answer: 'William Shakespeare',
+    category: 'Literature',
+    difficulty: 'easy'
+  }
+];
 
 // Durata del timer in secondi
 const QUESTION_TIMER = 90;
