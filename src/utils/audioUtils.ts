@@ -1,3 +1,4 @@
+
 /**
  * Audio utilities for game sounds
  */
@@ -20,22 +21,18 @@ export type AudioType =
 // Cache for preloaded audio objects
 const audioCache: Record<string, HTMLAudioElement> = {};
 
-// Source of audio - always use Supabase
-// We're removing the audioSource variable since we're always using Supabase
-
-// Mapping audio types to file paths for fallbacks
-// We'll keep this for reference but not use it directly
-const fallbackAudioMappings: Record<string, string> = {
-  buttonClick: '/audio/button-click.mp3',
-  notification: '/audio/notification.mp3',
-  success: '/audio/success.mp3',
-  error: '/audio/wrong.mp3',
-  gameStart: '/audio/game-start.mp3',
-  buzzer: '/audio/buzzer.mp3',
-  chime: '/audio/chime.mp3',
-  tick: '/audio/countdown.mp3',
-  background: '/audio/background-music.mp3',
-  backgroundMusic: '/audio/background-music.mp3',
+// Mapping audio types to actual file names in Supabase
+const audioFileMapping: Record<AudioType, string> = {
+  buttonClick: 'button-click.mp3',
+  notification: 'notification.mp3',
+  success: 'success.mp3',
+  error: 'wrong.mp3',
+  gameStart: 'success.mp3', // Using success as game start sound
+  buzzer: 'buzzer.mp3',
+  chime: 'notification.mp3', // Using notification as chime
+  tick: 'countdown.mp3',
+  background: 'background-music.mp3',
+  backgroundMusic: 'background-music.mp3',
 };
 
 /**
@@ -48,13 +45,18 @@ export const getAudioUrl = (type: AudioType): string => {
       return getBuzzerUrl('buzzer.mp3'); // Use buzzerUtils for buzzer sounds
     }
     
+    const fileName = audioFileMapping[type];
+    if (!fileName) {
+      throw new Error(`No file mapping for audio type: ${type}`);
+    }
+    
     const { data } = supabase
       .storage
       .from('audio')
-      .getPublicUrl(`${type}.mp3`);
+      .getPublicUrl(fileName);
     
     if (!data || !data.publicUrl) {
-      throw new Error(`Failed to get URL for ${type}`);
+      throw new Error(`Failed to get URL for ${type} (${fileName})`);
     }
     
     console.log(`Fetched Supabase audio URL for ${type}: ${data.publicUrl}`);
@@ -63,8 +65,8 @@ export const getAudioUrl = (type: AudioType): string => {
     console.error(`Error getting audio URL for ${type}:`, error);
     // Use direct Supabase URL construction as fallback
     const supabaseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co';
-    const path = type === 'buzzer' ? 'buzzers/buzzer.mp3' : `${type}.mp3`;
-    const fallbackUrl = `${supabaseUrl}/storage/v1/object/public/audio/${path}`;
+    const fileName = audioFileMapping[type] || `${type}.mp3`;
+    const fallbackUrl = `${supabaseUrl}/storage/v1/object/public/audio/${fileName}`;
     console.log(`Using fallback URL for ${type}: ${fallbackUrl}`);
     return fallbackUrl;
   }

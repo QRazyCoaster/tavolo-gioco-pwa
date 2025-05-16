@@ -3,8 +3,8 @@ import { supabase } from '@/supabaseClient';
 
 /**
  * Returns a fully‑qualified public URL for a buzzer file
- * e.g.  getBuzzerUrl('airhorn.mp3') →
- *       https://xyz.supabase.co/storage/v1/object/public/audio/buzzers/airhorn.mp3
+ * e.g.  getBuzzerUrl('buzzer.mp3') →
+ *       https://xyz.supabase.co/storage/v1/object/public/audio/buzzers/buzzer.mp3
  */
 export function getBuzzerUrl(fileName: string) {
   try {
