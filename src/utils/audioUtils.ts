@@ -1,8 +1,9 @@
+
 /**
  * Audio utilities for game sounds
  */
 
-// Tipologie di audio supportate
+// Types of supported audio
 type AudioType = 
   | 'buttonClick'
   | 'notification'
@@ -15,118 +16,146 @@ type AudioType =
   | 'background'
   | 'backgroundMusic';
 
-// Cache per gli oggetti audio precaricati
+// Cache for preloaded audio objects
 const audioCache: Record<string, HTMLAudioElement> = {};
 
-// Mappatura dei tipi audio ai loro percorsi file
+// Mapping audio types to file paths
 const audioMappings: Record<string, string> = {
-  buttonClick: '/audio/click.mp3',
+  buttonClick: '/audio/button-click.mp3',  // Updated path to match README
   notification: '/audio/notification.mp3',
   success: '/audio/success.mp3',
-  error: '/audio/error.mp3',
+  error: '/audio/wrong.mp3',               // Updated path to match README
   gameStart: '/audio/game-start.mp3',
   buzzer: '/audio/buzzer.mp3',
   chime: '/audio/chime.mp3',
-  tick: '/audio/tick.mp3',
+  tick: '/audio/countdown.mp3',            // Updated path to match README
   background: '/audio/background-music.mp3',
   backgroundMusic: '/audio/background-music.mp3',
 };
 
 /**
- * Precarica un audio per utilizzo successivo
+ * Preload an audio for later use
  */
-export const preloadAudio = (type?: AudioType): void => {
-  try {
-    if (type) {
-      if (!audioCache[type]) {
-        const audio = new Audio(audioMappings[type]);
-        audio.load();
-        audioCache[type] = audio;
-        console.log(`✅ Audio preloaded: ${type}`);
-      }
-    } else {
-      // Preload all audio if no type specified
-      preloadAllAudio();
-    }
-  } catch (error) {
-    console.error(`❌ Error preloading audio ${type || 'all'}:`, error);
-  }
-};
-
-/**
- * Precarica il suono del click del pulsante
- */
-export const preloadButtonClickSound = (): Promise<void> => {
+export const preloadAudio = (type?: AudioType): Promise<void> => {
   return new Promise((resolve) => {
     try {
-      preloadAudio('buttonClick');
-      resolve();
+      if (type) {
+        if (!audioCache[type]) {
+          const audioPath = audioMappings[type];
+          console.log(`🔊 Preloading audio: ${type} from ${audioPath}`);
+          
+          const audio = new Audio(audioPath);
+          audio.load();
+          audioCache[type] = audio;
+          
+          // Resolve when loaded or on error
+          audio.addEventListener('canplaythrough', () => {
+            console.log(`✅ Audio preloaded: ${type}`);
+            resolve();
+          }, { once: true });
+          
+          audio.addEventListener('error', (e) => {
+            console.error(`❌ Error preloading audio ${type}:`, e);
+            resolve(); // Still resolve to not block loading
+          }, { once: true });
+        } else {
+          resolve(); // Already cached
+        }
+      } else {
+        // Preload all audio if no type specified
+        preloadAllAudio().then(() => resolve());
+      }
     } catch (error) {
-      console.error('❌ Error preloading button click sound:', error);
+      console.error(`❌ Error in preloadAudio (${type || 'all'}):`, error);
+      resolve(); // Still resolve to not block loading
+    }
+  });
+};
+
+/**
+ * Preload button click sound
+ */
+export const preloadButtonClickSound = (): Promise<void> => {
+  return preloadAudio('buttonClick');
+};
+
+/**
+ * Preload all available audio
+ */
+export const preloadAllAudio = (): Promise<void> => {
+  console.log('🔊 Preloading all audio files...');
+  
+  return new Promise((resolve) => {
+    const promises = Object.keys(audioMappings).map(type => {
+      if (!audioCache[type]) {
+        const audio = new Audio(audioMappings[type]);
+        audioCache[type] = audio;
+        return new Promise<void>((res) => {
+          audio.addEventListener('canplaythrough', () => res(), { once: true });
+          audio.addEventListener('error', () => res(), { once: true });
+          audio.load();
+        });
+      }
+      return Promise.resolve();
+    });
+    
+    Promise.all(promises).then(() => {
+      console.log('✅ All audio preloaded');
       resolve();
-    }
+    });
   });
 };
 
 /**
- * Precarica tutti gli audio disponibili
+ * Play an audio
  */
-export const preloadAllAudio = (): void => {
-  Object.keys(audioMappings).forEach((type) => {
-    if (!audioCache[type]) {
-      const audio = new Audio(audioMappings[type]);
-      audio.load();
-      audioCache[type] = audio;
-    }
-  });
-  console.log('✅ All audio preloaded');
-};
-
-/**
- * Riproduce un audio
- */
-export const playAudio = (type: AudioType, options?: { volume?: number; loop?: boolean }): void => {
+export const playAudio = (type: AudioType, options?: { volume?: number; loop?: boolean }): HTMLAudioElement | undefined => {
   try {
     let audio = audioCache[type];
     
-    // Se non è in cache, lo crea al volo
+    // If not in cache, create it on the fly
     if (!audio) {
-      audio = new Audio(audioMappings[type]);
+      const audioPath = audioMappings[type];
+      console.log(`🔊 Creating audio on demand: ${type} from ${audioPath}`);
+      audio = new Audio(audioPath);
       audioCache[type] = audio;
     }
     
-    // Imposta il volume se specificato
+    // Set volume if specified
     if (options?.volume !== undefined) {
       audio.volume = options.volume;
     }
     
-    // Imposta se deve riprodursi in loop
+    // Set if should play in loop
     if (options?.loop !== undefined) {
       audio.loop = options.loop;
     }
     
-    // Reimposta l'audio prima della riproduzione
+    // Reset audio before playing
     audio.currentTime = 0;
     
-    // Riproduci l'audio
+    // Play audio
+    console.log(`🔊 Playing audio: ${type}`);
     audio.play().catch(error => {
       console.error(`❌ Error playing audio ${type}:`, error);
     });
     
+    return audio;
   } catch (error) {
     console.error(`❌ Error playing audio ${type}:`, error);
+    return undefined;
   }
 };
 
 /**
- * Riproduce il buffer del click per feedback immediato
+ * Play button click buffer for immediate feedback
  */
 export const playClickBuffer = (): void => {
   playAudio('buttonClick', { volume: 0.5 });
 };
 
 /**
- * Ferma un audio in riproduzione
+ * Stop a playing audio
  */
 export const stopAudio = (type: AudioType): void => {
   try {
@@ -141,7 +170,7 @@ export const stopAudio = (type: AudioType): void => {
 };
 
 /**
- * Pausa un audio in riproduzione
+ * Pause a playing audio
  */
 export const pauseAudio = (type: AudioType): void => {
   try {
@@ -155,7 +184,7 @@ export const pauseAudio = (type: AudioType): void => {
 };
 
 /**
- * Riprende un audio in pausa
+ * Resume a paused audio
  */
 export const resumeAudio = (type: AudioType): void => {
   try {
@@ -171,7 +200,7 @@ export const resumeAudio = (type: AudioType): void => {
 };
 
 /**
- * Verifica se un audio è in riproduzione
+ * Check if an audio is playing
  */
 export const isAudioPlaying = (type: AudioType): boolean => {
   try {
@@ -183,10 +212,12 @@ export const isAudioPlaying = (type: AudioType): boolean => {
 };
 
 /**
- * Riproduce la musica di sottofondo
+ * Play background music
  */
 export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume: number = 0.2): void => {
   try {
+    console.log(`🎵 Playing background music: ${type} at volume ${volume}`);
+    
     const audio = audioCache[type] || new Audio(audioMappings[type]);
     
     if (!audioCache[type]) {
@@ -211,21 +242,21 @@ export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume:
 };
 
 /**
- * Ferma la musica di sottofondo
+ * Stop background music
  */
 export const stopBackgroundMusic = (): void => {
   stopAudio('backgroundMusic');
   localStorage.setItem('backgroundMusicEnabled', 'false');
 };
 
-// Aggiungi gestori di eventi per la visibilità della pagina e la chiusura
+// Add event handlers for page visibility and closing
 const handleVisibilityChange = () => {
   if (document.hidden) {
-    // La pagina è nascosta, ferma tutti gli audio in background
+    // Page is hidden, pause all background audio
     pauseAudio('background');
     pauseAudio('backgroundMusic');
   } else {
-    // La pagina è di nuovo visibile, verifica se dobbiamo riprendere la musica
+    // Page is visible again, check if we should resume music
     const shouldPlayMusic = localStorage.getItem('backgroundMusicEnabled') === 'true';
     if (shouldPlayMusic) {
       resumeAudio('background');
@@ -234,17 +265,17 @@ const handleVisibilityChange = () => {
   }
 };
 
-// Evento quando la pagina viene nascosta (cambio app/scheda, blocco telefono)
+// Event when page is hidden (app/tab switch, phone lock)
 document.addEventListener('visibilitychange', handleVisibilityChange);
 
-// Evento quando la pagina sta per essere scaricata/chiusa
+// Event when page is about to be unloaded/closed
 window.addEventListener('beforeunload', () => {
   Object.keys(audioCache).forEach(key => {
     stopAudio(key as AudioType);
   });
 });
 
-// Eventi specifici per mobile per gestire la riproduzione audio
+// Mobile-specific events to handle audio playback
 window.addEventListener('pagehide', () => {
   pauseAudio('background');
   pauseAudio('backgroundMusic');
@@ -256,8 +287,8 @@ window.addEventListener('beforeunload', () => {
 document.addEventListener('pause', () => {
   pauseAudio('background');
   pauseAudio('backgroundMusic');
-}); // Per WebKit su iOS
+}); // For WebKit on iOS
 document.addEventListener('resign', () => {
   pauseAudio('background');
   pauseAudio('backgroundMusic');
-}); // Per alcune app WebView
+}); // For some WebView apps

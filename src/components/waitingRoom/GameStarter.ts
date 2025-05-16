@@ -54,8 +54,10 @@ export const useGameStarter = () => {
         
         console.log(`[GameStarter] Game ${state.gameId} successfully marked as active:`, data);
         
-        // Play success sound
-        playAudio('success');
+        // Play success sound with increased volume for better feedback
+        console.log('[GameStarter] Playing success sound');
+        playAudio('success', { volume: 0.6 });
+        playAudio('gameStart', { volume: 0.5 });
         
         // Show notification toast
         toast({
