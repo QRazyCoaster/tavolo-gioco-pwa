@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
@@ -7,44 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { availableGames } from '@/utils/gameUtils';
 import { playAudio } from '@/utils/audioUtils';
-import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, GamepadIcon } from 'lucide-react';
+import MusicToggle from '@/components/MusicToggle';
 
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { state, dispatch } = useGame();
-  const { toast } = useToast();
-  
-  // Verify the session is valid
-  useEffect(() => {
-    const gameId = state.gameId || sessionStorage.getItem('gameId');
-    const pin = state.pin || sessionStorage.getItem('pin');
-    
-    if (!gameId || !pin) {
-      toast({
-        title: language === 'it' ? "Sessione non valida" : "Invalid session",
-        description: language === 'it' 
-          ? "Devi prima creare o partecipare a un gioco" 
-          : "You need to create or join a game first",
-        variant: "destructive"
-      });
-      navigate('/');
-    }
-  }, [state.gameId, state.pin, navigate, language, toast]);
+  const { state } = useGame();
   
   const handleSelectGame = (gameId: string) => {
-    // Update game selection in state and session storage
-    dispatch({ type: 'SELECT_GAME', payload: gameId });
+    // Just store selected game in sessionStorage for now (no game created yet)
     sessionStorage.setItem('selectedGame', gameId);
     playAudio('buttonClick');
     
-    // Return to waiting room instead of directly starting game
-    navigate('/waiting-room');
+    // Go to join page to create/join game
+    navigate('/join');
   };
   
   const handleBack = () => {
-    navigate('/waiting-room');
+    // Go back to language selection
+    navigate('/');
     playAudio('buttonClick');
   };
   
@@ -53,12 +35,15 @@ const GameSelectionPage = () => {
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-primary">Tavolo Gioco</h1>
-          <Button 
-            variant="ghost" 
-            onClick={handleBack}
-          >
-            <ArrowLeft size={20} />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              onClick={handleBack}
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <MusicToggle />
+          </div>
         </div>
         
         <h2 className="text-2xl font-semibold mb-6 text-center">

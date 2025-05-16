@@ -35,8 +35,8 @@ const Index = () => {
       console.error('Failed to play sounds:', error);
     }
     
-    // Navigate to join page
-    navigate('/join');
+    // Navigate to games selection page instead of join
+    navigate('/games');
   };
 
   return (

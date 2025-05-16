@@ -46,12 +46,14 @@ export const useGameJoinCore = () => {
   const handleBack = () => {
     playAudio('buttonClick');
     if (isHost !== null) {
+      // If we've selected a role but not completed, go back to role selection
       setIsHost(null);
       setPin('');
       setName('');
       setShowPinError(false);
     } else {
-      navigate('/rules');
+      // Go back to games selection instead of rules
+      navigate('/games');
     }
   };
 
