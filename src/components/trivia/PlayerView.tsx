@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
@@ -28,6 +27,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   isCurrentPlayerNarrator
 }) => {
   const { language } = useLanguage();
+  const { state } = useGame();
   const { toast } = useToast();
   const [isPressed, setIsPressed] = useState(false);
   
@@ -38,8 +38,22 @@ const PlayerView: React.FC<PlayerViewProps> = ({
     if (hasAnswered || isCurrentPlayerNarrator) return;
     
     setIsPressed(true);
+    
+    // Play the player's custom buzzer sound if available
+    if (window.myBuzzer) {
+      console.log('Playing custom buzzer sound from player profile');
+      window.myBuzzer.play().catch(err => {
+        console.error('Error playing custom buzzer:', err);
+        // Fallback to default buzzer sound
+        playAudio('buzzer');
+      });
+    } else {
+      // Default buzzer sound
+      console.log('No custom buzzer found, using default');
+      playAudio('buzzer');
+    }
+    
     onBuzzerPressed();
-    playAudio('buzzer');
     
     toast({
       title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',

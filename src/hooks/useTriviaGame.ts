@@ -181,11 +181,37 @@ export const useTriviaGame = () => {
       }
     });
     
-    // Rimuovi il giocatore dalla lista dei prenotati
-    setCurrentRound(prev => ({
-      ...prev,
-      playerAnswers: prev.playerAnswers.filter(ans => ans.playerId !== playerId)
-    }));
+    // Rimuovi solo il giocatore corrente dalla lista dei prenotati
+    // lasciando gli altri in coda per rispondere
+    setCurrentRound(prev => {
+      const updatedPlayerAnswers = prev.playerAnswers.filter(ans => ans.playerId !== playerId);
+      
+      // Se non ci sono più giocatori in coda, passa alla prossima domanda
+      if (updatedPlayerAnswers.length === 0) {
+        // Se siamo all'ultima domanda, resetta solo le risposte
+        if (prev.currentQuestionIndex >= prev.questions.length - 1) {
+          return {
+            ...prev,
+            playerAnswers: [],
+            timeLeft: QUESTION_TIMER
+          };
+        }
+        
+        // Altrimenti, passa alla prossima domanda
+        return {
+          ...prev,
+          currentQuestionIndex: prev.currentQuestionIndex + 1,
+          playerAnswers: [],
+          timeLeft: QUESTION_TIMER
+        };
+      }
+      
+      // Se ci sono ancora giocatori in coda, mostra il prossimo
+      return {
+        ...prev,
+        playerAnswers: updatedPlayerAnswers
+      };
+    });
     
   }, [state.players, dispatch]);
   
