@@ -18,7 +18,7 @@ export function getBuzzerUrl(fileName: string) {
     return data.publicUrl;
   } catch (error) {
     console.error(`Error getting buzzer URL for ${fileName}:`, error);
-    // Fallback to a hardcoded URL pattern if needed
+    // Fallback to a direct Supabase URL construction
     const supabaseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co';
     return `${supabaseUrl}/storage/v1/object/public/audio/buzzers/${encodeURIComponent(fileName)}`;
   }

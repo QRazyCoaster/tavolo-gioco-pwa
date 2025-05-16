@@ -1,4 +1,3 @@
-
 /**
  * Audio utilities for game sounds
  */
@@ -21,14 +20,12 @@ export type AudioType =
 // Cache for preloaded audio objects
 const audioCache: Record<string, HTMLAudioElement> = {};
 
-// Source of audio - either local or Supabase
-type AudioSource = 'local' | 'supabase';
+// Source of audio - always use Supabase
+// We're removing the audioSource variable since we're always using Supabase
 
-// Default audio source - this can be configured at runtime
-let audioSource: AudioSource = 'supabase';
-
-// Mapping audio types to file paths for local files
-const localAudioMappings: Record<string, string> = {
+// Mapping audio types to file paths for fallbacks
+// We'll keep this for reference but not use it directly
+const fallbackAudioMappings: Record<string, string> = {
   buttonClick: '/audio/button-click.mp3',
   notification: '/audio/notification.mp3',
   success: '/audio/success.mp3',
@@ -42,35 +39,43 @@ const localAudioMappings: Record<string, string> = {
 };
 
 /**
- * Get the URL for an audio file
+ * Get the URL for an audio file from Supabase
  */
 export const getAudioUrl = (type: AudioType): string => {
   try {
-    // For all non-Supabase audio (when using local files)
-    if (audioSource === 'local') {
-      return localAudioMappings[type];
+    // Always use Supabase storage URLs
+    if (type === 'buzzer') {
+      return getBuzzerUrl('buzzer.mp3'); // Use buzzerUtils for buzzer sounds
     }
     
-    // Use Supabase storage URLs
     const { data } = supabase
       .storage
       .from('audio')
-      .getPublicUrl(type === 'buzzer' ? 'buzzers/buzzer.mp3' : `${type}.mp3`);
+      .getPublicUrl(`${type}.mp3`);
     
+    if (!data || !data.publicUrl) {
+      throw new Error(`Failed to get URL for ${type}`);
+    }
+    
+    console.log(`Fetched Supabase audio URL for ${type}: ${data.publicUrl}`);
     return data.publicUrl;
   } catch (error) {
     console.error(`Error getting audio URL for ${type}:`, error);
-    // Fallback to local files if Supabase fails
-    return localAudioMappings[type];
+    // Use direct Supabase URL construction as fallback
+    const supabaseUrl = 'https://ybjcwjmzwgobxgopntpy.supabase.co';
+    const path = type === 'buzzer' ? 'buzzers/buzzer.mp3' : `${type}.mp3`;
+    const fallbackUrl = `${supabaseUrl}/storage/v1/object/public/audio/${path}`;
+    console.log(`Using fallback URL for ${type}: ${fallbackUrl}`);
+    return fallbackUrl;
   }
 };
 
 /**
- * Set the audio source (local or Supabase)
+ * We no longer need setAudioSource since we're always using Supabase
+ * But we'll keep it as a no-op to avoid breaking existing code
  */
-export const setAudioSource = (source: AudioSource): void => {
-  audioSource = source;
-  console.log(`Audio source set to: ${source}`);
+export const setAudioSource = (): void => {
+  console.log(`Audio source is fixed to Supabase - setAudioSource call ignored`);
 };
 
 /**
@@ -81,19 +86,46 @@ export const preloadAudio = (type?: AudioType): void => {
     if (type) {
       if (!audioCache[type]) {
         const url = getAudioUrl(type);
-        const audio = new Audio(url);
+        const audio = new Audio();
+        
+        // Add event listeners to debug loading issues
+        audio.addEventListener('error', (e) => {
+          console.error(`Error loading audio ${type} from ${url}:`, e);
+        });
+        
+        audio.addEventListener('canplaythrough', () => {
+          console.log(`Audio ${type} successfully loaded from ${url}`);
+        });
+        
+        audio.src = url;
         audioCache[type] = audio;
-        console.log(`Preloaded audio: ${type} from ${url}`);
+        console.log(`Attempting to preload audio: ${type} from ${url}`);
       }
     } else {
       // Preload all audio files in background
-      Object.keys(localAudioMappings).forEach(key => {
-        if (!audioCache[key]) {
-          const audioType = key as AudioType;
+      const audioTypes: AudioType[] = [
+        'buttonClick', 'notification', 'success', 'error',
+        'gameStart', 'buzzer', 'chime', 'tick', 
+        'background', 'backgroundMusic'
+      ];
+      
+      audioTypes.forEach(audioType => {
+        if (!audioCache[audioType]) {
           const url = getAudioUrl(audioType);
-          const audio = new Audio(url);
-          audioCache[key] = audio;
-          console.log(`Preloaded audio: ${key} from ${url}`);
+          const audio = new Audio();
+          
+          // Add event listeners to debug loading issues
+          audio.addEventListener('error', (e) => {
+            console.error(`Error loading audio ${audioType} from ${url}:`, e);
+          });
+          
+          audio.addEventListener('canplaythrough', () => {
+            console.log(`Audio ${audioType} successfully loaded from ${url}`);
+          });
+          
+          audio.src = url;
+          audioCache[audioType] = audio;
+          console.log(`Attempting to preload audio: ${audioType} from ${url}`);
         }
       });
     }

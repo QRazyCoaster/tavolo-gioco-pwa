@@ -2,10 +2,10 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { preloadAudio, setAudioSource } from './utils/audioUtils';
+import { preloadAudio } from './utils/audioUtils';
 import { testSupabaseAudioAccess } from './utils/buzzerUtils';
 
-// Determine where to load audio files from
+// Setup audio system
 (async function setupAudio() {
   console.log('Main: Setting up audio system');
   
@@ -14,16 +14,13 @@ import { testSupabaseAudioAccess } from './utils/buzzerUtils';
     const testResult = await testSupabaseAudioAccess();
     
     if (testResult.success) {
-      console.log('Main: Using Supabase for audio files');
-      setAudioSource('supabase');
+      console.log('Main: Successfully connected to Supabase audio bucket');
     } else {
-      console.log('Main: Fallback to local audio files');
-      setAudioSource('local');
+      console.error('Main: Could not access Supabase audio bucket:', testResult.message);
+      console.error('Main: Audio playback may not work correctly');
     }
   } catch (error) {
-    console.error('Error during audio setup:', error);
-    console.log('Main: Using local audio files due to error');
-    setAudioSource('local');
+    console.error('Error during Supabase audio access test:', error);
   }
   
   // Try to preload audio files early
