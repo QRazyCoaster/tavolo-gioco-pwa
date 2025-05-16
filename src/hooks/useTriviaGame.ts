@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { TriviaQuestion, PlayerAnswer, Round } from '@/types/trivia';
@@ -128,22 +127,30 @@ export const useTriviaGame = () => {
     }
     
     // Aggiungi il giocatore alla lista dei prenotati
-    setCurrentRound(prev => ({
-      ...prev,
-      playerAnswers: [
-        ...prev.playerAnswers,
-        {
-          playerId: state.currentPlayer!.id,
-          playerName: state.currentPlayer!.name,
-          timestamp: Date.now()
-        }
-      ]
-    }));
+    setCurrentRound(prev => {
+      console.log('Adding player to answers:', state.currentPlayer!.name);
+      return {
+        ...prev,
+        playerAnswers: [
+          ...prev.playerAnswers,
+          {
+            playerId: state.currentPlayer!.id,
+            playerName: state.currentPlayer!.name,
+            timestamp: Date.now()
+          }
+        ]
+      };
+    });
     
     // Marca il giocatore come "ha risposto" per questa domanda
     setAnsweredPlayers(prev => new Set([...prev, state.currentPlayer!.id]));
     
-  }, [state.currentPlayer, isNarrator, hasPlayerAnswered]);
+    // Log the updated playerAnswers after state change
+    setTimeout(() => {
+      console.log('Updated player answers:', currentRound.playerAnswers);
+    }, 100);
+    
+  }, [state.currentPlayer, isNarrator, hasPlayerAnswered, currentRound.playerAnswers]);
   
   // Gestisce la risposta corretta di un giocatore
   const handleCorrectAnswer = useCallback((playerId: string) => {

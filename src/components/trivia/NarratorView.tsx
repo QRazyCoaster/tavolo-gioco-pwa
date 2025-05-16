@@ -59,6 +59,12 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     ? players.find(p => p.id === currentPlayerAnswering.playerId) 
     : null;
 
+  // Debug logging for player answers
+  useEffect(() => {
+    console.log("Current player answers:", playerAnswers);
+    console.log("Current player answering:", playerInfo?.name || "None");
+  }, [playerAnswers, playerInfo]);
+
   // Handle correct answer
   const handleCorrectAnswer = () => {
     if (!currentPlayerAnswering) return;

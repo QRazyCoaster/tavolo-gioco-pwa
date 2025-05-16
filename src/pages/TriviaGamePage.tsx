@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -32,15 +31,10 @@ const TriviaGamePage = () => {
   } = useTriviaGame();
   
   useEffect(() => {
-    console.log('[TriviaGamePage] Checking session validity', {
-      gameId: state.gameId,
-      pin: state.pin,
-      gameStarted: state.gameStarted,
-      fromSession: {
-        gameId: sessionStorage.getItem('gameId'),
-        pin: sessionStorage.getItem('pin'),
-        gameStarted: sessionStorage.getItem('gameStarted')
-      }
+    console.log('[TriviaGamePage] Game state:', {
+      isNarrator,
+      playerAnswers,
+      currentQuestion
     });
     
     // Verify if the game session is valid
@@ -81,7 +75,7 @@ const TriviaGamePage = () => {
         sessionStorage.setItem('selectedGame', 'trivia');
       }
     }
-  }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, navigate, dispatch, language, toast]);
+  }, [isNarrator, playerAnswers, currentQuestion]);
   
   const handleBackToLobby = () => {
     navigate('/waiting-room');
