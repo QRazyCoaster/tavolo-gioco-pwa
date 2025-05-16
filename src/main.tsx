@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import { preloadAudio } from './utils/audioUtils';
 import { testSupabaseAudioAccess } from './utils/buzzerUtils';
+import { supabase } from './supabaseClient';
 
 // Setup audio system
 (async function setupAudio() {
