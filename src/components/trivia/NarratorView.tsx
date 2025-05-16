@@ -1,7 +1,6 @@
-
 import React, { useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import { Player } from '@/context/GameContext';
 import { TriviaQuestion, PlayerAnswer } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +9,8 @@ import QuestionCard from './QuestionCard';
 import QuestionInfo from './QuestionInfo';
 import PlayerRankings from './PlayerRankings';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
-import PlayerAnswerList from './PlayerAnswerList';
+
+// NOTE: Pop‑up removed – bottom panel switches between queue & rankings.
 
 interface NarratorViewProps {
   currentQuestion: TriviaQuestion;
@@ -44,168 +44,90 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // Timer effects
+  // Timer: narrator only
   useEffect(() => {
-    if (timeLeft <= 10 && timeLeft > 0) {
-      playAudio('tick');
-    } else if (timeLeft === 0) {
+    if (timeLeft === 0) {
       toast({
-        title: language === 'it' ? "Tempo scaduto!" : "Time's up!",
-        description: language === 'it' ? "Passaggio alla prossima domanda" : "Moving to next question",
-        variant: "destructive",
+        title: language === 'it' ? 'Tempo scaduto!' : "Time's up!",
+        description: language === 'it' ? 'Passaggio alla prossima domanda' : 'Moving to next question',
+        variant: 'destructive'
       });
       onNextQuestion();
+    } else if (timeLeft === 10) {
+      playAudio('tick');
     }
   }, [timeLeft, language, toast, onNextQuestion]);
 
-  // Get the currently active player who needs to answer
-  const currentPlayerAnswering = playerAnswers.length > 0 ? playerAnswers[0] : null;
-  const playerInfo = currentPlayerAnswering 
-    ? players.find(p => p.id === currentPlayerAnswering.playerId) 
-    : null;
+  const currentPlayerAnswering = playerAnswers[0];
+  const playerInfo = players.find(p => p.id === currentPlayerAnswering?.playerId);
 
-  // Debug logging and force showPendingAnswers if we have answers
+  // Whenever we have answers ensure the queue is visible
   useEffect(() => {
-    console.log("[NarratorView] Player answers:", playerAnswers);
-    console.log("[NarratorView] showPendingAnswers:", showPendingAnswers);
-    console.log("[NarratorView] Current player:", playerInfo?.name || "None");
-    
-    // Always force showPendingAnswers true when we have player answers
-    if (playerAnswers.length > 0 && !showPendingAnswers) {
-      console.log("[NarratorView] Setting showPendingAnswers to true because we have player answers");
-      setShowPendingAnswers(true);
-    }
-  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, playerInfo]);
-
-  // Handle correct answer
-  const handleCorrectAnswer = () => {
-    if (!currentPlayerAnswering) return;
-    playAudio('success');
-    onCorrectAnswer(currentPlayerAnswering.playerId);
-    
-    toast({
-      title: language === 'it' ? "Risposta corretta!" : "Correct answer!",
-      description: language === 'it' 
-        ? `${playerInfo?.name} guadagna 10 punti` 
-        : `${playerInfo?.name} earns 10 points`,
-    });
-  };
-
-  // Handle wrong answer
-  const handleWrongAnswer = () => {
-    if (!currentPlayerAnswering) return;
-    playAudio('error');
-    onWrongAnswer(currentPlayerAnswering.playerId);
-    
-    toast({
-      title: language === 'it' ? "Risposta errata!" : "Wrong answer!",
-      description: language === 'it' 
-        ? `${playerInfo?.name} perde 5 punti` 
-        : `${playerInfo?.name} loses 5 points`,
-    });
-  };
+    if (playerAnswers.length > 0 && !showPendingAnswers) setShowPendingAnswers(true);
+  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers]);
 
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
-      {/* Question Card Component */}
+      {/* Question & meta info */}
       <QuestionCard currentQuestion={currentQuestion} />
-      
-      {/* Question Info Component */}
-      <QuestionInfo 
+      <QuestionInfo
         roundNumber={roundNumber}
         questionNumber={questionNumber}
         totalQuestions={totalQuestions}
         timeLeft={timeLeft}
       />
-      
-      {/* Debug Info */}
-      <div className="bg-red-50 border border-red-200 p-2 mb-4 rounded text-xs">
-        <p>Debug: Players Answering: {playerAnswers.length}</p>
-        <p>Debug: Show Pending: {showPendingAnswers ? 'true' : 'false'}</p>
-        <p>Debug: Current Player: {playerInfo?.name || 'None'}</p>
-      </div>
-      
-      {/* Current Player Answering */}
+
+      {/* Bottom panel */}
       {showPendingAnswers && currentPlayerAnswering && playerInfo ? (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in">
           <div className="text-center mb-3">
             <h3 className="font-bold text-xl text-blue-800">
-              {language === 'it' ? "Primo a rispondere:" : "First to answer:"}
+              {language === 'it' ? 'Primo a rispondere:' : 'First to answer:'}
             </h3>
             <p className="text-2xl font-semibold text-blue-900">{playerInfo.name}</p>
           </div>
-          
           <div className="flex justify-center gap-6 mt-4">
             <Button
-              onClick={handleCorrectAnswer}
+              onClick={() => onCorrectAnswer(currentPlayerAnswering.playerId)}
               size="lg"
               className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2 px-6 py-4"
             >
               <ThumbsUp className="h-6 w-6" />
-              <span className="font-medium">
-                {language === 'it' ? "+10 punti" : "+10 points"}
-              </span>
+              <span>{language === 'it' ? '+10 punti' : '+10 points'}</span>
             </Button>
-            
             <Button
-              onClick={handleWrongAnswer}
-              size="lg" 
+              onClick={() => onWrongAnswer(currentPlayerAnswering.playerId)}
+              size="lg"
               className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 px-6 py-4"
             >
               <ThumbsDown className="h-6 w-6" />
-              <span className="font-medium">
-                {language === 'it' ? "-5 punti" : "-5 points"}
-              </span>
+              <span>{language === 'it' ? '-5 punti' : '-5 points'}</span>
             </Button>
           </div>
-          
-          <div className="text-center mt-4 text-sm text-gray-600">
-            {language === 'it' 
-              ? "Premi pollice su per risposta corretta, giù per risposta errata" 
-              : "Press thumbs up for correct answer, down for wrong answer"}
-          </div>
+          {playerAnswers.length > 1 && (
+            <div className="mt-6">
+              <h4 className="font-semibold mb-2 text-center">
+                {language === 'it' ? 'Prossimi in coda:' : 'Next players in queue:'}
+              </h4>
+              <ol className="list-decimal pl-5 space-y-1 text-center">
+                {playerAnswers.slice(1).map(ans => {
+                  const p = players.find(q => q.id === ans.playerId);
+                  return <li key={ans.playerId}>{p?.name || 'Player'}</li>;
+                })}
+              </ol>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-          <p className="text-gray-600">
-            {language === 'it' 
-              ? "In attesa che qualcuno risponda..." 
-              : "Waiting for someone to answer..."}
-          </p>
-        </div>
+        <PlayerRankings players={players} />
       )}
-      
-      {/* Player Queue */}
-      {playerAnswers.length > 1 && (
-        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <h3 className="font-semibold mb-2">
-            {language === 'it' ? "Prossimi giocatori in coda:" : "Next players in queue:"}
-          </h3>
-          <ol className="list-decimal pl-5 space-y-1">
-            {playerAnswers.slice(1).map((answer, index) => {
-              const player = players.find(p => p.id === answer.playerId);
-              return (
-                <li key={answer.playerId} className="text-gray-700">
-                  {player?.name || `Player ${index + 2}`}
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
-      
-      {/* Next Question Button - only show when no players are left to answer */}
-      {(playerAnswers.length === 0 || !showPendingAnswers) && (
-        <Button 
-          onClick={onNextQuestion}
-          className="w-full mb-4 bg-blue-600 hover:bg-blue-700"
-        >
+
+      {/* Manual next question (visible only when queue empty) */}
+      {playerAnswers.length === 0 && (
+        <Button onClick={onNextQuestion} className="w-full mb-4 bg-blue-600 hover:bg-blue-700">
           {language === 'it' ? 'Prossima Domanda' : 'Next Question'}
         </Button>
       )}
-      
-      {/* Player Rankings Component */}
-      <PlayerRankings players={players} />
     </div>
   );
 };
