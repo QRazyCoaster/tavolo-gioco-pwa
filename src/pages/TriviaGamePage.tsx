@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -84,6 +85,11 @@ const TriviaGamePage = () => {
   // If the session validation is still in progress, show a loading state
   if (!state.gameId || !state.pin) {
     return null;
+  }
+  
+  // Debug logging to check what's being passed to NarratorView
+  if (isNarrator) {
+    console.log('[TriviaGamePage] Rendering NarratorView with playerAnswers:', playerAnswers);
   }
   
   return (

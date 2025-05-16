@@ -61,7 +61,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 
   // Debug logging for player answers
   useEffect(() => {
-    console.log("Current player answers:", playerAnswers);
+    console.log("Current player answers in NarratorView:", playerAnswers);
     console.log("Current player answering:", playerInfo?.name || "None");
   }, [playerAnswers, playerInfo]);
 

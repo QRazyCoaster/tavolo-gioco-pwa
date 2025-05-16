@@ -126,31 +126,29 @@ export const useTriviaGame = () => {
       playAudio('buzzer');
     }
     
-    // Aggiungi il giocatore alla lista dei prenotati
+    // Create the new player answer object
+    const newPlayerAnswer = {
+      playerId: state.currentPlayer.id,
+      playerName: state.currentPlayer.name,
+      timestamp: Date.now()
+    };
+    
+    // Add player to answeredPlayers set
+    setAnsweredPlayers(prev => new Set([...prev, state.currentPlayer!.id]));
+    
+    // Update the currentRound with the new player answer
     setCurrentRound(prev => {
       console.log('Adding player to answers:', state.currentPlayer!.name);
+      const updatedAnswers = [...prev.playerAnswers, newPlayerAnswer];
+      console.log('Updated player answers array:', updatedAnswers);
+      
       return {
         ...prev,
-        playerAnswers: [
-          ...prev.playerAnswers,
-          {
-            playerId: state.currentPlayer!.id,
-            playerName: state.currentPlayer!.name,
-            timestamp: Date.now()
-          }
-        ]
+        playerAnswers: updatedAnswers
       };
     });
     
-    // Marca il giocatore come "ha risposto" per questa domanda
-    setAnsweredPlayers(prev => new Set([...prev, state.currentPlayer!.id]));
-    
-    // Log the updated playerAnswers after state change
-    setTimeout(() => {
-      console.log('Updated player answers:', currentRound.playerAnswers);
-    }, 100);
-    
-  }, [state.currentPlayer, isNarrator, hasPlayerAnswered, currentRound.playerAnswers]);
+  }, [state.currentPlayer, isNarrator, hasPlayerAnswered]);
   
   // Gestisce la risposta corretta di un giocatore
   const handleCorrectAnswer = useCallback((playerId: string) => {

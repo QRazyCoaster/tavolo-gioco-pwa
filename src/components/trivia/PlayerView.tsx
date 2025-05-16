@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
@@ -37,6 +38,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const handleBuzzerPress = () => {
     if (hasAnswered || isCurrentPlayerNarrator) return;
     
+    console.log('Player pressed buzzer button - hasAnswered:', hasAnswered);
     setIsPressed(true);
     
     // Play the player's custom buzzer sound if available
@@ -53,6 +55,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
       playAudio('buzzer');
     }
     
+    // Call the onBuzzerPressed callback
     onBuzzerPressed();
     
     toast({
