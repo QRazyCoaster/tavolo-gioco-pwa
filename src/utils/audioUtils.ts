@@ -18,18 +18,18 @@ type AudioType =
 // Cache for preloaded audio objects
 const audioCache: Record<string, HTMLAudioElement> = {};
 
-// Mapping audio types to file paths - Fix the paths by adding the full path
+// Mapping audio types to file paths - Use absolute paths starting with /
 const audioMappings: Record<string, string> = {
-  buttonClick: './audio/button-click.mp3',
-  notification: './audio/notification.mp3',
-  success: './audio/success.mp3',
-  error: './audio/wrong.mp3',
-  gameStart: './audio/game-start.mp3',
-  buzzer: './audio/buzzer.mp3',
-  chime: './audio/chime.mp3',
-  tick: './audio/countdown.mp3',
-  background: './audio/background-music.mp3',
-  backgroundMusic: './audio/background-music.mp3',
+  buttonClick: '/audio/button-click.mp3',
+  notification: '/audio/notification.mp3',
+  success: '/audio/success.mp3',
+  error: '/audio/wrong.mp3',
+  gameStart: '/audio/game-start.mp3',
+  buzzer: '/audio/buzzer.mp3',
+  chime: '/audio/chime.mp3',
+  tick: '/audio/countdown.mp3',
+  background: '/audio/background-music.mp3',
+  backgroundMusic: '/audio/background-music.mp3',
 };
 
 /**
