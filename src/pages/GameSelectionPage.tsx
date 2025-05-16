@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { availableGames } from '@/utils/gameUtils';
 import { playAudio } from '@/utils/audioUtils';
-import { ArrowLeft, GamepadIcon } from 'lucide-react';
+import { GamepadIcon } from 'lucide-react';
 import MusicToggle from '@/components/MusicToggle';
 
 const GameSelectionPage = () => {
@@ -31,30 +31,30 @@ const GameSelectionPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
-      <div className="w-full max-w-md">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">Tavolo Gioco</h1>
-          <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              onClick={handleBack}
-            >
-              <ArrowLeft size={20} />
-            </Button>
-            <MusicToggle />
-          </div>
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ 
+        backgroundImage: `url('/lovable-uploads/3513380f-9e72-4df5-a6b6-1cdbe36f3f30.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div className="w-full max-w-md flex flex-col items-center">
+        <div className="w-full flex justify-end mb-4">
+          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
         </div>
         
-        <h2 className="text-2xl font-semibold mb-6 text-center">
-          {language === 'it' ? 'Seleziona un gioco' : 'Select a game'}
-        </h2>
+        <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg mb-6 text-center w-full">
+          <h2 className="text-2xl font-semibold">
+            {language === 'it' ? 'Seleziona un gioco' : 'Select a game'}
+          </h2>
+        </div>
         
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           {availableGames.map((game) => (
             <Card 
               key={game.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
+              className="cursor-pointer hover:shadow-md transition-shadow bg-white/90 backdrop-blur-sm"
               onClick={() => handleSelectGame(game.id)}
             >
               <CardContent className="p-6 flex items-center">
@@ -77,6 +77,16 @@ const GameSelectionPage = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+        
+        <div className="mt-6">
+          <Button 
+            variant="outline" 
+            onClick={handleBack}
+            className="bg-white/80 backdrop-blur-sm"
+          >
+            {language === 'it' ? 'Indietro' : 'Back'}
+          </Button>
         </div>
       </div>
     </div>
