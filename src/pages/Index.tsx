@@ -1,71 +1,37 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useLanguage, Language } from '@/context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import {
-  preloadAudio,
-  playAudio,
-  playBackgroundMusic,
-  stopBackgroundMusic,
-} from '@/utils/audioUtils';
+import { playAudio, playBackgroundMusic } from '@/utils/audioUtils';
 import { useGame } from '@/context/GameContext';
 
 const Index = () => {
   const { setLanguage } = useLanguage();
   const navigate = useNavigate();
   const { dispatch } = useGame();
-  const [ready, setReady] = useState(false);
-  const [musicStarted, setMusicStarted] = useState(false);
 
-  /* preload exactly once per full page load */
   useEffect(() => {
-    (async () => {
-      await preloadAudio();
-      setReady(true);
-    })();
-    return () => stopBackgroundMusic();                         // cleanup on unmount
-  }, []);
-
-  /* handle visibility changes more thoroughly for mobile devices */
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && musicStarted) {
-        stopBackgroundMusic();
-        dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', () => {
-      if (musicStarted) {
-        stopBackgroundMusic();
-        dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-      }
-    });
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', () => {
-        if (musicStarted) {
-          stopBackgroundMusic();
-          dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
-        }
-      });
-    };
-  }, [musicStarted, dispatch]);
+    // Try to start background music when the page loads
+    try {
+      playBackgroundMusic('backgroundMusic', 0.2);
+      dispatch({ type: 'START_BACKGROUND_MUSIC' });
+    } catch (error) {
+      console.error('Failed to play background music:', error);
+    }
+  }, [dispatch]);
 
   const handleLanguage = (lang: Language) => {
     setLanguage(lang);
-    playAudio('buttonClick');                                  // instant click
     
-    if (ready) {
-      playBackgroundMusic('backgroundMusic', 0.2);
-      dispatch({ type: 'START_BACKGROUND_MUSIC' });
-      setMusicStarted(true);
+    try {
+      // Play button click sound
+      playAudio('buttonClick');
+    } catch (error) {
+      console.error('Failed to play button click:', error);
     }
     
-    // Change this to go to the join page instead of the games page
+    // Navigate to join page
     navigate('/join');
   };
 
@@ -83,7 +49,6 @@ const Index = () => {
             <div className="flex items-center justify-center"><span className="text-3xl mr-3">🇬🇧</span>English</div>
           </Card>
         </div>
-        {!ready && <p className="text-center text-white">Loading resources…</p>}
       </div>
     </div>
   );

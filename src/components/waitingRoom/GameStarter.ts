@@ -12,7 +12,7 @@ export const useGameStarter = () => {
   const { dispatch, state } = useGame();
 
   const handleStartGame = useCallback(async (selectedGame?: string) => {
-    console.log(`[GameStarter] Starting game with type: ${selectedGame || 'default'}`);
+    console.log(`Starting game with type: ${selectedGame || 'default'}`);
 
     // Set gameStarted in state and sessionStorage
     sessionStorage.setItem('gameStarted', 'true');
@@ -30,9 +30,7 @@ export const useGameStarter = () => {
     // Update the database to notify all players that the game has started
     if (state.gameId) {
       try {
-        console.log(`[GameStarter] Updating game ${state.gameId} to active status with game type: ${game}`);
-        
-        // IMPORTANT: Make sure we're properly setting status to 'active'
+        // Update game status to active in database
         const { data, error } = await supabase
           .from('games')
           .update({ 
@@ -43,7 +41,7 @@ export const useGameStarter = () => {
           .select();
         
         if (error) {
-          console.error('[GameStarter] Error updating game status:', error);
+          console.error('Error updating game status:', error);
           toast({
             title: "Error starting game",
             description: "There was a problem starting the game. Please try again.",
@@ -52,12 +50,15 @@ export const useGameStarter = () => {
           return;
         }
         
-        console.log(`[GameStarter] Game ${state.gameId} successfully marked as active:`, data);
+        console.log('Game successfully marked as active:', data);
         
-        // Play success sound with increased volume for better feedback
-        console.log('[GameStarter] Playing success sound');
-        playAudio('success', { volume: 0.6 });
-        playAudio('gameStart', { volume: 0.5 });
+        // Try to play success sounds
+        try {
+          playAudio('success', { volume: 0.6 });
+          playAudio('gameStart', { volume: 0.5 });
+        } catch (error) {
+          console.error('Error playing game start sounds:', error);
+        }
         
         // Show notification toast
         toast({
@@ -67,14 +68,12 @@ export const useGameStarter = () => {
         
         // Navigate to the appropriate game page
         if (game === 'trivia') {
-          console.log('[GameStarter] Host navigating to /trivia');
           navigate('/trivia');
         } else {
-          console.log('[GameStarter] Host navigating to /game');
           navigate('/game');
         }
       } catch (error) {
-        console.error('[GameStarter] Error updating game status:', error);
+        console.error('Error updating game status:', error);
         toast({
           title: "Error starting game",
           description: "There was a problem starting the game. Please try again.",
@@ -82,7 +81,7 @@ export const useGameStarter = () => {
         });
       }
     } else {
-      console.error('[GameStarter] Cannot start game: No gameId in state');
+      console.error('Cannot start game: No gameId in state');
       toast({
         title: "Error starting game",
         description: "Game session not found. Please try rejoining the game.",

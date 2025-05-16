@@ -13,14 +13,13 @@ const RoleSelector = ({ onSelectRole }: RoleSelectorProps) => {
   const { t, language } = useLanguage();
   
   const handleRoleSelect = (isHost: boolean) => {
-    // Play sound first, then perform action
-    console.log(`[RoleSelector] Playing button click sound and selecting role: ${isHost ? 'host' : 'player'}`);
-    const audio = playAudio('buttonClick');
+    try {
+      playAudio('buttonClick');
+    } catch (error) {
+      console.error('Failed to play button click:', error);
+    }
     
-    // Ensure audio plays before proceeding with action
-    setTimeout(() => {
-      onSelectRole(isHost);
-    }, 50);
+    onSelectRole(isHost);
   };
   
   return (
