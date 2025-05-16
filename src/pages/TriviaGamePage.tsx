@@ -26,6 +26,8 @@ const TriviaGamePage = () => {
     totalQuestions,
     playerAnswers,
     timeLeft,
+    showPendingAnswers,
+    setShowPendingAnswers,
     handlePlayerBuzzer,
     handleCorrectAnswer,
     handleWrongAnswer,
@@ -99,6 +101,11 @@ const TriviaGamePage = () => {
     return () => clearTimeout(timer);
   }, [isNarrator, playerAnswers, currentQuestion, state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
   
+  useEffect(() => {
+    // Debug logging for player answers at the page level
+    console.log('[TriviaGamePage] Current playerAnswers:', playerAnswers);
+  }, [playerAnswers]);
+  
   const handleBackToLobby = () => {
     navigate('/waiting-room');
   };
@@ -166,6 +173,8 @@ const TriviaGamePage = () => {
             onWrongAnswer={handleWrongAnswer}
             onNextQuestion={handleNextQuestion}
             timeLeft={timeLeft}
+            showPendingAnswers={showPendingAnswers}
+            setShowPendingAnswers={setShowPendingAnswers}
           />
         ) : (
           <PlayerView

@@ -22,6 +22,8 @@ interface NarratorViewProps {
   onWrongAnswer: (playerId: string) => void;
   onNextQuestion: () => void;
   timeLeft: number;
+  showPendingAnswers: boolean;
+  setShowPendingAnswers: (show: boolean) => void;
 }
 
 const NarratorView: React.FC<NarratorViewProps> = ({
@@ -34,11 +36,12 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   onCorrectAnswer,
   onWrongAnswer,
   onNextQuestion,
-  timeLeft
+  timeLeft,
+  showPendingAnswers,
+  setShowPendingAnswers
 }) => {
   const { language } = useLanguage();
   const { toast } = useToast();
-  const [showPendingAnswers, setShowPendingAnswers] = useState<boolean>(true);
 
   // Timer effects
   useEffect(() => {
@@ -62,18 +65,20 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 
   // Debug logging for player answers
   useEffect(() => {
-    console.log("Current player answers in NarratorView:", playerAnswers);
-    console.log("Current player answering:", playerInfo?.name || "None");
+    console.log("[NarratorView] Current player answers:", playerAnswers);
+    console.log("[NarratorView] Current player answering:", playerInfo?.name || "None");
+    console.log("[NarratorView] showPendingAnswers:", showPendingAnswers);
+    
+    // If we have player answers but aren't showing them, make sure to show them
     if (playerAnswers.length > 0 && !showPendingAnswers) {
       setShowPendingAnswers(true);
     }
-  }, [playerAnswers, playerInfo]);
+  }, [playerAnswers, playerInfo, showPendingAnswers, setShowPendingAnswers]);
 
   // Handle correct answer
   const handleCorrectAnswer = () => {
     if (!currentPlayerAnswering) return;
     playAudio('success');
-    setShowPendingAnswers(false);
     onCorrectAnswer(currentPlayerAnswering.playerId);
     
     toast({
@@ -110,6 +115,13 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         totalQuestions={totalQuestions}
         timeLeft={timeLeft}
       />
+      
+      {/* Debug Info */}
+      <div className="bg-red-50 border border-red-200 p-2 mb-4 rounded text-xs">
+        <p>Debug: Players Answering: {playerAnswers.length}</p>
+        <p>Debug: Show Pending: {showPendingAnswers ? 'true' : 'false'}</p>
+        <p>Debug: Current Player: {playerInfo?.name || 'None'}</p>
+      </div>
       
       {/* Current Player Answering */}
       {showPendingAnswers && currentPlayerAnswering && playerInfo ? (

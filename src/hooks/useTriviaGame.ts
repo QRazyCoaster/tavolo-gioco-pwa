@@ -71,6 +71,7 @@ export const useTriviaGame = () => {
   });
   
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
+  const [showPendingAnswers, setShowPendingAnswers] = useState<boolean>(true);
   
   // Determina se il giocatore corrente è il narratore
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
@@ -94,10 +95,24 @@ export const useTriviaGame = () => {
     return () => clearInterval(timer);
   }, [isNarrator]);
   
+  // Debug logging for player answers
+  useEffect(() => {
+    if (currentRound.playerAnswers.length > 0) {
+      console.log('[useTriviaGame] Player answers updated:', currentRound.playerAnswers);
+      console.log('[useTriviaGame] Current player answering:', 
+        currentRound.playerAnswers[0]?.playerName || "None");
+      
+      // Ensure showPendingAnswers is true when we have player answers
+      if (!showPendingAnswers) {
+        setShowPendingAnswers(true);
+      }
+    }
+  }, [currentRound.playerAnswers, showPendingAnswers]);
+  
   // Gestisce la prenotazione di un giocatore per rispondere
   const handlePlayerBuzzer = useCallback(() => {
     if (!state.currentPlayer || isNarrator || hasPlayerAnswered) {
-      console.log('Cannot buzz: player conditions not met', { 
+      console.log('[useTriviaGame] Cannot buzz: player conditions not met', { 
         currentPlayer: !!state.currentPlayer, 
         isNarrator, 
         hasAnswered: hasPlayerAnswered 
@@ -105,7 +120,7 @@ export const useTriviaGame = () => {
       return;
     }
     
-    console.log('Player buzzer pressed:', state.currentPlayer.name);
+    console.log('[useTriviaGame] Player buzzer pressed:', state.currentPlayer.name);
     
     // Play buzzer sound immediately
     if (window.myBuzzer) {
@@ -133,7 +148,7 @@ export const useTriviaGame = () => {
     // Update the currentRound with the new player answer
     setCurrentRound(prev => {
       const updatedAnswers = [...prev.playerAnswers, newPlayerAnswer];
-      console.log('Updated player answers array:', updatedAnswers);
+      console.log('[useTriviaGame] Updated player answers array:', updatedAnswers);
       return {
         ...prev,
         playerAnswers: updatedAnswers
@@ -175,6 +190,7 @@ export const useTriviaGame = () => {
     
     // Resetta i giocatori che hanno risposto per la nuova domanda
     setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
     
   }, [state.players, dispatch]);
   
@@ -193,7 +209,7 @@ export const useTriviaGame = () => {
     // lasciando gli altri in coda per rispondere
     setCurrentRound(prev => {
       const updatedPlayerAnswers = prev.playerAnswers.filter(ans => ans.playerId !== playerId);
-      console.log('Player removed after wrong answer, remaining players:', updatedPlayerAnswers);
+      console.log('[useTriviaGame] Player removed after wrong answer, remaining players:', updatedPlayerAnswers);
       
       return {
         ...prev,
@@ -226,6 +242,7 @@ export const useTriviaGame = () => {
     
     // Resetta i giocatori che hanno risposto per la nuova domanda
     setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
     playAudio('notification');
     
   }, []);
@@ -239,6 +256,8 @@ export const useTriviaGame = () => {
     totalQuestions: currentRound.questions.length,
     playerAnswers: currentRound.playerAnswers,
     timeLeft: currentRound.timeLeft,
+    showPendingAnswers,
+    setShowPendingAnswers,
     handlePlayerBuzzer,
     handleCorrectAnswer,
     handleWrongAnswer,
