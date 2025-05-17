@@ -153,4 +153,125 @@ export const useTriviaGame = () => {
       setShowPendingAnswers(true);
     });
 
-    ch.on('broadcast', { event:
+    ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
+      const { nextRound, nextNarratorId, scores } = payload as any;
+      scores?.forEach((s: any) =>
+        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+      );
+
+      setAnsweredPlayers(new Set());
+      setShowPendingAnswers(false);
+      setNextNarrator(nextNarratorId);
+      setShowRoundBridge(true);
+
+      setTimeout(() => {
+        const newQuestions = mockQuestions
+          .slice(0, QUESTIONS_PER_ROUND)
+          .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
+
+        setCurrentRound({
+          roundNumber: nextRound,
+          narratorId: nextNarratorId,
+          questions: newQuestions,
+          currentQuestionIndex: 0,
+          playerAnswers: [],
+          timeLeft: QUESTION_TIMER
+        });
+      }, 6500);
+    });
+
+    return () => { /* listeners live for lifetime of channel */ };
+  }, [dispatch, currentRound.currentQuestionIndex]);
+
+  /* narrator subscription for buzz INSERTS (kept for redundancy) -------------- */
+  useEffect(() => {
+    if (!isNarrator || !state.gameId) {
+      narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
+      narratorSubRef.current = null;
+      return;
+    }
+
+    narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
+
+    const dbCh = supabase
+      .channel(`buzzes_${state.gameId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'player_answers' },
+        ({ new: row }: any) => {
+          if (row.game_id !== state.gameId) return;
+          const currentQ = currentRound.questions[currentRound.currentQuestionIndex]?.id;
+          if (row.question_id !== currentQ) return;
+
+          setCurrentRound(prev => {
+            if (prev.playerAnswers.some(a => a.playerId === row.player_id)) return prev;
+            const player = state.players.find(p => p.id === row.player_id);
+            if (!player) return prev;
+            return {
+              ...prev,
+              playerAnswers: [
+                ...prev.playerAnswers,
+                { playerId: player.id, playerName: player.name, timestamp: Date.now() }
+              ]
+            };
+          });
+          setShowPendingAnswers(true);
+        }
+      )
+      .subscribe();
+
+    narratorSubRef.current = dbCh;
+    return () => { void supabase.removeChannel(dbCh); };
+  }, [
+    isNarrator,
+    state.gameId,
+    currentRound.currentQuestionIndex,
+    currentRound.narratorId,
+    currentRound.questions,
+    state.players
+  ]);
+
+  /* narrator timer ------------------------------------------------------------- */
+  useEffect(() => {
+    if (!isNarrator || showRoundBridge) return;
+    const t = setInterval(() => {
+      setCurrentRound(prev => {
+        const tl = Math.max(0, prev.timeLeft - 1);
+        if (tl === 0) handleTimeUp();
+        return { ...prev, timeLeft: tl };
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [isNarrator, showRoundBridge]);
+
+  /* bridge continue ----------------------------------------------------------- */
+  const startNextRound = () => {
+    setShowRoundBridge(false);
+    setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
+    setCurrentRound(prev => ({ ...prev, narratorId: nextNarrator }));
+    broadcastScoreUpdate(state.players);
+  };
+
+  /* exports ------------------------------------------------------------------- */
+  return {
+    currentRound,
+    isNarrator,
+    hasPlayerAnswered,
+    currentQuestion,
+    questionNumber,
+    totalQuestions,
+    playerAnswers: currentRound.playerAnswers,
+    timeLeft: currentRound.timeLeft,
+    showPendingAnswers,
+    setShowPendingAnswers,
+    handlePlayerBuzzer,
+    handleCorrectAnswer,
+    handleWrongAnswer,
+    handleNextQuestion,
+    showRoundBridge,
+    nextNarrator: state.players.find(p => p.id === nextNarrator),
+    nextRoundNumber: currentRound.roundNumber + 1,
+    startNextRound
+  };
+};
