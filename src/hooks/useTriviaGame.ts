@@ -226,14 +226,20 @@ export const useTriviaGame = () => {
   const broadcastScoreUpdate = useCallback(() => {
     if (!gameChannel || !state.gameId) return;
     
-    // Send current scores from GameContext
-    const scores = state.players.map(p => ({ id: p.id, score: p.score || 0 }));
-    console.log('[useTriviaGame] Broadcasting score update to all clients:', scores);
+    // Make sure we're sending the CURRENT scores from state.players
+    // This is critical - we need to use the actual updated scores
+    const currentScores = state.players.map(p => ({ 
+      id: p.id, 
+      score: p.score || 0 
+    }));
     
+    console.log('[useTriviaGame] Broadcasting score update to all clients:', currentScores);
+    
+    // Send the broadcast with the current scores
     gameChannel.send({ 
       type: 'broadcast', 
       event: 'SCORE_UPDATE', 
-      payload: { scores } 
+      payload: { scores: currentScores } 
     });
   }, [state.players, state.gameId]);
 
@@ -244,15 +250,20 @@ export const useTriviaGame = () => {
     if (!gameChannel || !state.gameId) return;
     
     // Important: Always send current scores from GameContext
-    const scores = state.players.map(p => ({ id: p.id, score: p.score || 0 }));
-    console.log('[useTriviaGame] Broadcasting scores with next question to all clients:', scores);
+    // Make sure we're sending the current scores, not stale ones
+    const currentScores = state.players.map(p => ({ 
+      id: p.id, 
+      score: p.score || 0 
+    }));
+    
+    console.log('[useTriviaGame] Broadcasting scores with next question to all clients:', currentScores);
     
     gameChannel.send({ 
       type: 'broadcast', 
       event: 'NEXT_QUESTION', 
       payload: { 
         questionIndex: nextIndex, 
-        scores 
+        scores: currentScores
       } 
     });
   };
@@ -274,14 +285,20 @@ export const useTriviaGame = () => {
     const newScore = (state.players.find(p => p.id === playerId)?.score || 0) + 10;
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
     
-    // Immediately broadcast the updated score to all clients
-    broadcastScoreUpdate();
-
+    // IMPORTANT: Immediately broadcast the updated score to all clients
+    // We need to do this AFTER updating the score in the local state
+    setTimeout(() => {
+      broadcastScoreUpdate();
+    }, 100); // Small delay to ensure state update has completed
+    
     // Advance to next question
     advanceQuestionLocally(idx => Math.min(idx + 1, currentRound.questions.length - 1));
     
     // Broadcast to all players with UPDATED scores
-    broadcastNextQuestion(currentRound.currentQuestionIndex + 1);
+    setTimeout(() => {
+      broadcastNextQuestion(Math.min(currentRound.currentQuestionIndex + 1, currentRound.questions.length - 1));
+    }, 200); // Small delay to ensure score updates are processed first
+    
     playAudio('success');
   }, [state.players, dispatch, currentRound.questions.length, currentRound.currentQuestionIndex, broadcastScoreUpdate]);
 
@@ -290,16 +307,21 @@ export const useTriviaGame = () => {
     const newScore = Math.max(0, (state.players.find(p => p.id === playerId)?.score || 0) - 5);
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
     
-    // Immediately broadcast the updated score to all clients
-    broadcastScoreUpdate();
-
+    // IMPORTANT: Immediately broadcast the updated score to all clients
+    // We need to do this AFTER updating the score in the local state
+    setTimeout(() => {
+      broadcastScoreUpdate();
+    }, 100); // Small delay to ensure state update has completed
+    
     setCurrentRound(prev => {
       const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);
       if (remaining.length === 0) {
         const nextIdx = Math.min(prev.currentQuestionIndex + 1, prev.questions.length - 1);
         
-        // Broadcast with UPDATED scores
-        broadcastNextQuestion(nextIdx);
+        // Broadcast with UPDATED scores - but with a slight delay
+        setTimeout(() => {
+          broadcastNextQuestion(nextIdx);
+        }, 200);
         
         setAnsweredPlayers(new Set());
         setShowPendingAnswers(false);
@@ -314,8 +336,10 @@ export const useTriviaGame = () => {
   const handleNextQuestion = useCallback(() => {
     advanceQuestionLocally(idx => Math.min(idx + 1, currentRound.questions.length - 1));
     
-    // Broadcast with current scores
-    broadcastNextQuestion(currentRound.currentQuestionIndex + 1);
+    // Broadcast with current scores (with small delay to ensure state is updated)
+    setTimeout(() => {
+      broadcastNextQuestion(Math.min(currentRound.currentQuestionIndex + 1, currentRound.questions.length - 1));
+    }, 100);
     
     playAudio('notification');
   }, [currentRound.questions.length, currentRound.currentQuestionIndex]);
