@@ -26,17 +26,18 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
   };
 
   return (
-    <div className="mb-6 h-[40vh]">
+    <div className="mb-6 h-[40vh] relative">
+      {/* Perspective container for 3D effect */}
       <div 
-        className={`relative w-full h-full perspective-1000 ${isFlipping ? 'animate-flip' : ''}`}
+        className={`w-full h-full perspective-1000 ${isFlipping ? 'animate-flip' : ''}`}
         style={{ perspective: '1000px' }}
       >
-        {/* Card container with 3D space - position:relative so it maintains its space in document flow */}
+        {/* Card container with 3D space */}
         <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
-          {/* Front Card (Question) */}
+          {/* Front Card (Question) - Positioned absolutely */}
           <Card 
-            className={`w-full h-full absolute transition-all duration-500 ${
-              showAnswer ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            className={`absolute inset-0 w-full h-full transition-transform duration-500 ${
+              showAnswer ? 'backface-hidden' : 'z-10'
             }`}
             style={{ 
               backfaceVisibility: 'hidden',
@@ -63,11 +64,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
             </CardContent>
           </Card>
           
-          {/* Back Card (Answer) - Starts flipped, then rotates into view */}
+          {/* Back Card (Answer) - Also positioned absolutely */}
           <Card 
-            className={`w-full h-full absolute bg-blue-50 transition-all duration-500 ${
-              !showAnswer ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
+            className="absolute inset-0 w-full h-full bg-blue-50 transition-transform duration-500"
             style={{ 
               backfaceVisibility: 'hidden',
               transform: showAnswer ? 'rotateY(0deg)' : 'rotateY(-180deg)'
