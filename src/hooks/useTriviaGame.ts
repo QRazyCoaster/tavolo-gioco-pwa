@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/supabaseClient';
@@ -115,6 +116,9 @@ export const useTriviaGame = () => {
       const nextNarratorId = getNextNarrator();
       setNextNarrator(nextNarratorId);
       broadcastRoundEnd(nextNarratorId);
+      
+      // FIX: Ensure the narrator also sees the round bridge
+      setShowRoundBridge(true);
     } else {
       // Just proceed to next question in this round
       const nextIdx = currentRound.currentQuestionIndex + 1;
@@ -324,9 +328,6 @@ export const useTriviaGame = () => {
         scores
       }
     });
-    
-    // Show round bridge for the narrator too
-    setShowRoundBridge(true);
   };
 
   // ────────────────────────────────────────────────────────────
@@ -367,6 +368,10 @@ export const useTriviaGame = () => {
       const nextNarratorId = getNextNarrator();
       broadcastRoundEnd(nextNarratorId);
       playAudio('success');
+      
+      // FIX: Explicitly show the round bridge for the narrator too
+      setShowRoundBridge(true);
+      setNextNarrator(nextNarratorId);
     } else {
       // Continue with next question in this round
       const nextIdx = currentRound.currentQuestionIndex + 1;
@@ -404,6 +409,11 @@ export const useTriviaGame = () => {
           // End of round - get next narrator and broadcast round end
           const nextNarratorId = getNextNarrator();
           broadcastRoundEnd(nextNarratorId);
+          
+          // FIX: Explicitly show the round bridge for the narrator too
+          setShowRoundBridge(true);
+          setNextNarrator(nextNarratorId);
+          
           playAudio('notification');
           return prev;
         } else {
@@ -439,6 +449,10 @@ export const useTriviaGame = () => {
       // End of round - transition to next round
       const nextNarratorId = getNextNarrator();
       broadcastRoundEnd(nextNarratorId);
+      
+      // FIX: Explicitly show the round bridge for the narrator too
+      setShowRoundBridge(true);
+      setNextNarrator(nextNarratorId);
     } else {
       // Just go to next question in this round
       const nextIdx = currentRound.currentQuestionIndex + 1;
