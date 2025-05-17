@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
@@ -6,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Player } from '@/context/GameContext';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
+import PlayerRankings from './PlayerRankings';
 
 interface PlayerViewProps {
   roundNumber: number;
@@ -31,11 +33,12 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const { toast } = useToast();
   const [isPressed, setIsPressed] = useState(false);
 
+  // Use the players directly from GameContext to ensure we always have the latest scores
+  const currentPlayers = state.players;
+
   useEffect(() => {
     setIsPressed(hasAnswered);
   }, [questionNumber, roundNumber, hasAnswered]);
-
-  const sorted = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
 
   const handlePress = () => {
     if (hasAnswered || isCurrentPlayerNarrator) return;
@@ -95,34 +98,8 @@ const PlayerView: React.FC<PlayerViewProps> = ({
         </div>
       )}
 
-      <div className="border rounded-lg overflow-hidden mt-4">
-        <div className="bg-primary/10 px-4 py-2 font-semibold text-center">
-          {language === 'it' ? 'Classifica Giocatori' : 'Player Rankings'}
-        </div>
-        <ScrollArea className="h-56 w-full">
-          <div className="p-4">
-            {sorted.map((p, i) => (
-              <div
-                key={p.id}
-                className={`flex justify-between items-center py-2 border-b last:border-0 ${
-                  p.id === state.currentPlayer?.id ? 'font-medium bg-blue-50' : ''
-                }`}
-              >
-                <div className="flex items-center">
-                  <span className="text-gray-500 w-6">{i + 1}.</span>
-                  <span>{p.name}</span>
-                  {p.isHost && (
-                    <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                      Host
-                    </span>
-                  )}
-                </div>
-                <span className="font-bold">{p.score || 0}</span>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </div>
+      {/* Use separate PlayerRankings component with the latest players data from context */}
+      <PlayerRankings players={currentPlayers} />
     </div>
   );
 };
