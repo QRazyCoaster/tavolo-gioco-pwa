@@ -3,13 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
-import { useToast } from '@/hooks/use-toast';
-import { useLanguage } from '@/context/LanguageContext';
-import {
-  mockQuestions,
-  QUESTION_TIMER,
-  QUESTIONS_PER_ROUND
-} from '@/utils/triviaConstants';
+import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
 import {
   setGameChannel,
   broadcastNextQuestion,
@@ -23,12 +17,10 @@ import { useNarratorActions } from './useNarratorActions';
 
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
-  const { toast } = useToast();
-  const { language } = useLanguage();
 
-  /* ------------------------------------------------------------------ */
-  /*  Round / question state                                            */
-  /* ------------------------------------------------------------------ */
+  /* ──────────────────────────────────────────────────────────
+     Round & question state
+  ────────────────────────────────────────────────────────── */
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
     narratorId: state.players.find(p => p.isHost)?.id || '',
@@ -39,21 +31,18 @@ export const useTriviaGame = () => {
   });
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
-  const [showPendingAnswers, setShowPendingAnswers] = useState(false);
-  const [showRoundBridge, setShowRoundBridge] = useState(false);
-  const [nextNarrator, setNextNarrator] = useState<string>('');
-
-  const narratorSubscriptionRef = useRef<any>(null);
-  const gameChannelRef          = useRef<any>(null);
+  const [showPendingAnswers, setShowPendingAnswers]   = useState(false);
+  const [showRoundBridge,  setShowRoundBridge]        = useState(false);
+  const [nextNarrator,     setNextNarrator]           = useState('');
+  const narratorSubRef  = useRef<any>(null);
+  const gameChannelRef  = useRef<any>(null);
 
   const isNarrator        = state.currentPlayer?.id === currentRound.narratorId;
-  const hasPlayerAnswered = state.currentPlayer
-    ? answeredPlayers.has(state.currentPlayer.id)
-    : false;
+  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
-  /* ------------------------------------------------------------------ */
-  /*  Helpers                                                            */
-  /* ------------------------------------------------------------------ */
+  /* ──────────────────────────────────────────────────────────
+     Determine next narrator
+  ────────────────────────────────────────────────────────── */
   const getNextNarrator = useCallback(() => {
     if (currentRound.roundNumber >= state.players.length) {
       return state.players.find(p => p.isHost)?.id || '';
@@ -61,10 +50,13 @@ export const useTriviaGame = () => {
     return state.players[currentRound.roundNumber]?.id || state.players[0].id;
   }, [currentRound.roundNumber, state.players]);
 
-  const advanceQuestionLocally = (nextIdx: number) => {
+  /* ──────────────────────────────────────────────────────────
+     Question helpers
+  ────────────────────────────────────────────────────────── */
+  const advanceQuestionLocally = (idx: number) => {
     setCurrentRound(prev => ({
       ...prev,
-      currentQuestionIndex: nextIdx,
+      currentQuestionIndex: idx,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER
     }));
@@ -72,14 +64,10 @@ export const useTriviaGame = () => {
     setShowPendingAnswers(false);
   };
 
-  /* ------------------------------------------------------------------ */
-  /*  Question-manager, player actions, narrator actions                 */
-  /* ------------------------------------------------------------------ */
-  const {
-    currentQuestion,
-    questionNumber,
-    totalQuestions
-  } = useQuestionManager(
+  /* ──────────────────────────────────────────────────────────
+     Question manager / actions
+  ────────────────────────────────────────────────────────── */
+  const { currentQuestion, questionNumber, totalQuestions } = useQuestionManager(
     currentRound,
     setCurrentRound,
     setAnsweredPlayers,
@@ -111,35 +99,29 @@ export const useTriviaGame = () => {
     setCurrentRound
   );
 
-  /* ------------------------------------------------------------------ */
-  /*  Open ONE shared channel per game                                   */
-  /* ------------------------------------------------------------------ */
+  /* ──────────────────────────────────────────────────────────
+     Single game channel
+  ────────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (!state.gameId) return;
-
-    if (!gameChannelRef.current) {
-      const ch = supabase.channel(`game-${state.gameId}`).subscribe();
-      gameChannelRef.current = ch;
-      setGameChannel(ch);
-    }
-
+    if (!state.gameId || gameChannelRef.current) return;
+    const ch = supabase.channel(`game-${state.gameId}`).subscribe();
+    setGameChannel(ch);
+    gameChannelRef.current = ch;
     return () => {
       cleanupChannel();
       gameChannelRef.current = null;
     };
   }, [state.gameId]);
 
-  /* ------------------------------------------------------------------ */
-  /*  Broadcast listeners (NEXT_QUESTION, SCORE_UPDATE, ROUND_END)       */
-  /* ------------------------------------------------------------------ */
+  /* ──────────────────────────────────────────────────────────
+     Broadcast listeners
+  ────────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (!gameChannelRef.current) return;
-
     const ch = gameChannelRef.current;
+    if (!ch) return;
 
     ch.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
       const { questionIndex, scores } = payload as any;
-
       setCurrentRound(prev => ({
         ...prev,
         currentQuestionIndex: questionIndex,
@@ -148,17 +130,13 @@ export const useTriviaGame = () => {
       }));
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
-
-      if (scores) {
-        scores.forEach((s: any) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        );
-      }
+      scores?.forEach((s: any) =>
+        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+      );
     });
 
     ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
-      const { scores } = payload as any;
-      scores.forEach((s: any) =>
+      payload.scores.forEach((s: any) =>
         dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
       );
     });
@@ -166,51 +144,50 @@ export const useTriviaGame = () => {
     ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
       const { nextRound, nextNarratorId, scores } = payload as any;
 
-      if (scores) {
-        scores.forEach((s: any) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        );
-      }
+      scores?.forEach((s: any) =>
+        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+      );
+
+      /* NEW: clear answered set immediately so buzzers reset */
+      setAnsweredPlayers(new Set());
+      setShowPendingAnswers(false);
 
       setNextNarrator(nextNarratorId);
       setShowRoundBridge(true);
 
+      // prepare next round after bridge
       setTimeout(() => {
-        setCurrentRound(prev => ({
-          ...prev,
+        setCurrentRound({
           roundNumber: nextRound,
           narratorId: nextNarratorId,
+          questions: mockQuestions.slice(0, QUESTIONS_PER_ROUND),
           currentQuestionIndex: 0,
           playerAnswers: [],
           timeLeft: QUESTION_TIMER
-        }));
+        });
       }, 6500);
     });
 
-    return () => { /* listeners stay for life of channel */ };
+    return () => { /* listeners live for channel life-time */ };
   }, [dispatch]);
 
-  /* ------------------------------------------------------------------ */
-  /*  Narrator listens for buzzer INSERTs                                */
-  /* ------------------------------------------------------------------ */
+  /* ──────────────────────────────────────────────────────────
+     Narrator subscription for buzzes
+  ────────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!isNarrator || !state.gameId) {
-      if (narratorSubscriptionRef.current) {
-        supabase.removeChannel(narratorSubscriptionRef.current);
-        narratorSubscriptionRef.current = null;
-      }
+      narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
+      narratorSubRef.current = null;
       return;
     }
 
-    // re-create subscription when narrator changes
-    if (narratorSubscriptionRef.current) {
-      supabase.removeChannel(narratorSubscriptionRef.current);
-      narratorSubscriptionRef.current = null;
-    }
+    // re-subscribe whenever narrator changes
+    narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
 
-    const dbChannel = supabase
-      .channel(`player_answers_${state.gameId}`)
-      .on('postgres_changes',
+    const dbCh = supabase
+      .channel(`buzzes_${state.gameId}`)
+      .on(
+        'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
         ({ new: row }: any) => {
           if (row.game_id !== state.gameId) return;
@@ -225,33 +202,20 @@ export const useTriviaGame = () => {
               ...prev,
               playerAnswers: [
                 ...prev.playerAnswers,
-                {
-                  playerId: player.id,
-                  playerName: player.name,
-                  timestamp: Date.now()
-                }
+                { playerId: player.id, playerName: player.name, timestamp: Date.now() }
               ]
             };
           });
           setShowPendingAnswers(true);
-        })
+        }
+      )
       .subscribe();
 
-    narratorSubscriptionRef.current = dbChannel;
+    narratorSubRef.current = dbCh;
+    return () => { void supabase.removeChannel(dbCh); };
+  }, [isNarrator, currentRound.currentQuestionIndex, currentRound.narratorId]);
 
-    return () => { void supabase.removeChannel(dbChannel); };
-  }, [
-    isNarrator,
-    state.gameId,
-    currentRound.currentQuestionIndex,
-    currentRound.narratorId,
-    currentRound.questions,
-    state.players
-  ]);
-
-  /* ------------------------------------------------------------------ */
-  /*  Narrator-side timer                                               */
-  /* ------------------------------------------------------------------ */
+  /* Narrator timer */
   useEffect(() => {
     if (!isNarrator || showRoundBridge) return;
     const t = setInterval(() => {
@@ -264,8 +228,11 @@ export const useTriviaGame = () => {
     return () => clearInterval(t);
   }, [isNarrator, showRoundBridge]);
 
+  /* Round-bridge “Continue” */
   const startNextRound = () => {
     setShowRoundBridge(false);
+    setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
     setCurrentRound(prev => ({ ...prev, narratorId: nextNarrator }));
     broadcastScoreUpdate(state.players);
   };
