@@ -1,12 +1,12 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useGame } from '@/context/GameContext';
 import { Round, TriviaQuestion, PlayerAnswer } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/LanguageContext';
 import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
-import { setGameChannel, broadcastNextQuestion, broadcastRoundEnd, broadcastScoreUpdate } from '@/utils/triviaBroadcast';
+import { setGameChannel, broadcastNextQuestion, broadcastRoundEnd, broadcastScoreUpdate, cleanupChannel } from '@/utils/triviaBroadcast';
 import { useQuestionManager } from './useQuestionManager';
 import { usePlayerActions } from './usePlayerActions';
 import { useNarratorActions } from './useNarratorActions';
@@ -15,6 +15,11 @@ export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
   const { toast } = useToast();
   const { language } = useLanguage();
+
+  // Track if we've set up subscriptions to prevent duplicates
+  const narratorSubscriptionRef = useRef<any>(null);
+  const broadcastSubscriptionRef = useRef<any>(null);
+  const gameChannelRef = useRef<any>(null);
 
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
@@ -131,10 +136,18 @@ export const useTriviaGame = () => {
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
     // Create a channel for this game if it doesn't exist yet
-    if (state.gameId) {
+    if (state.gameId && !gameChannelRef.current) {
       console.log('[useTriviaGame] Setting up game channel for game:', state.gameId);
-      const gameChannel = supabase.channel(`game-${state.gameId}`).subscribe();
+      const gameChannel = supabase.channel(`game-${state.gameId}`);
+      gameChannel.subscribe();
       setGameChannel(gameChannel);
+      gameChannelRef.current = gameChannel;
+      
+      return () => {
+        console.log('[useTriviaGame] Cleaning up game channel');
+        cleanupChannel();
+        gameChannelRef.current = null;
+      };
     }
   }, [state.gameId]);
 
@@ -143,7 +156,21 @@ export const useTriviaGame = () => {
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
     // Only the current narrator needs to listen for player answers
-    if (!isNarrator || !state.gameId) return;
+    if (!isNarrator || !state.gameId) {
+      // If we're not the narrator anymore, cleanup the subscription
+      if (narratorSubscriptionRef.current) {
+        console.log('[useTriviaGame] Cleaning up narrator subscription');
+        supabase.removeChannel(narratorSubscriptionRef.current);
+        narratorSubscriptionRef.current = null;
+      }
+      return;
+    }
+
+    // If we already have a subscription active, don't create another one
+    if (narratorSubscriptionRef.current) {
+      console.log('[useTriviaGame] Narrator subscription already exists, skipping');
+      return;
+    }
 
     console.log('[useTriviaGame] Setting up narrator subscription for player answers:', {
       isNarrator,
@@ -151,8 +178,9 @@ export const useTriviaGame = () => {
     });
 
     // Set up a real-time subscription to player_answers table
+    const channelName = `player_answers_for_narrator_${state.gameId}`;
     const dbChannel = supabase
-      .channel('player_answers_for_narrator')
+      .channel(channelName)
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
         payload => {
@@ -221,17 +249,23 @@ export const useTriviaGame = () => {
           }));
         })
       .subscribe();
+    
+    // Store the subscription reference
+    narratorSubscriptionRef.current = dbChannel;
 
     // Clean up subscription when component unmounts or narrator changes
     return () => { 
       console.log('[useTriviaGame] Cleaning up narrator subscription');
-      void supabase.removeChannel(dbChannel);
+      if (narratorSubscriptionRef.current) {
+        supabase.removeChannel(narratorSubscriptionRef.current);
+        narratorSubscriptionRef.current = null;
+      }
       
       // Clear any pending timeouts
       Object.values(playerAnswerTimeouts).forEach(timeout => clearTimeout(timeout));
       setPlayerAnswerTimeouts({});
     };
-  }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players, playerAnswerTimeouts]);
+  }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players, playerAnswerTimeouts, state.currentPlayer?.id, currentRound.narratorId]);
 
   // ────────────────────────────────────────────────────────────
   //  Listen for broadcasts
@@ -239,8 +273,13 @@ export const useTriviaGame = () => {
   useEffect(() => {
     if (!state.gameId) return;
     
+    // If we already have a broadcast subscription, don't create another one
+    if (broadcastSubscriptionRef.current) {
+      return;
+    }
+    
     // Create a channel for this game
-    const gameChannel = supabase.channel(`game-${state.gameId}`);
+    const gameChannel = supabase.channel(`game-broadcast-${state.gameId}`);
 
     console.log('[useTriviaGame] Setting up broadcast listeners for game:', state.gameId);
 
@@ -320,11 +359,17 @@ export const useTriviaGame = () => {
 
     // Subscribe to the channel
     gameChannel.subscribe();
+    
+    // Store the subscription reference
+    broadcastSubscriptionRef.current = gameChannel;
 
     // Return cleanup functions
     return () => { 
       console.log('[useTriviaGame] Cleaning up broadcast listeners');
-      void supabase.removeChannel(gameChannel); 
+      if (broadcastSubscriptionRef.current) {
+        supabase.removeChannel(broadcastSubscriptionRef.current);
+        broadcastSubscriptionRef.current = null;
+      }
       
       // Clear any pending timeouts
       Object.values(playerAnswerTimeouts).forEach(timeout => clearTimeout(timeout));
