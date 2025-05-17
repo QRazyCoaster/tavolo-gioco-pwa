@@ -6,12 +6,12 @@ import { TriviaQuestion, PlayerAnswer, Round } from '@/types/trivia';
 import { playAudio } from '@/utils/audioUtils';
 
 // ─────────────────────────────────────────────────────────────
-//  Shared broadcast channel (one per browser session)
+//  Shared broadcast channel (one per session)
 // ─────────────────────────────────────────────────────────────
 let gameChannel: RealtimeChannel | null = null;
 
 // ─────────────────────────────────────────────────────────────
-//  Demo questions (replace with a Supabase fetch later)
+//  Demo questions
 // ─────────────────────────────────────────────────────────────
 const mockQuestions: TriviaQuestion[] = [
   { id: '1', textEn: 'What is the capital of France?', textIt: 'Qual è la capitale della Francia?', answerEn: 'Paris', answerIt: 'Parigi', categoryId: 'geography', difficulty: 'easy' },
@@ -21,7 +21,7 @@ const mockQuestions: TriviaQuestion[] = [
   { id: '5', textEn: 'Who wrote "Romeo and Juliet"?', textIt: 'Chi ha scritto "Romeo e Giulietta"?', answerEn: 'William Shakespeare', answerIt: 'William Shakespeare', categoryId: 'literature', difficulty: 'easy' }
 ];
 
-const QUESTION_TIMER = 90; // seconds
+const QUESTION_TIMER = 90;
 
 // ─────────────────────────────────────────────────────────────
 //  Hook
@@ -29,9 +29,6 @@ const QUESTION_TIMER = 90; // seconds
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
 
-  // ╭────────────────────────────────────────────────────╮
-  // │ Local round-state (each tab)                      │
-  // ╰────────────────────────────────────────────────────╯
   const [currentRound, setCurrentRound] = useState<Round>(() => ({
     roundNumber: 1,
     narratorId: state.players.find(p => p.isHost)?.id || '',
@@ -47,9 +44,9 @@ export const useTriviaGame = () => {
   const isNarrator        = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = state.currentPlayer ? answeredPlayers.has(state.currentPlayer.id) : false;
 
-  // ╭────────────────────────────────────────────────────╮
-  // │ Narrator-side timer                               │
-  // ╰────────────────────────────────────────────────────╯
+  // ────────────────────────────────────────────────────────────
+  //  Narrator timer
+  // ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isNarrator) return;
     const t = setInterval(() => {
@@ -58,80 +55,69 @@ export const useTriviaGame = () => {
     return () => clearInterval(t);
   }, [isNarrator]);
 
- // ────────────────────────────────────────────────────────────
-//  PLAYER presses the buzzer  →  write row in Supabase
-// ────────────────────────────────────────────────────────────
-const handlePlayerBuzzer = useCallback(async () => {
-  if (!state.currentPlayer || isNarrator || hasPlayerAnswered || !state.gameId) return;
+  // ────────────────────────────────────────────────────────────
+  //  PLAYER presses the buzzer
+  // ────────────────────────────────────────────────────────────
+  const handlePlayerBuzzer = useCallback(async () => {
+    if (!state.currentPlayer || isNarrator || hasPlayerAnswered || !state.gameId) return;
 
-  // local sound for immediate feedback
-  window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
-                  : playAudio('buzzer');
+    window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
+                    : playAudio('buzzer');
 
-  const questionId = currentRound.questions[currentRound.currentQuestionIndex].id;
+    const questionId = currentRound.questions[currentRound.currentQuestionIndex].id;
 
-  // v2 style: insert + try/catch
-  try {
-    const { error } = await supabase
-      .from('player_answers')
-      .insert({ game_id: state.gameId, question_id: questionId, player_id: state.currentPlayer.id });
+    try {
+      const { error } = await supabase
+        .from('player_answers')
+        .insert({ game_id: state.gameId, question_id: questionId, player_id: state.currentPlayer.id });
 
-    // ignore duplicate-key errors (player already queued)
-    if (error && error.code !== '23505') {
-      console.error('[handlePlayerBuzzer] Supabase insert error', error);
+      if (error && error.code !== '23505') {            // 23505 = duplicate key
+        console.error('[handlePlayerBuzzer] insert error', error);
+      }
+    } catch (err) {
+      console.error('[handlePlayerBuzzer] network error', err);
     }
-  } catch (err) {
-    console.error('[handlePlayerBuzzer] network / client error', err);
-  }
 
-  // optimistic local queue
-  const optimistic: PlayerAnswer = {
-    playerId: state.currentPlayer.id,
-    playerName: state.currentPlayer.name,
-    timestamp: Date.now()
-  };
-  setCurrentRound(prev =>
-    prev.playerAnswers.some(a => a.playerId === optimistic.playerId)
-      ? prev
-      : { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] }
-  );
-  setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
-  setShowPendingAnswers(true);
-}, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
+    const optimistic: PlayerAnswer = {
+      playerId: state.currentPlayer.id,
+      playerName: state.currentPlayer.name,
+      timestamp: Date.now()
+    };
+    setCurrentRound(prev =>
+      prev.playerAnswers.some(a => a.playerId === optimistic.playerId)
+        ? prev
+        : { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] }
+    );
+    setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
+    setShowPendingAnswers(true);
+  }, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
 
-
-  // ╭────────────────────────────────────────────────────╮
-  // │ Open shared Supabase channel (once per session)    │
-  // ╰────────────────────────────────────────────────────╯
+  // ────────────────────────────────────────────────────────────
+  //  Open shared Supabase channel once
+  // ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!state.gameId) return;
-
     if (!gameChannel) {
       gameChannel = supabase.channel(`game-${state.gameId}`).subscribe();
-      console.log('[Realtime] opened channel', gameChannel.topic);
     }
   }, [state.gameId]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │ Narrator listens for new buzzer INSERTs            │
-  // ╰────────────────────────────────────────────────────╯
+  // ────────────────────────────────────────────────────────────
+  //  Narrator listens for INSERTs (player buzzes)
+  // ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isNarrator) return;
-    if (!state.gameId) return;
+    if (!isNarrator || !state.gameId) return;
 
     const dbChannel = supabase
       .channel('player_answers_all')
-      .on(
-        'postgres_changes',
+      .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
         payload => {
           const { player_id, game_id, question_id, created_at } = payload.new as any;
+          if (game_id !== state.gameId) return;
 
-          if (game_id !== state.gameId) return; // other games
           const currentQ = currentRound.questions[currentRound.currentQuestionIndex].id;
-          if (question_id !== currentQ) return; // other questions
-
-          console.log('[Narrator] Realtime payload →', payload);
+          if (question_id !== currentQ) return;
 
           setCurrentRound(prev => {
             if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev;
@@ -144,23 +130,22 @@ const handlePlayerBuzzer = useCallback(async () => {
                   playerName: state.players.find(p => p.id === player_id)?.name || 'Player',
                   timestamp: new Date(created_at).valueOf()
                 }
-              ].sort((a, b) => a.timestamp - b.timestamp)
+              ]
             };
           });
           setShowPendingAnswers(true);
-        }
-      )
+        })
       .subscribe();
 
-    return () => supabase.removeChannel(dbChannel);
+    // cleanup: ignore the Promise return value
+    return () => { void supabase.removeChannel(dbChannel); };
   }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │  Receive NEXT_QUESTION broadcast (all tabs)        │
-  // ╰────────────────────────────────────────────────────╯
+  // ────────────────────────────────────────────────────────────
+  //  Broadcast NEXT_QUESTION events (receive in all tabs)
+  // ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!state.gameId) return;
-    if (!gameChannel) return;
+    if (!state.gameId || !gameChannel) return;
 
     const sub = gameChannel.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
       const { questionIndex, scores } = payload as any;
@@ -171,56 +156,46 @@ const handlePlayerBuzzer = useCallback(async () => {
         playerAnswers: [],
         timeLeft: QUESTION_TIMER
       }));
-
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
 
-      // update scores
       scores.forEach((s: { id: string; score: number }) => {
         dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
       });
     });
 
-    return () => { gameChannel?.off('broadcast', { event: 'NEXT_QUESTION' }, sub); };
+    // no off() in v2 – we simply don't remove the handler (cheap)
+    return () => { gameChannel!.unsubscribe(); };
   }, [state.gameId, dispatch]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │  Correct answer                                    │
-  // ╰────────────────────────────────────────────────────╯
+  // helpers -------------------------------------------------------------------
+  const broadcastNextQuestion = (nextIndex: number) => {
+    if (!gameChannel) return;
+    const scores = state.players.map(p => ({ id: p.id, score: p.score || 0 }));
+    gameChannel.send({ type: 'broadcast', event: 'NEXT_QUESTION', payload: { questionIndex: nextIndex, scores } });
+  };
+
+  const advanceQuestionLocally = (update: (idx: number) => number) => {
+    setCurrentRound(prev => {
+      const nextIdx = update(prev.currentQuestionIndex);
+      return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
+    });
+    setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
+  };
+
+  // ────────────────────────────────────────────────────────────
+  //  Correct & wrong answers
+  // ────────────────────────────────────────────────────────────
   const handleCorrectAnswer = useCallback((playerId: string) => {
-    // 1. update score locally and in context
     const newScore = (state.players.find(p => p.id === playerId)?.score || 0) + 10;
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
 
-    // 2. advance question locally
-    setCurrentRound(prev => {
-      const nextIdx = Math.min(prev.currentQuestionIndex + 1, prev.questions.length - 1);
-      return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
-    });
-
-    // 3. broadcast to everyone
-    if (gameChannel) {
-      const scores = state.players.map(p =>
-        p.id === playerId ? { id: p.id, score: newScore } : { id: p.id, score: p.score || 0 }
-      );
-      gameChannel.send({
-        type: 'broadcast',
-        event: 'NEXT_QUESTION',
-        payload: {
-          questionIndex: currentRound.currentQuestionIndex + 1,
-          scores
-        }
-      });
-    }
-
-    setAnsweredPlayers(new Set());
-    setShowPendingAnswers(false);
+    advanceQuestionLocally(idx => Math.min(idx + 1, currentRound.questions.length - 1));
+    broadcastNextQuestion(currentRound.currentQuestionIndex + 1);
     playAudio('success');
   }, [state.players, dispatch, currentRound.currentQuestionIndex]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │  Wrong answer                                      │
-  // ╰────────────────────────────────────────────────────╯
   const handleWrongAnswer = useCallback((playerId: string) => {
     const newScore = Math.max(0, (state.players.find(p => p.id === playerId)?.score || 0) - 5);
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
@@ -229,19 +204,7 @@ const handlePlayerBuzzer = useCallback(async () => {
       const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);
       if (remaining.length === 0) {
         const nextIdx = Math.min(prev.currentQuestionIndex + 1, prev.questions.length - 1);
-
-        // broadcast skip
-        if (gameChannel) {
-          const scores = state.players.map(p =>
-            p.id === playerId ? { id: p.id, score: newScore } : { id: p.id, score: p.score || 0 }
-          );
-          gameChannel.send({
-            type: 'broadcast',
-            event: 'NEXT_QUESTION',
-            payload: { questionIndex: nextIdx, scores }
-          });
-        }
-
+        broadcastNextQuestion(nextIdx);
         setAnsweredPlayers(new Set());
         setShowPendingAnswers(false);
         playAudio('notification');
@@ -249,38 +212,18 @@ const handlePlayerBuzzer = useCallback(async () => {
       }
       return { ...prev, playerAnswers: remaining };
     });
-
     playAudio('error');
   }, [state.players, dispatch]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │  Manual next question (narrator button)            │
-  // ╰────────────────────────────────────────────────────╯
   const handleNextQuestion = useCallback(() => {
-    setCurrentRound(prev => {
-      const nextIdx = Math.min(prev.currentQuestionIndex + 1, prev.questions.length - 1);
-
-      // broadcast
-      if (gameChannel) {
-        const scores = state.players.map(p => ({ id: p.id, score: p.score || 0 }));
-        gameChannel.send({
-          type: 'broadcast',
-          event: 'NEXT_QUESTION',
-          payload: { questionIndex: nextIdx, scores }
-        });
-      }
-
-      return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
-    });
-
-    setAnsweredPlayers(new Set());
-    setShowPendingAnswers(false);
+    advanceQuestionLocally(idx => Math.min(idx + 1, currentRound.questions.length - 1));
+    broadcastNextQuestion(currentRound.currentQuestionIndex + 1);
     playAudio('notification');
-  }, [state.players]);
+  }, [currentRound.questions.length]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │  Exported API                                      │
-  // ╰────────────────────────────────────────────────────╯
+  // ────────────────────────────────────────────────────────────
+  //  Return values for components
+  // ────────────────────────────────────────────────────────────
   return {
     currentRound,
     isNarrator,
