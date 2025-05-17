@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useGame } from '@/context/GameContext';
-import { Round } from '@/types/trivia';
+import { Round, TriviaQuestion } from '@/types/trivia';
 import {
   mockQuestions,
   QUESTION_TIMER,
@@ -30,7 +30,7 @@ export const useTriviaGame = () => {
     narratorId: state.players.find(p => p.isHost)?.id || '',
     questions: mockQuestions
       .slice(0, QUESTIONS_PER_ROUND)
-      .map(q => ({ ...q, id: `r1-${q.id}` })),
+      .map(q => ({ ...q, id: `r1-${q.id}` })) as TriviaQuestion[],
     currentQuestionIndex: 0,
     playerAnswers: [],
     timeLeft: QUESTION_TIMER

@@ -9,7 +9,7 @@ export const useQuestionManager = (
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
   setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>,
-  broadcastNextQuestion: (nextIndex: number) => void
+  broadcastNextQuestion: (nextIndex: number, scores?: any) => void
 ) => {
   const advanceQuestionLocally = (nextIndex: number) => {
     // Update local state to move to the next question
