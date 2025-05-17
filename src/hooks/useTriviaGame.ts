@@ -217,7 +217,7 @@ export const useTriviaGame = () => {
   //  Wrong answer
   // ────────────────────────────────────────────────────────────
   const handleWrongAnswer = useCallback((playerId: string) => {
-    const newScore = Math.max(0, (state.players.find(p => p.id === playerId)?.score || 0) - 5);
+const newScore = (state.players.find(p => p.id === playerId)?.score || 0) - 5; // ← no clamping
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
 
     setCurrentRound(prev => {
