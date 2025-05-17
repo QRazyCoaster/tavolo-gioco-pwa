@@ -26,7 +26,7 @@ export const mockQuestions = [
   {
     id: '7',
     textEn: 'Which gas do plants absorb from the atmosphere?',
-    textIt: 'Quale gas assorbono le piante dall'atmosfera?',
+    textIt: 'Quale gas assorbono le piante dall\'atmosfera?',
     answerEn: 'Carbon dioxide',
     answerIt: 'Anidride carbonica',
     categoryId: 'science',
