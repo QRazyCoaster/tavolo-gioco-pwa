@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,27 @@ import { BookOpenText, Trophy } from "lucide-react";
 
 interface QuestionCardProps {
   currentQuestion: TriviaQuestion;
+  questionKey?: string; // Added to reset state when question changes
 }
 
-const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
+const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion, questionKey }) => {
   const { language } = useLanguage();
   const [showAnswer, setShowAnswer] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
 
-  const handleRevealAnswer = () => {
+  // Reset to question view when the question changes
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [questionKey, currentQuestion.id]);
+
+  const handleCardFlip = () => {
     setIsFlipping(true);
     setTimeout(() => {
-      setShowAnswer(true);
+      setShowAnswer(prev => !prev);
       setIsFlipping(false);
-      playAudio('notification');
+      if (!showAnswer) {
+        playAudio('notification');
+      }
     }, 600);
   };
 
@@ -31,6 +39,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
       <div 
         className={`w-full h-full perspective-1000 ${isFlipping ? 'animate-flip' : ''}`}
         style={{ perspective: '1000px' }}
+        onClick={handleCardFlip}
       >
         {/* Card container with 3D space */}
         <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d' }}>
@@ -53,14 +62,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
                 {language === 'it' ? currentQuestion.textIt : currentQuestion.textEn}
               </p>
               
-              {!showAnswer && (
-                <Button 
-                  className="mt-6" 
-                  onClick={handleRevealAnswer}
-                >
-                  {language === 'it' ? 'Rivela Risposta' : 'Reveal Answer'}
-                </Button>
-              )}
+              <div className="mt-6 text-sm text-gray-500">
+                {language === 'it' ? 'Clicca per rivelare la risposta' : 'Click to reveal answer'}
+              </div>
             </CardContent>
           </Card>
           
@@ -80,6 +84,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion }) => {
               <p className="text-xl font-semibold text-center text-blue-900">
                 {language === 'it' ? currentQuestion.answerIt : currentQuestion.answerEn}
               </p>
+              
+              <div className="mt-6 text-sm text-gray-500">
+                {language === 'it' ? 'Clicca per vedere la domanda' : 'Click to see question'}
+              </div>
             </CardContent>
           </Card>
         </div>

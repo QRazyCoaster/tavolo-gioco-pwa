@@ -68,8 +68,11 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
-      {/* Question & meta info */}
-      <QuestionCard currentQuestion={currentQuestion} />
+      {/* Question & meta info - pass questionId as key to reset card state */}
+      <QuestionCard 
+        currentQuestion={currentQuestion}
+        questionKey={currentQuestion.id}
+      />
       <QuestionInfo
         roundNumber={roundNumber}
         questionNumber={questionNumber}
