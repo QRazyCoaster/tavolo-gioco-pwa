@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
@@ -27,9 +27,9 @@ import { useRoundTransition } from './useRoundTransition';
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
 
-  /* ──────────────────────────────────────────────────────────
-     Round & question state
-  ────────────────────────────────────────────────────────── */
+  /* ────────────────────────────────────────────────────────── */
+  /*  Round & question state                                   */
+  /* ────────────────────────────────────────────────────────── */
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
     narratorId: state.players.find(p => p.isHost)?.id || '',
@@ -41,16 +41,18 @@ export const useTriviaGame = () => {
     timeLeft: QUESTION_TIMER
   });
 
-  const [answeredPlayers,      setAnsweredPlayers]      = useState<Set<string>>(new Set());
-  const [showPendingAnswers,   setShowPendingAnswers]   = useState(false);
-  const [nextNarrator,         setNextNarrator]         = useState('');
-  const [showRoundBridge,      setShowRoundBridge]      = useState(false);
-  const [gameOver,             setGameOver]             = useState(false);
+  const [answeredPlayers,    setAnsweredPlayers]    = useState<Set<string>>(new Set());
+  const [showPendingAnswers, setShowPendingAnswers] = useState(false);
+  const [showRoundBridge,    setShowRoundBridge]    = useState(false);
+  const [nextNarrator,       setNextNarrator]       = useState('');
+  const [gameOver,           setGameOver]           = useState(false);
 
   const isNarrator        = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
-  /* helper: decide next narrator ------------------------------------------- */
+  /* ────────────────────────────────────────────────────────── */
+  /*  Next narrator helper                                     */
+  /* ────────────────────────────────────────────────────────── */
   const getNextNarrator = useCallback(() => {
     if (currentRound.roundNumber >= state.players.length) {
       return { nextNarratorId: state.players[0].id, isGameOver: true };
@@ -61,20 +63,11 @@ export const useTriviaGame = () => {
     };
   }, [currentRound.roundNumber, state.players]);
 
-  /* game channel ----------------------------------------------------------- */
+  /* ────────────────────────────────────────────────────────── */
+  /*  Game channel & listeners                                 */
+  /* ────────────────────────────────────────────────────────── */
   const gameChannelRef = useGameChannel(state.gameId);
 
-  /* round-transition helper ------------------------------------------------ */
-  const {
-    setShowRoundBridge: setShowRoundBridgeRT,
-    startNextRound: startNextRoundRT
-  } = useRoundTransition(
-    currentRound.roundNumber,
-    state.players,
-    getNextNarrator
-  );
-
-  /* broadcast listeners ---------------------------------------------------- */
   useBroadcastListeners(
     gameChannelRef.current,
     setCurrentRound,
@@ -88,7 +81,6 @@ export const useTriviaGame = () => {
     QUESTIONS_PER_ROUND
   );
 
-  /* narrator subscription (buzzes) ---------------------------------------- */
   useNarratorSubscription(
     isNarrator,
     state.gameId,
@@ -98,7 +90,23 @@ export const useTriviaGame = () => {
     state.players
   );
 
-  /* question manager ------------------------------------------------------- */
+  /* ────────────────────────────────────────────────────────── */
+  /*  Advance question locally helper                          */
+  /* ────────────────────────────────────────────────────────── */
+  const advanceQuestionLocally = (idx: number) => {
+    setCurrentRound(prev => ({
+      ...prev,
+      currentQuestionIndex: idx,
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    }));
+    setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
+  };
+
+  /* ────────────────────────────────────────────────────────── */
+  /*  Question manager & actions                               */
+  /* ────────────────────────────────────────────────────────── */
   const { currentQuestion, questionNumber, totalQuestions } = useQuestionManager(
     currentRound,
     setCurrentRound,
@@ -107,7 +115,6 @@ export const useTriviaGame = () => {
     (idx, scores) => broadcastNextQuestion(idx, state.players, scores)
   );
 
-  /* player actions (buzz) -------------------------------------------------- */
   const { handlePlayerBuzzer } = usePlayerActions(
     state.gameId,
     currentRound.currentQuestionIndex,
@@ -117,11 +124,6 @@ export const useTriviaGame = () => {
     setShowPendingAnswers
   );
 
-  /* clear queue helper (hides thumbs panel fast) --------------------------- */
-  const clearAnswerQueue = () =>
-    setCurrentRound(prev => ({ ...prev, playerAnswers: [] }));
-
-  /* narrator actions (score, next, time-up) -------------------------------- */
   const {
     handleCorrectAnswer,
     handleWrongAnswer,
@@ -131,23 +133,16 @@ export const useTriviaGame = () => {
     currentRound.roundNumber,
     currentRound.currentQuestionIndex,
     getNextNarrator,
-    (idx: number) => {
-      setCurrentRound(prev => ({
-        ...prev,
-        currentQuestionIndex: idx,
-        playerAnswers: [],
-        timeLeft: QUESTION_TIMER
-      }));
-      setAnsweredPlayers(new Set());
-      setShowPendingAnswers(false);
-    },
+    advanceQuestionLocally,
     setNextNarrator,
     setShowRoundBridge,
     setCurrentRound,
     setGameOver
   );
 
-  /* narrator timer --------------------------------------------------------- */
+  /* ────────────────────────────────────────────────────────── */
+  /*  Narrator timer                                           */
+  /* ────────────────────────────────────────────────────────── */
   useNarratorTimer(
     isNarrator,
     showRoundBridge,
@@ -156,13 +151,21 @@ export const useTriviaGame = () => {
     handleTimeUp
   );
 
-  /* bridge “continue” handler --------------------------------------------- */
-  const startNextRoundHandler = () => {
+  /* ────────────────────────────────────────────────────────── */
+  /*  Round bridge / transition                                */
+  /* ────────────────────────────────────────────────────────── */
+  const { startNextRound } = useRoundTransition(
+    currentRound.roundNumber,
+    state.players,
+    getNextNarrator
+  );
+
+  const continueToNextRound = () => {
     setShowRoundBridge(false);
     setAnsweredPlayers(new Set());
     setShowPendingAnswers(false);
 
-    const newRound = startNextRoundRT(nextNarrator, currentRound.roundNumber + 1);
+    const newRound = startNextRound(nextNarrator, currentRound.roundNumber + 1);
     setCurrentRound(newRound);
 
     broadcastScoreUpdate(state.players);
@@ -181,22 +184,13 @@ export const useTriviaGame = () => {
     showPendingAnswers,
     setShowPendingAnswers,
     handlePlayerBuzzer,
-    /* wrappers clear the queue immediately */
-    handleCorrectAnswer: (pid: string) => {
-      handleCorrectAnswer(pid);
-      clearAnswerQueue();
-      setShowPendingAnswers(false);
-    },
-    handleWrongAnswer: (pid: string) => {
-      handleWrongAnswer(pid);
-      clearAnswerQueue();
-      setShowPendingAnswers(false);
-    },
+    handleCorrectAnswer,
+    handleWrongAnswer,
     handleNextQuestion,
     showRoundBridge,
     nextNarrator: state.players.find(p => p.id === nextNarrator),
     nextRoundNumber: currentRound.roundNumber + 1,
-    startNextRound: startNextRoundHandler,
+    startNextRound: continueToNextRound,
     gameOver
   };
 };
