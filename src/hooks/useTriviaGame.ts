@@ -75,6 +75,7 @@ export const useTriviaGame = () => {
   const [showRoundBridge, setShowRoundBridge] = useState(false);
   const [nextNarrator, setNextNarrator] = useState<string>('');
 
+  // CRITICAL - Check if the current player is the narrator based on currentRound.narratorId
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = state.currentPlayer ? answeredPlayers.has(state.currentPlayer.id) : false;
   
@@ -263,6 +264,7 @@ export const useTriviaGame = () => {
       
       // After round bridge is shown, prepare for the next round
       setTimeout(() => {
+        // CRITICAL FIX: Update the narrator ID in the current round state to switch views
         setCurrentRound(prev => ({
           ...prev,
           roundNumber: nextRound,
@@ -346,6 +348,12 @@ export const useTriviaGame = () => {
 
   const startNextRound = () => {
     setShowRoundBridge(false);
+    
+    // IMPORTANT: Make sure the narratorId is properly updated when starting the new round
+    setCurrentRound(prev => ({
+      ...prev,
+      narratorId: nextNarrator,
+    }));
   };
 
   // ────────────────────────────────────────────────────────────
