@@ -7,6 +7,7 @@ import { useTriviaGame } from '@/hooks/useTriviaGame';
 import { Button } from "@/components/ui/button";
 import NarratorView from '@/components/trivia/NarratorView';
 import PlayerView from '@/components/trivia/PlayerView';
+import RoundBridgePage from '@/components/trivia/RoundBridgePage';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 
@@ -31,7 +32,11 @@ const TriviaGamePage = () => {
     handlePlayerBuzzer,
     handleCorrectAnswer,
     handleWrongAnswer,
-    handleNextQuestion
+    handleNextQuestion,
+    showRoundBridge,
+    nextNarrator,
+    nextRoundNumber,
+    startNextRound
   } = useTriviaGame();
   
   // Session validation effect
@@ -150,32 +155,41 @@ const TriviaGamePage = () => {
           </div>
         </div>
         
-        {/* Narrator or player view based on role */}
-        {isNarrator ? (
-          <NarratorView
-            currentQuestion={currentQuestion}
-            roundNumber={currentRound.roundNumber}
-            questionNumber={questionNumber}
-            totalQuestions={totalQuestions}
-            players={state.players}
-            playerAnswers={playerAnswers}
-            onCorrectAnswer={handleCorrectAnswer}
-            onWrongAnswer={handleWrongAnswer}
-            onNextQuestion={handleNextQuestion}
-            timeLeft={timeLeft}
-            showPendingAnswers={showPendingAnswers}
-            setShowPendingAnswers={setShowPendingAnswers}
+        {/* Show round bridge between rounds */}
+        {showRoundBridge && nextNarrator ? (
+          <RoundBridgePage
+            nextRoundNumber={nextRoundNumber}
+            nextNarrator={nextNarrator}
+            onCountdownComplete={startNextRound}
           />
         ) : (
-          <PlayerView
-            roundNumber={currentRound.roundNumber}
-            questionNumber={questionNumber}
-            totalQuestions={totalQuestions}
-            players={state.players}
-            hasAnswered={hasPlayerAnswered}
-            onBuzzerPressed={handlePlayerBuzzer}
-            isCurrentPlayerNarrator={isNarrator}
-          />
+          /* Narrator or player view based on role */
+          isNarrator ? (
+            <NarratorView
+              currentQuestion={currentQuestion}
+              roundNumber={currentRound.roundNumber}
+              questionNumber={questionNumber}
+              totalQuestions={totalQuestions}
+              players={state.players}
+              playerAnswers={playerAnswers}
+              onCorrectAnswer={handleCorrectAnswer}
+              onWrongAnswer={handleWrongAnswer}
+              onNextQuestion={handleNextQuestion}
+              timeLeft={timeLeft}
+              showPendingAnswers={showPendingAnswers}
+              setShowPendingAnswers={setShowPendingAnswers}
+            />
+          ) : (
+            <PlayerView
+              roundNumber={currentRound.roundNumber}
+              questionNumber={questionNumber}
+              totalQuestions={totalQuestions}
+              players={state.players}
+              hasAnswered={hasPlayerAnswered}
+              onBuzzerPressed={handlePlayerBuzzer}
+              isCurrentPlayerNarrator={isNarrator}
+            />
+          )
         )}
       </div>
     </div>
