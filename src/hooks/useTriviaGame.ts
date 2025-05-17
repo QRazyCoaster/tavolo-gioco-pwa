@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useGame } from '@/context/GameContext';
-import { Round, TriviaQuestion } from '@/types/trivia';
+import { Round, TriviaQuestion, PlayerAnswer } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/LanguageContext';
 import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
@@ -28,6 +29,7 @@ export const useTriviaGame = () => {
   const [showPendingAnswers, setShowPendingAnswers] = useState(false);
   const [showRoundBridge, setShowRoundBridge] = useState(false);
   const [nextNarrator, setNextNarrator] = useState<string>('');
+  const [playerAnswerTimeouts, setPlayerAnswerTimeouts] = useState<{[playerId: string]: NodeJS.Timeout}>({});
 
   // Check if the current player is the narrator based on currentRound.narratorId
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
@@ -57,6 +59,10 @@ export const useTriviaGame = () => {
     // Reset the list of players who have answered
     setAnsweredPlayers(new Set());
     setShowPendingAnswers(false);
+
+    // Clear any existing timeouts
+    Object.values(playerAnswerTimeouts).forEach(timeout => clearTimeout(timeout));
+    setPlayerAnswerTimeouts({});
   };
 
   const broadcastNextQuestionRef = (nextIndex: number, scores?: { id: string; score: number }[]) => {
@@ -102,7 +108,7 @@ export const useTriviaGame = () => {
     setCurrentRound
   );
 
-  // ─────────────────────────────────────��──────────────────────
+  // ─────────────────────────────────────────────────────────────
   //  Narrator timer
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -126,6 +132,7 @@ export const useTriviaGame = () => {
   useEffect(() => {
     // Create a channel for this game if it doesn't exist yet
     if (state.gameId) {
+      console.log('[useTriviaGame] Setting up game channel for game:', state.gameId);
       const gameChannel = supabase.channel(`game-${state.gameId}`).subscribe();
       setGameChannel(gameChannel);
     }
@@ -138,47 +145,93 @@ export const useTriviaGame = () => {
     // Only the current narrator needs to listen for player answers
     if (!isNarrator || !state.gameId) return;
 
+    console.log('[useTriviaGame] Setting up narrator subscription for player answers:', {
+      isNarrator,
+      gameId: state.gameId
+    });
+
     // Set up a real-time subscription to player_answers table
     const dbChannel = supabase
-      .channel('player_answers_all')
+      .channel('player_answers_for_narrator')
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
         payload => {
           const { player_id, game_id, question_id, created_at } = payload.new as any;
           
+          console.log('[useTriviaGame] Received player answer:', payload.new);
+          
           // Ignore answers for other games
-          if (game_id !== state.gameId) return;
+          if (game_id !== state.gameId) {
+            console.log('[useTriviaGame] Ignoring answer for different game');
+            return;
+          }
 
           // Ignore answers for questions other than the current one
-          const currentQ = currentRound.questions[currentRound.currentQuestionIndex].id;
-          if (question_id !== currentQ) return;
+          const currentQ = currentRound.questions[currentRound.currentQuestionIndex]?.id;
+          if (!currentQ || question_id !== currentQ) {
+            console.log('[useTriviaGame] Ignoring answer for different question');
+            return;
+          }
 
-          // Update the list of player answers
-          setCurrentRound(prev => {
-            // Don't add the same player twice
-            if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev;
-            
-            return {
-              ...prev,
-              playerAnswers: [
+          // Add a small delay for reliability
+          const timeout = setTimeout(() => {
+            // Update the list of player answers
+            setCurrentRound(prev => {
+              // Don't add the same player twice
+              if (prev.playerAnswers.some(a => a.playerId === player_id)) {
+                console.log('[useTriviaGame] Player already in answers list');
+                return prev;
+              }
+              
+              const player = state.players.find(p => p.id === player_id);
+              if (!player) {
+                console.warn('[useTriviaGame] Player not found:', player_id);
+                return prev;
+              }
+
+              const newAnswers: PlayerAnswer[] = [
                 ...prev.playerAnswers,
                 {
                   playerId: player_id,
-                  playerName: state.players.find(p => p.id === player_id)?.name || 'Player',
+                  playerName: player.name,
                   timestamp: new Date(created_at).valueOf()
                 }
-              ]
-            };
-          });
-          
-          // Show the pending answers panel to the narrator
-          setShowPendingAnswers(true);
+              ];
+
+              console.log('[useTriviaGame] Updated player answers:', newAnswers);
+              return { ...prev, playerAnswers: newAnswers };
+            });
+            
+            // Show the pending answers panel to the narrator
+            setShowPendingAnswers(true);
+
+            // Clear this timeout from the state
+            setPlayerAnswerTimeouts(prev => {
+              const newTimeouts = {...prev};
+              delete newTimeouts[player_id];
+              return newTimeouts;
+            });
+
+          }, 200); // Small delay to ensure UI synchronization
+
+          // Store timeout to clear if needed
+          setPlayerAnswerTimeouts(prev => ({
+            ...prev,
+            [player_id]: timeout
+          }));
         })
       .subscribe();
 
     // Clean up subscription when component unmounts or narrator changes
-    return () => { void supabase.removeChannel(dbChannel); };
-  }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
+    return () => { 
+      console.log('[useTriviaGame] Cleaning up narrator subscription');
+      void supabase.removeChannel(dbChannel);
+      
+      // Clear any pending timeouts
+      Object.values(playerAnswerTimeouts).forEach(timeout => clearTimeout(timeout));
+      setPlayerAnswerTimeouts({});
+    };
+  }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players, playerAnswerTimeouts]);
 
   // ────────────────────────────────────────────────────────────
   //  Listen for broadcasts
@@ -189,8 +242,11 @@ export const useTriviaGame = () => {
     // Create a channel for this game
     const gameChannel = supabase.channel(`game-${state.gameId}`);
 
+    console.log('[useTriviaGame] Setting up broadcast listeners for game:', state.gameId);
+
     // Listen for broadcast events from narrators
     const nextQuestionSub = gameChannel.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
+      console.log('[useTriviaGame] Received NEXT_QUESTION broadcast:', payload);
       const { questionIndex, scores } = payload as any;
 
       // Update the current question
@@ -205,10 +261,17 @@ export const useTriviaGame = () => {
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
 
-      // Update scores in game context
-      scores.forEach((s: { id: string; score: number }) => {
-        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-      });
+      // Clear any existing timeouts
+      Object.values(playerAnswerTimeouts).forEach(timeout => clearTimeout(timeout));
+      setPlayerAnswerTimeouts({});
+
+      // Update scores in game context if provided
+      if (scores && Array.isArray(scores)) {
+        console.log('[useTriviaGame] Updating scores from broadcast:', scores);
+        scores.forEach((s: { id: string; score: number }) => {
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+        });
+      }
     });
 
     // Listen for score updates
@@ -217,23 +280,25 @@ export const useTriviaGame = () => {
       console.log('[useTriviaGame] Received SCORE_UPDATE broadcast with scores:', scores);
 
       // Update player scores in game state
-      scores.forEach((s: { id: string; score: number }) => {
-        setTimeout(() => {
+      if (scores && Array.isArray(scores)) {
+        scores.forEach((s: { id: string; score: number }) => {
           dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-        }, 100);
-      });
+        });
+      }
     });
 
     // Listen for round end events
     const roundEndSub = gameChannel.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
       const { nextRound, nextNarratorId, scores } = payload as any;
       
-      console.log('[useTriviaGame] Round ended, showing bridge page');
+      console.log('[useTriviaGame] Round ended, showing bridge page:', payload);
       
-      // Update scores
-      scores.forEach((s: { id: string; score: number }) => {
-        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-      });
+      // Update scores if provided
+      if (scores && Array.isArray(scores)) {
+        scores.forEach((s: { id: string; score: number }) => {
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+        });
+      }
       
       // Set next narrator and show round bridge for ALL players
       setNextNarrator(nextNarratorId);
@@ -258,9 +323,14 @@ export const useTriviaGame = () => {
 
     // Return cleanup functions
     return () => { 
+      console.log('[useTriviaGame] Cleaning up broadcast listeners');
       void supabase.removeChannel(gameChannel); 
+      
+      // Clear any pending timeouts
+      Object.values(playerAnswerTimeouts).forEach(timeout => clearTimeout(timeout));
+      setPlayerAnswerTimeouts({});
     };
-  }, [state.gameId, dispatch]);
+  }, [state.gameId, dispatch, playerAnswerTimeouts]);
 
   const startNextRound = () => {
     // Hide the round bridge
@@ -272,6 +342,11 @@ export const useTriviaGame = () => {
       ...prev,
       narratorId: nextNarrator,
     }));
+
+    // Force the UI to update when the round starts
+    setTimeout(() => {
+      broadcastScoreUpdate(state.players);
+    }, 300);
   };
 
   // ────────────────────────────────────────────────────────────

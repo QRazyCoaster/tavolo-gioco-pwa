@@ -27,47 +27,75 @@ export const usePlayerActions = (
     window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
                     : playAudio('buzzer');
 
-    // Get the current question ID
-    const questionId = currentQuestions[currentQuestionIndex].id;
+    // Get the current question ID - ensure we're using the correct index
+    const questionId = currentQuestions[currentQuestionIndex]?.id;
+    if (!questionId) {
+      console.error('[handlePlayerBuzzer] Invalid question ID at index', currentQuestionIndex);
+      return;
+    }
 
     try {
-      // Store the answer in the database
-      const { error } = await supabase
-        .from('player_answers')
-        .insert({ game_id: gameId, question_id: questionId, player_id: state.currentPlayer.id });
+      // First optimistically update local state for quick UI feedback
+      const optimistic: PlayerAnswer = {
+        playerId: state.currentPlayer.id,
+        playerName: state.currentPlayer.name,
+        timestamp: Date.now()
+      };
+      
+      // Add the player to the answer list if not already there
+      setCurrentRound(prev => {
+        const alreadyAnswered = prev.playerAnswers.some(a => a.playerId === optimistic.playerId);
+        if (alreadyAnswered) return prev;
+        
+        return { 
+          ...prev, 
+          playerAnswers: [...prev.playerAnswers, optimistic] 
+        };
+      });
+      
+      // Mark this player as having answered
+      setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
+      
+      // Make sure the narrator sees the pending answers
+      setShowPendingAnswers(true);
 
-      if (error && error.code !== '23505') {
-        console.error('[handlePlayerBuzzer] insert error', error);
+      // Then store the answer in the database with retry mechanism
+      // We'll try up to 3 times with exponential backoff
+      let attempts = 0;
+      const maxAttempts = 3;
+      let success = false;
+      
+      while (attempts < maxAttempts && !success) {
+        const { error } = await supabase
+          .from('player_answers')
+          .insert({ 
+            game_id: gameId, 
+            question_id: questionId, 
+            player_id: state.currentPlayer.id,
+            created_at: new Date().toISOString() // Explicitly set timestamp
+          });
+
+        if (!error || error.code === '23505') {
+          // Success or duplicate entry (player already buzzed)
+          success = true;
+        } else {
+          console.error(`[handlePlayerBuzzer] insert error attempt ${attempts + 1}:`, error);
+          attempts++;
+          if (attempts < maxAttempts) {
+            // Wait with exponential backoff
+            await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempts)));
+          }
+        }
       }
+
+      // Show feedback to the player
+      toast({
+        title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',
+        description: language === 'it' ? 'Sei in attesa di rispondere' : 'Waiting for your turn to answer'
+      });
     } catch (err) {
       console.error('[handlePlayerBuzzer] network error', err);
     }
-
-    // Optimistically update local state for quick UI feedback
-    const optimistic: PlayerAnswer = {
-      playerId: state.currentPlayer.id,
-      playerName: state.currentPlayer.name,
-      timestamp: Date.now()
-    };
-    
-    // Add the player to the answer list if not already there
-    setCurrentRound(prev =>
-      prev.playerAnswers.some(a => a.playerId === optimistic.playerId)
-        ? prev
-        : { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] }
-    );
-    
-    // Mark this player as having answered
-    setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
-    
-    // Make sure the narrator sees the pending answers
-    setShowPendingAnswers(true);
-
-    // Show feedback to the player
-    toast({
-      title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',
-      description: language === 'it' ? 'Sei in attesa di rispondere' : 'Waiting for your turn to answer'
-    });
   }, [state.currentPlayer, gameId, currentQuestionIndex, setAnsweredPlayers, setCurrentRound, setShowPendingAnswers, toast, language, currentQuestions]);
 
   return {

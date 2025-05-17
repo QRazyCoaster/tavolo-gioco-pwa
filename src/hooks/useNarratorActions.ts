@@ -1,9 +1,10 @@
+
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Player } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
 import { broadcastScoreUpdate, broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast';
-import { QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
+import { QUESTION_TIMER, QUESTIONS_PER_ROUND, CORRECT_ANSWER_POINTS, WRONG_ANSWER_POINTS, MIN_SCORE_LIMIT } from '@/utils/triviaConstants';
 
 export const useNarratorActions = (
   currentRoundNumber: number,
@@ -18,7 +19,10 @@ export const useNarratorActions = (
   
   const handleCorrectAnswer = useCallback((playerId: string) => {
     // Award points for correct answer
-    const newScore = (state.players.find(p => p.id === playerId)?.score || 0) + 10;
+    const currentScore = state.players.find(p => p.id === playerId)?.score || 0;
+    const newScore = currentScore + CORRECT_ANSWER_POINTS;
+    
+    // Update local state
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
     
     // Broadcast score update immediately to all players
@@ -32,7 +36,13 @@ export const useNarratorActions = (
     if (isLastQuestionOfRound) {
       // End of round - get next narrator and broadcast round end
       const nextNarratorId = getNextNarrator();
-      broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
+      
+      // Build updated scores array with the new score included
+      const updatedPlayers = state.players.map(p => 
+        p.id === playerId ? {...p, score: newScore} : p
+      );
+      
+      broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
       playAudio('success');
       
       // Show the round bridge for ALL players, including the current narrator
@@ -53,8 +63,11 @@ export const useNarratorActions = (
   }, [state.players, dispatch, currentQuestionIndex, getNextNarrator, currentRoundNumber, advanceQuestionLocally, setNextNarrator, setShowRoundBridge]);
 
   const handleWrongAnswer = useCallback((playerId: string) => {
-    // Deduct points for wrong answer
-    const newScore = (state.players.find(p => p.id === playerId)?.score || 0) - 5;
+    // Deduct points for wrong answer, but enforce minimum score limit
+    const currentScore = state.players.find(p => p.id === playerId)?.score || 0;
+    const newScore = Math.max(MIN_SCORE_LIMIT, currentScore + WRONG_ANSWER_POINTS);
+    
+    // Update local state
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
     
     // Broadcast score update immediately
@@ -73,7 +86,13 @@ export const useNarratorActions = (
         if (isLastQuestionOfRound) {
           // End of round - get next narrator and broadcast round end
           const nextNarratorId = getNextNarrator();
-          broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
+          
+          // Build updated players array with the new score included
+          const updatedPlayers = state.players.map(p => 
+            p.id === playerId ? {...p, score: newScore} : p
+          );
+          
+          broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
           
           // Show the round bridge for ALL players, including the current narrator
           setShowRoundBridge(true);

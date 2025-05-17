@@ -4,6 +4,9 @@
 // ─────────────────────────────────────────────────────────────
 export const QUESTION_TIMER = 90;
 export const QUESTIONS_PER_ROUND = 7;
+export const MIN_SCORE_LIMIT = -420; // New constant for minimum score
+export const CORRECT_ANSWER_POINTS = 10;
+export const WRONG_ANSWER_POINTS = -5;
 
 // ─────────────────────────────────────────────────────────────
 //  Demo questions
