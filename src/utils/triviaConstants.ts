@@ -1,7 +1,9 @@
 
-export const QUESTION_TIMER = 20;
-export const QUESTIONS_PER_ROUND = 7;
-
+export const QUESTIONS_PER_ROUND   = 7;
+export const QUESTION_TIMER        = 90;   // seconds  ← restored
+export const CORRECT_ANSWER_POINTS = 10;   // ← restored
+export const WRONG_ANSWER_POINTS   = -5;
+export const MIN_SCORE_LIMIT       = -420; // keep your preferred floor
 export const mockQuestions = [
   { 
     id: '1', 
