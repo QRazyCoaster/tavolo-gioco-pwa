@@ -133,49 +133,51 @@ export const useTriviaGame = () => {
     setShowPendingAnswers(true);
   }, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
 
-  // ---------------------------------------------------------------------------
-  //  📡  NARRATOR: subscribe to Realtime INSERTs for the current question
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!isNarrator || !state.gameId) return;
+// ----------------------------------------------------------
+//  NARRATOR: subscribe to every INSERT, filter in handler
+// ----------------------------------------------------------
+useEffect(() => {
+  if (!isNarrator || !state.gameId) return;
 
-    const questionId = currentRound.questions[currentRound.currentQuestionIndex].id;
+  const channel = supabase
+    .channel(`buzz-${state.gameId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'player_answers',
+        filter: `game_id=eq.${state.gameId}`   // ← only ONE filter here
+      },
+      payload => {
+        const { player_id, question_id, created_at } = payload.new;
 
-    const channel = supabase
-      .channel(`buzz-${state.gameId}-${questionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'player_answers',
-          filter: `game_id=eq.${state.gameId},question_id=eq.${questionId}`
-        },
-        payload => {
-          const { player_id, created_at } = payload.new as { player_id: string; created_at: string };
+        // Ignore rows for other questions
+        const currentQ = currentRound.questions[currentRound.currentQuestionIndex].id;
+        if (question_id !== currentQ) return;
 
-          setCurrentRound(prev => {
-            // skip if already queued (optimistic update from player’s own tab)
-            if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev;
-            const updated: PlayerAnswer[] = [
+        setCurrentRound(prev => {
+          if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev;
+          return {
+            ...prev,
+            playerAnswers: [
               ...prev.playerAnswers,
               {
                 playerId: player_id,
                 playerName: state.players.find(p => p.id === player_id)?.name || 'Player',
                 timestamp: new Date(created_at).valueOf()
               }
-            ].sort((a, b) => a.timestamp - b.timestamp);
-            return { ...prev, playerAnswers: updated };
-          });
-          setShowPendingAnswers(true);
-        }
-      )
-      .subscribe();
+            ].sort((a, b) => a.timestamp - b.timestamp)
+          };
+        });
+        setShowPendingAnswers(true);
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
+  return () => supabase.removeChannel(channel);
+}, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
+
 
   // ---------------------------------------------------------------------------
   //  ✅ Correct answer  (logic unchanged)
