@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/supabaseClient';
@@ -7,7 +6,7 @@ import { TriviaQuestion, PlayerAnswer, Round } from '@/types/trivia';
 import { playAudio } from '@/utils/audioUtils';
 
 // ─────────────────────────────────────────────────────────────
-//  Shared broadcast channel (one per session)
+//  Shared broadcast channel (singleton)
 // ─────────────────────────────────────────────────────────────
 let gameChannel: RealtimeChannel | null = null;
 
@@ -51,21 +50,7 @@ export const useTriviaGame = () => {
   useEffect(() => {
     if (!isNarrator) return;
     const t = setInterval(() => {
-      setCurrentRound(prev => {
-        // When timer reaches 0, trigger next question
-        if (prev.timeLeft <= 1) {
-          const nextIdx = Math.min(prev.currentQuestionIndex + 1, prev.questions.length - 1);
-          // Important: broadcast scores even on timeout
-          broadcastNextQuestion(nextIdx);
-          return { 
-            ...prev, 
-            currentQuestionIndex: nextIdx, 
-            playerAnswers: [],
-            timeLeft: QUESTION_TIMER 
-          };
-        }
-        return { ...prev, timeLeft: prev.timeLeft - 1 };
-      });
+      setCurrentRound(prev => ({ ...prev, timeLeft: Math.max(0, prev.timeLeft - 1) }));
     }, 1000);
     return () => clearInterval(t);
   }, [isNarrator]);
@@ -86,7 +71,7 @@ export const useTriviaGame = () => {
         .from('player_answers')
         .insert({ game_id: state.gameId, question_id: questionId, player_id: state.currentPlayer.id });
 
-      if (error && error.code !== '23505') {            // 23505 = duplicate key
+      if (error && error.code !== '23505') {
         console.error('[handlePlayerBuzzer] insert error', error);
       }
     } catch (err) {
@@ -108,27 +93,16 @@ export const useTriviaGame = () => {
   }, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
 
   // ────────────────────────────────────────────────────────────
-  //  Open shared Supabase channel once
+  //  Open shared channel once
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!state.gameId) return;
-    
-    if (!gameChannel) {
-      console.log(`[useTriviaGame] Creating new game channel for game-${state.gameId}`);
+    if (state.gameId && !gameChannel) {
       gameChannel = supabase.channel(`game-${state.gameId}`).subscribe();
     }
-
-    return () => {
-      if (gameChannel) {
-        console.log('[useTriviaGame] Cleaning up game channel');
-        supabase.removeChannel(gameChannel);
-        gameChannel = null;
-      }
-    };
   }, [state.gameId]);
 
   // ────────────────────────────────────────────────────────────
-  //  Narrator listens for INSERTs (player buzzes)
+  //  Narrator listens for buzzer INSERTs
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isNarrator || !state.gameId) return;
@@ -162,187 +136,118 @@ export const useTriviaGame = () => {
         })
       .subscribe();
 
-    // cleanup: ignore the Promise return value
     return () => { void supabase.removeChannel(dbChannel); };
   }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
 
   // ────────────────────────────────────────────────────────────
-  //  ALL CLIENTS: Listen for NEXT_QUESTION events & score updates
+  //  Listen for NEXT_QUESTION broadcasts
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!state.gameId || !gameChannel) return;
 
-    // Clear any existing subscription to avoid duplicates
-    gameChannel.unsubscribe();
-    
-    // Create a new subscription
-    const cleanChannel = supabase
-      .channel(`game-${state.gameId}`)
-      .on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
-        const { questionIndex, scores } = payload as any;
-        
-        console.log('[useTriviaGame] Received NEXT_QUESTION broadcast with scores:', scores);
+    const sub = gameChannel.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
+      const { questionIndex, scores } = payload as any;
 
-        // Update local round state
-        setCurrentRound(prev => ({
-          ...prev,
-          currentQuestionIndex: questionIndex,
-          playerAnswers: [],
-          timeLeft: QUESTION_TIMER
-        }));
-        
-        setAnsweredPlayers(new Set());
-        setShowPendingAnswers(false);
+      setCurrentRound(prev => ({
+        ...prev,
+        currentQuestionIndex: questionIndex,
+        playerAnswers: [],
+        timeLeft: QUESTION_TIMER
+      }));
+      setAnsweredPlayers(new Set());
+      setShowPendingAnswers(false);
 
-        // Update all player scores in the GameContext
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) => {
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-          });
-        }
-      })
-      .on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
-        const { scores } = payload as any;
-        
-        console.log('[useTriviaGame] Received SCORE_UPDATE broadcast with scores:', scores);
-        
-        // Update all player scores in the GameContext
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) => {
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-          });
-        }
-      })
-      .subscribe();
-      
-    gameChannel = cleanChannel;
+      scores.forEach((s: { id: string; score: number }) => {
+        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+      });
+    });
 
-    return () => { void supabase.removeChannel(cleanChannel); };
+    return () => { void sub; };        // no off()/unsubscribe needed
   }, [state.gameId, dispatch]);
 
-  // ────────────────────────────────────────────────────────────
-  //  Helper: Broadcast score updates to all clients
-  // ────────────────────────────────────────────────────────────
-  const broadcastScoreUpdate = useCallback(() => {
-    if (!gameChannel || !state.gameId) return;
-    
-    // Make sure we're sending the CURRENT scores from state.players
-    // This is critical - we need to use the actual updated scores
-    const currentScores = state.players.map(p => ({ 
-      id: p.id, 
-      score: p.score || 0 
-    }));
-    
-    console.log('[useTriviaGame] Broadcasting score update to all clients:', currentScores);
-    
-    // Send the broadcast with the current scores
-    gameChannel.send({ 
-      type: 'broadcast', 
-      event: 'SCORE_UPDATE', 
-      payload: { scores: currentScores } 
-    });
-  }, [state.players, state.gameId]);
+  // helpers ───────────────────────────────────────────────────
+  const broadcastNextQuestion = (
+    nextIndex: number,
+    scores?: { id: string; score: number }[]
+  ) => {
+    if (!gameChannel) return;
+    const payloadScores =
+      scores ?? state.players.map(p => ({ id: p.id, score: p.score || 0 }));
 
-  // ────────────────────────────────────────────────────────────
-  //  Helper: Broadcast NEXT_QUESTION with scores to all clients
-  // ────────────────────────────────────────────────────────────
-  const broadcastNextQuestion = (nextIndex: number) => {
-    if (!gameChannel || !state.gameId) return;
-    
-    // Important: Always send current scores from GameContext
-    // Make sure we're sending the current scores, not stale ones
-    const currentScores = state.players.map(p => ({ 
-      id: p.id, 
-      score: p.score || 0 
-    }));
-    
-    console.log('[useTriviaGame] Broadcasting scores with next question to all clients:', currentScores);
-    
-    gameChannel.send({ 
-      type: 'broadcast', 
-      event: 'NEXT_QUESTION', 
-      payload: { 
-        questionIndex: nextIndex, 
-        scores: currentScores
-      } 
+    console.log('[useTriviaGame] Broadcasting score update to all clients:', payloadScores);
+
+    gameChannel.send({
+      type: 'broadcast',
+      event: 'NEXT_QUESTION',
+      payload: { questionIndex: nextIndex, scores: payloadScores }
     });
   };
 
-  const advanceQuestionLocally = (update: (idx: number) => number) => {
-    setCurrentRound(prev => {
-      const nextIdx = update(prev.currentQuestionIndex);
-      return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
-    });
+  const advanceQuestionLocally = (nextIndex: number) => {
+    setCurrentRound(prev => ({
+      ...prev,
+      currentQuestionIndex: nextIndex,
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    }));
     setAnsweredPlayers(new Set());
     setShowPendingAnswers(false);
   };
 
   // ────────────────────────────────────────────────────────────
-  //  Correct & wrong answers
+  //  Correct answer
   // ────────────────────────────────────────────────────────────
   const handleCorrectAnswer = useCallback((playerId: string) => {
-    // Update score locally first
     const newScore = (state.players.find(p => p.id === playerId)?.score || 0) + 10;
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
-    
-    // IMPORTANT: Immediately broadcast the updated score to all clients
-    // We need to do this AFTER updating the score in the local state
-    setTimeout(() => {
-      broadcastScoreUpdate();
-    }, 100); // Small delay to ensure state update has completed
-    
-    // Advance to next question
-    advanceQuestionLocally(idx => Math.min(idx + 1, currentRound.questions.length - 1));
-    
-    // Broadcast to all players with UPDATED scores
-    setTimeout(() => {
-      broadcastNextQuestion(Math.min(currentRound.currentQuestionIndex + 1, currentRound.questions.length - 1));
-    }, 200); // Small delay to ensure score updates are processed first
-    
-    playAudio('success');
-  }, [state.players, dispatch, currentRound.questions.length, currentRound.currentQuestionIndex, broadcastScoreUpdate]);
 
+    const nextIdx = Math.min(currentRound.currentQuestionIndex + 1, currentRound.questions.length - 1);
+    advanceQuestionLocally(nextIdx);
+
+    // build fresh score array **including** the new score
+    const updatedScores = state.players.map(p =>
+      p.id === playerId ? { id: p.id, score: newScore } : { id: p.id, score: p.score || 0 }
+    );
+    broadcastNextQuestion(nextIdx, updatedScores);
+
+    playAudio('success');
+  }, [state.players, dispatch, currentRound.currentQuestionIndex, currentRound.questions.length]);
+
+  // ────────────────────────────────────────────────────────────
+  //  Wrong answer
+  // ────────────────────────────────────────────────────────────
   const handleWrongAnswer = useCallback((playerId: string) => {
-    // Update score locally first
     const newScore = Math.max(0, (state.players.find(p => p.id === playerId)?.score || 0) - 5);
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
-    
-    // IMPORTANT: Immediately broadcast the updated score to all clients
-    // We need to do this AFTER updating the score in the local state
-    setTimeout(() => {
-      broadcastScoreUpdate();
-    }, 100); // Small delay to ensure state update has completed
-    
+
     setCurrentRound(prev => {
       const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);
       if (remaining.length === 0) {
         const nextIdx = Math.min(prev.currentQuestionIndex + 1, prev.questions.length - 1);
-        
-        // Broadcast with UPDATED scores - but with a slight delay
-        setTimeout(() => {
-          broadcastNextQuestion(nextIdx);
-        }, 200);
-        
-        setAnsweredPlayers(new Set());
-        setShowPendingAnswers(false);
+        advanceQuestionLocally(nextIdx);
+
+        const updatedScores = state.players.map(p =>
+          p.id === playerId ? { id: p.id, score: newScore } : { id: p.id, score: p.score || 0 }
+        );
+        broadcastNextQuestion(nextIdx, updatedScores);
         playAudio('notification');
         return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
       }
       return { ...prev, playerAnswers: remaining };
     });
-    playAudio('error');
-  }, [state.players, dispatch, broadcastScoreUpdate]);
 
+    playAudio('error');
+  }, [state.players, dispatch]);
+
+  // ────────────────────────────────────────────────────────────
+  //  Manual next question
+  // ────────────────────────────────────────────────────────────
   const handleNextQuestion = useCallback(() => {
-    advanceQuestionLocally(idx => Math.min(idx + 1, currentRound.questions.length - 1));
-    
-    // Broadcast with current scores (with small delay to ensure state is updated)
-    setTimeout(() => {
-      broadcastNextQuestion(Math.min(currentRound.currentQuestionIndex + 1, currentRound.questions.length - 1));
-    }, 100);
-    
+    const nextIdx = Math.min(currentRound.currentQuestionIndex + 1, currentRound.questions.length - 1);
+    advanceQuestionLocally(nextIdx);
+    broadcastNextQuestion(nextIdx);
     playAudio('notification');
-  }, [currentRound.questions.length, currentRound.currentQuestionIndex]);
+  }, [currentRound.currentQuestionIndex, currentRound.questions.length]);
 
   // ────────────────────────────────────────────────────────────
   //  Return values for components
