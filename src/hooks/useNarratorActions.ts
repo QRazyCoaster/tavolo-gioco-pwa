@@ -1,163 +1,115 @@
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
-import {
-  broadcastScoreUpdate,
-  broadcastNextQuestion,
-  broadcastRoundEnd
-} from '@/utils/triviaBroadcast';
-import {
-  QUESTION_TIMER,
-  QUESTIONS_PER_ROUND,
-  CORRECT_ANSWER_POINTS,
-  WRONG_ANSWER_POINTS,
-  MIN_SCORE_LIMIT
-} from '@/utils/triviaConstants';
+import { Round } from '@/types/trivia';
+import { MIN_SCORE_LIMIT } from '@/utils/triviaConstants';
+import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast';
 
 export const useNarratorActions = (
-  currentRoundNumber: number,
+  roundNumber: number,
   currentQuestionIndex: number,
-  getNextNarrator: () => string,
-  advanceQuestionLocally: (nextIndex: number) => void,
-  setNextNarrator: React.Dispatch<React.SetStateAction<string>>,
-  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
-  setCurrentRound: React.Dispatch<React.SetStateAction<any>>
+  getNextNarrator: () => { nextNarratorId: string; isGameOver: boolean },
+  advanceQuestionLocally: (idx: number) => void,
+  setNextNarrator: (id: string) => void,
+  setShowRoundBridge: (show: boolean) => void,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  setGameOver?: (over: boolean) => void
 ) => {
   const { state, dispatch } = useGame();
 
-  // ───────────────────────────────────────────────────────────
-  //  Helpers
-  // ───────────────────────────────────────────────────────────
-  const withUpdatedScores = (playerId: string, delta: number) => {
-    const current = state.players.find(p => p.id === playerId)?.score || 0;
-    const newScore = Math.max(MIN_SCORE_LIMIT, current + delta);
-    dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
-
-    // return a fresh copy of all players with the updated score included
-    return state.players.map(p =>
-      p.id === playerId ? { ...p, score: newScore } : { ...p }
-    );
-  };
-
-  // ───────────────────────────────────────────────────────────
-  //  Correct answer
-  // ───────────────────────────────────────────────────────────
-  const handleCorrectAnswer = useCallback(
-    (playerId: string) => {
-      const updatedPlayers = withUpdatedScores(playerId, CORRECT_ANSWER_POINTS);
-
-      const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
-
-      if (isLast) {
-        const nextNarratorId = getNextNarrator();
-        broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
-        setShowRoundBridge(true);
-        setNextNarrator(nextNarratorId);
-        playAudio('success');
-      } else {
-        const nextIdx = currentQuestionIndex + 1;
-        advanceQuestionLocally(nextIdx);
-        broadcastNextQuestion(nextIdx, updatedPlayers);
-        playAudio('success');
+  // Award points to the player who answered correctly
+  const handleCorrectAnswer = useCallback((playerId: string) => {
+    playAudio('success');
+    
+    // Find player and update score
+    const player = state.players.find(p => p.id === playerId);
+    if (!player) return;
+    
+    // Award 1 point for correct answer
+    const newScore = (player.score || 0) + 1;
+    dispatch({
+      type: 'UPDATE_SCORE',
+      payload: {
+        playerId,
+        score: newScore
       }
+    });
+    
+    // Update all scores via broadcast (for reliability)
+    broadcastNextQuestion(currentQuestionIndex, state.players);
+  }, [state.players, currentQuestionIndex, dispatch]);
+  
+  // Deduct points for wrong answer
+  const handleWrongAnswer = useCallback((playerId: string) => {
+    playAudio('error');
+    
+    // Find player and update score
+    const player = state.players.find(p => p.id === playerId);
+    if (!player) return;
+    
+    // Deduct 5 points for wrong answer but don't go below MIN_SCORE_LIMIT
+    const newScore = Math.max(MIN_SCORE_LIMIT, (player.score || 0) - 5);
+    dispatch({
+      type: 'UPDATE_SCORE',
+      payload: {
+        playerId,
+        score: newScore
+      }
+    });
+  }, [state.players, dispatch]);
 
-      broadcastScoreUpdate(updatedPlayers);
-    },
-    [
-      currentQuestionIndex,
-      currentRoundNumber,
-      advanceQuestionLocally,
-      getNextNarrator,
-      setNextNarrator,
-      setShowRoundBridge,
-      state.players
-    ]
-  );
-
-  // ───────────────────────────────────────────────────────────
-  //  Wrong answer
-  // ───────────────────────────────────────────────────────────
-  const handleWrongAnswer = useCallback(
-    (playerId: string) => {
-      const updatedPlayers = withUpdatedScores(playerId, WRONG_ANSWER_POINTS);
-
-      setCurrentRound(prev => {
-        const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);
-
-        if (remaining.length === 0) {
-          const isLast = prev.currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
-
-          if (isLast) {
-            const nextNarratorId = getNextNarrator();
-            broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
-            setShowRoundBridge(true);
-            setNextNarrator(nextNarratorId);
-            playAudio('notification');
-          } else {
-            const nextIdx = prev.currentQuestionIndex + 1;
-            advanceQuestionLocally(nextIdx);
-            broadcastNextQuestion(nextIdx, updatedPlayers);
-            playAudio('notification');
-            return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
-          }
-        }
-        return { ...prev, playerAnswers: remaining };
-      });
-
-      broadcastScoreUpdate(updatedPlayers);
-      playAudio('error');
-    },
-    [
-      currentRoundNumber,
-      getNextNarrator,
-      advanceQuestionLocally,
-      setNextNarrator,
-      setShowRoundBridge,
-      setCurrentRound,
-      state.players
-    ]
-  );
-
-  // ───────────────────────────────────────────────────────────
+  // Move to the next question when narrator clicks "Next"
   const handleNextQuestion = useCallback(() => {
-    const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
-
-    if (isLast) {
-      const nextNarratorId = getNextNarrator();
-      broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
-      setShowRoundBridge(true);
+    const totalQuestions = 7; // This should match QUESTIONS_PER_ROUND or be passed in
+    const isLastQuestion = currentQuestionIndex >= totalQuestions - 1;
+    
+    if (isLastQuestion) {
+      // End of round - determine next narrator
+      const { nextNarratorId, isGameOver } = getNextNarrator();
       setNextNarrator(nextNarratorId);
+      
+      // Broadcast round end to all clients
+      broadcastRoundEnd(roundNumber, nextNarratorId, state.players, isGameOver);
+      
+      // Show end screen if game is over
+      if (isGameOver && setGameOver) {
+        console.log("[useNarratorActions] Game over - last narrator reached");
+        setShowRoundBridge(true);
+        setTimeout(() => {
+          setGameOver(true);
+        }, 6500);
+      } else {
+        // Otherwise show round bridge
+        setShowRoundBridge(true);
+      }
     } else {
-      const nextIdx = currentQuestionIndex + 1;
-      advanceQuestionLocally(nextIdx);
-      broadcastNextQuestion(nextIdx, state.players);
+      // Just move to next question
+      const nextIndex = currentQuestionIndex + 1;
+      advanceQuestionLocally(nextIndex);
+      broadcastNextQuestion(nextIndex, state.players);
     }
-
-    playAudio('notification');
   }, [
-    currentQuestionIndex,
-    currentRoundNumber,
-    advanceQuestionLocally,
+    currentQuestionIndex, 
+    roundNumber,
     getNextNarrator,
     setNextNarrator,
     setShowRoundBridge,
-    state.players
+    advanceQuestionLocally,
+    state.players,
+    setGameOver
   ]);
+  
+  // When the timer runs out
+  const handleTimeUp = useCallback(() => {
+    // If time's up, treat it like "Next Question" but play a sound
+    playAudio('error');
+    handleNextQuestion();
+  }, [handleNextQuestion]);
 
-  const handleTimeUp = () => {
-    const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
-
-    if (isLast) {
-      const nextNarratorId = getNextNarrator();
-      broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
-      setNextNarrator(nextNarratorId);
-      setShowRoundBridge(true);
-    } else {
-      const nextIdx = currentQuestionIndex + 1;
-      advanceQuestionLocally(nextIdx);
-      broadcastNextQuestion(nextIdx, state.players);
-    }
+  return {
+    handleCorrectAnswer,
+    handleWrongAnswer,
+    handleNextQuestion,
+    handleTimeUp
   };
-
-  return { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion, handleTimeUp };
 };

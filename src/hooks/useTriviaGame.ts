@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/supabaseClient';
@@ -6,7 +7,8 @@ import { Round } from '@/types/trivia';
 import {
   mockQuestions,
   QUESTION_TIMER,
-  QUESTIONS_PER_ROUND
+  QUESTIONS_PER_ROUND,
+  MIN_SCORE_LIMIT
 } from '@/utils/triviaConstants';
 import {
   setGameChannel,
@@ -36,8 +38,9 @@ export const useTriviaGame = () => {
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
   const [showPendingAnswers, setShowPendingAnswers] = useState(false);
-  const [showRoundBridge,  setShowRoundBridge]  = useState(false);
-  const [nextNarrator,     setNextNarrator]     = useState('');
+  const [showRoundBridge, setShowRoundBridge] = useState(false);
+  const [nextNarrator, setNextNarrator] = useState('');
+  const [gameOver, setGameOver] = useState(false); // New game over state
 
   const narratorSubRef = useRef<any>(null);
   const gameChannelRef = useRef<any>(null);
@@ -47,10 +50,15 @@ export const useTriviaGame = () => {
 
   /* helper to pick next narrator ------------------------------------------------ */
   const getNextNarrator = useCallback(() => {
+    // Game is over if we've gone through all players as narrators
     if (currentRound.roundNumber >= state.players.length) {
-      return state.players.find(p => p.isHost)?.id || '';
+      console.log("[useTriviaGame] Game will end after this round - last narrator reached");
+      return { nextNarratorId: state.players[0].id, isGameOver: true };
     }
-    return state.players[currentRound.roundNumber]?.id || state.players[0].id;
+    return { 
+      nextNarratorId: state.players[currentRound.roundNumber]?.id || state.players[0].id,
+      isGameOver: false 
+    };
   }, [currentRound.roundNumber, state.players]);
 
   const advanceQuestionLocally = (idx: number) => {
@@ -94,7 +102,8 @@ export const useTriviaGame = () => {
     advanceQuestionLocally,
     setNextNarrator,
     setShowRoundBridge,
-    setCurrentRound
+    setCurrentRound,
+    setGameOver // Pass the new setGameOver function
   );
 
   /* open one shared channel ----------------------------------------------------- */
@@ -154,7 +163,7 @@ export const useTriviaGame = () => {
     });
 
     ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
-      const { nextRound, nextNarratorId, scores } = payload as any;
+      const { nextRound, nextNarratorId, scores, isGameOver } = payload as any;
       scores?.forEach((s: any) =>
         dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
       );
@@ -162,21 +171,32 @@ export const useTriviaGame = () => {
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
       setNextNarrator(nextNarratorId);
-      setShowRoundBridge(true);
+      
+      // Handle game over state
+      if (isGameOver) {
+        console.log("[useTriviaGame] Game over received from broadcast");
+        setTimeout(() => {
+          setGameOver(true);
+        }, 6500); // Wait for round bridge to complete
+      } else {
+        setShowRoundBridge(true);
+      }
 
       setTimeout(() => {
-        const newQuestions = mockQuestions
-          .slice(0, QUESTIONS_PER_ROUND)
-          .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
+        if (!isGameOver) {
+          const newQuestions = mockQuestions
+            .slice(0, QUESTIONS_PER_ROUND)
+            .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
 
-        setCurrentRound({
-          roundNumber: nextRound,
-          narratorId: nextNarratorId,
-          questions: newQuestions,
-          currentQuestionIndex: 0,
-          playerAnswers: [],
-          timeLeft: QUESTION_TIMER
-        });
+          setCurrentRound({
+            roundNumber: nextRound,
+            narratorId: nextNarratorId,
+            questions: newQuestions,
+            currentQuestionIndex: 0,
+            playerAnswers: [],
+            timeLeft: QUESTION_TIMER
+          });
+        }
       }, 6500);
     });
 
@@ -194,7 +214,7 @@ export const useTriviaGame = () => {
     narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
 
     const dbCh = supabase
-      .channel(`buzzes_${state.gameId}`)
+      .channel(`buzzes_${state.gameId}_${currentRound.currentQuestionIndex}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
@@ -203,6 +223,8 @@ export const useTriviaGame = () => {
           const currentQ = currentRound.questions[currentRound.currentQuestionIndex]?.id;
           if (row.question_id !== currentQ) return;
 
+          console.log(`[useTriviaGame] Received DB notification for player_answer: ${row.player_id}`);
+          
           setCurrentRound(prev => {
             if (prev.playerAnswers.some(a => a.playerId === row.player_id)) return prev;
             const player = state.players.find(p => p.id === row.player_id);
@@ -233,7 +255,7 @@ export const useTriviaGame = () => {
 
   /* narrator timer ------------------------------------------------------------- */
   useEffect(() => {
-    if (!isNarrator || showRoundBridge) return;
+    if (!isNarrator || showRoundBridge || gameOver) return;
     const t = setInterval(() => {
       setCurrentRound(prev => {
         const tl = Math.max(0, prev.timeLeft - 1);
@@ -242,7 +264,7 @@ export const useTriviaGame = () => {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [isNarrator, showRoundBridge]);
+  }, [isNarrator, showRoundBridge, gameOver]);
 
   /* bridge continue ----------------------------------------------------------- */
   const startNextRound = () => {
@@ -272,6 +294,7 @@ export const useTriviaGame = () => {
     showRoundBridge,
     nextNarrator: state.players.find(p => p.id === nextNarrator),
     nextRoundNumber: currentRound.roundNumber + 1,
-    startNextRound
+    startNextRound,
+    gameOver
   };
 };

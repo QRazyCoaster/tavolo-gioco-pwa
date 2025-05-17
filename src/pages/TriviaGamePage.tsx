@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import NarratorView from '@/components/trivia/NarratorView';
 import PlayerView from '@/components/trivia/PlayerView';
 import RoundBridgePage from '@/components/trivia/RoundBridgePage';
+import GameEndScreen from '@/components/trivia/GameEndScreen';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 
@@ -36,7 +38,8 @@ const TriviaGamePage = () => {
     showRoundBridge,
     nextNarrator,
     nextRoundNumber,
-    startNextRound
+    startNextRound,
+    gameOver
   } = useTriviaGame();
 
   /* ────────────────────────────────────────
@@ -93,6 +96,17 @@ const TriviaGamePage = () => {
   }
 
   if (!state.gameId || !state.pin) return null;
+
+  // Show game end screen if game is over
+  if (gameOver) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
+        <div className="max-w-4xl mx-auto">
+          <GameEndScreen players={state.players} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
