@@ -177,7 +177,6 @@ useEffect(() => {
   };
 }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
 
-
   // ---------------------------------------------------------------------------
   //  ✅ Correct answer  (logic unchanged)
   // ---------------------------------------------------------------------------
