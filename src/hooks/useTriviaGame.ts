@@ -38,7 +38,15 @@ const mockQuestions: TriviaQuestion[] = [
   categoryId: 'science',
   difficulty: 'easy'
 },
-…
+{
+  id: '8',
+  textEn: 'Am i getting good or not? aha',
+  textIt: 'Am i getting good or not? aha?',
+  answerEn: 'Yeye',
+  answerIt: 'yeye',
+  categoryId: 'history',
+  difficulty: 'easy'
+},
 
 ];
 
