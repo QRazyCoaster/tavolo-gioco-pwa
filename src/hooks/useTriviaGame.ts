@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Round, TriviaQuestion } from '@/types/trivia';
 import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
-import { broadcastScoreUpdate } from '@/utils/triviaBroadcast';
+import { broadcastScoreUpdate, broadcastNextQuestion } from '@/utils/triviaBroadcast';
 import { useQuestionManager } from './useQuestionManager';
 import { usePlayerActions } from './usePlayerActions';
 import { useNarratorActions } from './useNarratorActions';
