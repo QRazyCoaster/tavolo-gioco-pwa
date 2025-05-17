@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useGame } from '@/context/GameContext';
-import { Round } from '@/types/trivia';
+import { Round, TriviaQuestion } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/LanguageContext';
 import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
@@ -15,14 +15,14 @@ export const useTriviaGame = () => {
   const { toast } = useToast();
   const { language } = useLanguage();
 
-  const [currentRound, setCurrentRound] = useState<Round>(() => ({
+  const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
     narratorId: state.players.find(p => p.isHost)?.id || '',
-    questions: mockQuestions.slice(0, QUESTIONS_PER_ROUND),
+    questions: mockQuestions.slice(0, QUESTIONS_PER_ROUND) as TriviaQuestion[],
     currentQuestionIndex: 0,
     playerAnswers: [],
     timeLeft: QUESTION_TIMER
-  }));
+  });
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
   const [showPendingAnswers, setShowPendingAnswers] = useState(false);
@@ -102,7 +102,7 @@ export const useTriviaGame = () => {
     setCurrentRound
   );
 
-  // ────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────��──────────────────────
   //  Narrator timer
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
