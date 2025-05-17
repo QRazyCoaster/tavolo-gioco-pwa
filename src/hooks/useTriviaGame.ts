@@ -58,36 +58,47 @@ export const useTriviaGame = () => {
     return () => clearInterval(t);
   }, [isNarrator]);
 
-  // ╭────────────────────────────────────────────────────╮
-  // │ PLAYER presses the buzzer → insert row             │
-  // ╰────────────────────────────────────────────────────╯
-  const handlePlayerBuzzer = useCallback(async () => {
-    if (!state.currentPlayer || isNarrator || hasPlayerAnswered || !state.gameId) return;
+ // ────────────────────────────────────────────────────────────
+//  PLAYER presses the buzzer  →  write row in Supabase
+// ────────────────────────────────────────────────────────────
+const handlePlayerBuzzer = useCallback(async () => {
+  if (!state.currentPlayer || isNarrator || hasPlayerAnswered || !state.gameId) return;
 
-    window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer')) : playAudio('buzzer');
+  // local sound for immediate feedback
+  window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
+                  : playAudio('buzzer');
 
-    const questionId = currentRound.questions[currentRound.currentQuestionIndex].id;
+  const questionId = currentRound.questions[currentRound.currentQuestionIndex].id;
 
-    await supabase
+  // v2 style: insert + try/catch
+  try {
+    const { error } = await supabase
       .from('player_answers')
-      .insert({ game_id: state.gameId, question_id: questionId, player_id: state.currentPlayer.id })
-      .single()
-      .catch(err => console.error('[handlePlayerBuzzer] insert error', err.message));
+      .insert({ game_id: state.gameId, question_id: questionId, player_id: state.currentPlayer.id });
 
-    // optimistic UI
-    const optimistic: PlayerAnswer = {
-      playerId: state.currentPlayer.id,
-      playerName: state.currentPlayer.name,
-      timestamp: Date.now()
-    };
-    setCurrentRound(prev =>
-      prev.playerAnswers.some(a => a.playerId === optimistic.playerId)
-        ? prev
-        : { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] }
-    );
-    setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
-    setShowPendingAnswers(true);
-  }, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
+    // ignore duplicate-key errors (player already queued)
+    if (error && error.code !== '23505') {
+      console.error('[handlePlayerBuzzer] Supabase insert error', error);
+    }
+  } catch (err) {
+    console.error('[handlePlayerBuzzer] network / client error', err);
+  }
+
+  // optimistic local queue
+  const optimistic: PlayerAnswer = {
+    playerId: state.currentPlayer.id,
+    playerName: state.currentPlayer.name,
+    timestamp: Date.now()
+  };
+  setCurrentRound(prev =>
+    prev.playerAnswers.some(a => a.playerId === optimistic.playerId)
+      ? prev
+      : { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] }
+  );
+  setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
+  setShowPendingAnswers(true);
+}, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
+
 
   // ╭────────────────────────────────────────────────────╮
   // │ Open shared Supabase channel (once per session)    │
