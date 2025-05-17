@@ -134,48 +134,57 @@ export const useTriviaGame = () => {
   }, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
 
 // ----------------------------------------------------------
-//  NARRATOR (Supabase v1 syntax): listen for INSERTs
+//  NARRATOR (Supabase v2 syntax): listen for INSERTs
 // ----------------------------------------------------------
 useEffect(() => {
   if (!isNarrator || !state.gameId) return;
 
-  // v-1 SDK: use .from().on().subscribe()
-  const subscription = supabase
-    .from('player_answers')
-    .on('INSERT', payload => {
-      const { player_id, game_id, question_id, created_at } = payload.new as any;
+  const channel = supabase
+    .channel(`buzz-${state.gameId}`)                     // ➊ any unique name
+    .on(
+      'postgres_changes',
+      {                                                  // ➋ ONE filter only
+        event: 'INSERT',
+        schema: 'public',
+        table: 'player_answers',
+        filter: `game_id=eq.${state.gameId}`
+      },
+      payload => {
+        const { player_id, question_id, created_at } = payload.new as any;
 
-      // Make sure this row belongs to our game
-      if (game_id !== state.gameId) return;
+        // show only answers for the current question
+        const currentQ =
+          currentRound.questions[currentRound.currentQuestionIndex].id;
+        if (question_id !== currentQ) return;
 
-      // Ignore answers from previous / next questions
-      const currentQ = currentRound.questions[currentRound.currentQuestionIndex].id;
-      if (question_id !== currentQ) return;
-
-      setCurrentRound(prev => {
-        if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev; // already queued
-        return {
-          ...prev,
-          playerAnswers: [
-            ...prev.playerAnswers,
-            {
-              playerId: player_id,
-              playerName: state.players.find(p => p.id === player_id)?.name || 'Player',
-              timestamp: new Date(created_at).valueOf()
-            }
-          ].sort((a, b) => a.timestamp - b.timestamp)
-        };
-      });
-
-      setShowPendingAnswers(true);
-    })
+        setCurrentRound(prev => {
+          if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev;
+          return {
+            ...prev,
+            playerAnswers: [
+              ...prev.playerAnswers,
+              {
+                playerId: player_id,
+                playerName:
+                  state.players.find(p => p.id === player_id)?.name || 'Player',
+                timestamp: new Date(created_at).valueOf()
+              }
+            ].sort((a, b) => a.timestamp - b.timestamp)
+          };
+        });
+        setShowPendingAnswers(true);
+      }
+    )
     .subscribe();
 
-  // cleanup when component unmounts or deps change
-  return () => {
-    supabase.removeSubscription(subscription);
-  };
-}, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
+  return () => supabase.removeChannel(channel);
+}, [
+  isNarrator,
+  state.gameId,
+  currentRound.currentQuestionIndex,
+  state.players,
+  setShowPendingAnswers
+]);
 
   // ---------------------------------------------------------------------------
   //  ✅ Correct answer  (logic unchanged)
