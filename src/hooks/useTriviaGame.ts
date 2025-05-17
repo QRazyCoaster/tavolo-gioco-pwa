@@ -11,7 +11,7 @@ import { playAudio } from '@/utils/audioUtils';
 // ─────────────────────────────────────────────────────────────
 let gameChannel: RealtimeChannel | null = null;
 
-// ──────────────────���──────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 //  Constants
 // ─────────────────────────────────────────────────────────────
 const QUESTION_TIMER = 90;
@@ -26,33 +26,33 @@ const mockQuestions: TriviaQuestion[] = [
   { id: '3', textEn: 'What is the chemical symbol for water?', textIt: "Qual è il simbolo chimico dell'acqua?", answerEn: 'H2O', answerIt: 'H2O', categoryId: 'science', difficulty: 'easy' },
   { id: '4', textEn: 'What planet is known as the Red Planet?', textIt: 'Quale pianeta è conosciuto come il Pianeta Rosso?', answerEn: 'Mars', answerIt: 'Marte', categoryId: 'astronomy', difficulty: 'easy' },
   { id: '5', textEn: 'Who wrote "Romeo and Juliet"?', textIt: 'Chi ha scritto "Romeo e Giulietta"?', answerEn: 'William Shakespeare', answerIt: 'William Shakespeare', categoryId: 'literature', difficulty: 'easy' },
-{
-  id: '6',
-  textEn: 'In what year did the Titanic sink?',
-  textIt: 'In che anno affondò il Titanic?',
-  answerEn: '1912',
-  answerIt: '1912',
-  categoryId: 'history',
-  difficulty: 'easy'
-},
-{
-  id: '7',
-  textEn: 'Which gas do plants absorb from the atmosphere?',
-  textIt: 'Quale gas assorbono le piante dall’atmosfera?',
-  answerEn: 'Carbon dioxide',
-  answerIt: 'Anidride carbonica',
-  categoryId: 'science',
-  difficulty: 'easy'
-},
-{
-  id: '8',
-  textEn: 'Am i getting good or not? aha',
-  textIt: 'Am i getting good or not? aha?',
-  answerEn: 'Yeye',
-  answerIt: 'yeye',
-  categoryId: 'history',
-  difficulty: 'easy'
-},
+  {
+    id: '6',
+    textEn: 'In what year did the Titanic sink?',
+    textIt: 'In che anno affondò il Titanic?',
+    answerEn: '1912',
+    answerIt: '1912',
+    categoryId: 'history',
+    difficulty: 'easy'
+  },
+  {
+    id: '7',
+    textEn: 'Which gas do plants absorb from the atmosphere?',
+    textIt: 'Quale gas assorbono le piante dall'atmosfera?',
+    answerEn: 'Carbon dioxide',
+    answerIt: 'Anidride carbonica',
+    categoryId: 'science',
+    difficulty: 'easy'
+  },
+  {
+    id: '8',
+    textEn: 'Am i getting good or not? aha',
+    textIt: 'Am i getting good or not? aha?',
+    answerEn: 'Yeye',
+    answerIt: 'yeye',
+    categoryId: 'history',
+    difficulty: 'easy'
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export const useTriviaGame = () => {
   const [showRoundBridge, setShowRoundBridge] = useState(false);
   const [nextNarrator, setNextNarrator] = useState<string>('');
 
-  // CRITICAL - Check if the current player is the narrator based on currentRound.narratorId
+  // Check if the current player is the narrator based on currentRound.narratorId
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = state.currentPlayer ? answeredPlayers.has(state.currentPlayer.id) : false;
   
@@ -118,7 +118,7 @@ export const useTriviaGame = () => {
       setNextNarrator(nextNarratorId);
       broadcastRoundEnd(nextNarratorId);
       
-      // FIX: Ensure the narrator also sees the round bridge
+      // Ensure everyone sees the round bridge
       setShowRoundBridge(true);
     } else {
       // Just proceed to next question in this round
@@ -132,14 +132,18 @@ export const useTriviaGame = () => {
   //  PLAYER presses the buzzer
   // ────────────────────────────────────────────────────────────
   const handlePlayerBuzzer = useCallback(async () => {
+    // Make sure the current player isn't the narrator, hasn't already answered, and there's a valid game
     if (!state.currentPlayer || isNarrator || hasPlayerAnswered || !state.gameId) return;
 
+    // Play buzzer sound
     window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
                     : playAudio('buzzer');
 
+    // Get the current question ID
     const questionId = currentRound.questions[currentRound.currentQuestionIndex].id;
 
     try {
+      // Store the answer in the database
       const { error } = await supabase
         .from('player_answers')
         .insert({ game_id: state.gameId, question_id: questionId, player_id: state.currentPlayer.id });
@@ -151,17 +155,24 @@ export const useTriviaGame = () => {
       console.error('[handlePlayerBuzzer] network error', err);
     }
 
+    // Optimistically update local state for quick UI feedback
     const optimistic: PlayerAnswer = {
       playerId: state.currentPlayer.id,
       playerName: state.currentPlayer.name,
       timestamp: Date.now()
     };
+    
+    // Add the player to the answer list if not already there
     setCurrentRound(prev =>
       prev.playerAnswers.some(a => a.playerId === optimistic.playerId)
         ? prev
         : { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] }
     );
+    
+    // Mark this player as having answered
     setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
+    
+    // Make sure the narrator sees the pending answers
     setShowPendingAnswers(true);
   }, [state.currentPlayer, state.gameId, isNarrator, hasPlayerAnswered, currentRound]);
 
@@ -169,6 +180,7 @@ export const useTriviaGame = () => {
   //  Open shared channel once
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Create a channel for this game if it doesn't exist yet
     if (state.gameId && !gameChannel) {
       gameChannel = supabase.channel(`game-${state.gameId}`).subscribe();
     }
@@ -178,21 +190,29 @@ export const useTriviaGame = () => {
   //  Narrator listens for buzzer INSERTs
   // ────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Only the current narrator needs to listen for player answers
     if (!isNarrator || !state.gameId) return;
 
+    // Set up a real-time subscription to player_answers table
     const dbChannel = supabase
       .channel('player_answers_all')
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
         payload => {
           const { player_id, game_id, question_id, created_at } = payload.new as any;
+          
+          // Ignore answers for other games
           if (game_id !== state.gameId) return;
 
+          // Ignore answers for questions other than the current one
           const currentQ = currentRound.questions[currentRound.currentQuestionIndex].id;
           if (question_id !== currentQ) return;
 
+          // Update the list of player answers
           setCurrentRound(prev => {
+            // Don't add the same player twice
             if (prev.playerAnswers.some(a => a.playerId === player_id)) return prev;
+            
             return {
               ...prev,
               playerAnswers: [
@@ -205,10 +225,13 @@ export const useTriviaGame = () => {
               ]
             };
           });
+          
+          // Show the pending answers panel to the narrator
           setShowPendingAnswers(true);
         })
       .subscribe();
 
+    // Clean up subscription when component unmounts or narrator changes
     return () => { void supabase.removeChannel(dbChannel); };
   }, [isNarrator, state.gameId, currentRound.currentQuestionIndex, state.players]);
 
@@ -218,15 +241,19 @@ export const useTriviaGame = () => {
   useEffect(() => {
     if (!state.gameId || !gameChannel) return;
 
+    // Listen for broadcast events from narrators
     const nextQuestionSub = gameChannel.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
       const { questionIndex, scores } = payload as any;
 
+      // Update the current question
       setCurrentRound(prev => ({
         ...prev,
         currentQuestionIndex: questionIndex,
         playerAnswers: [],
         timeLeft: QUESTION_TIMER
       }));
+      
+      // Reset the list of players who have answered
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
 
@@ -236,6 +263,7 @@ export const useTriviaGame = () => {
       });
     });
 
+    // Listen for score updates
     const scoreUpdateSub = gameChannel.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
       const { scores } = payload as any;
       console.log('[useTriviaGame] Received SCORE_UPDATE broadcast with scores:', scores);
@@ -248,6 +276,7 @@ export const useTriviaGame = () => {
       });
     });
 
+    // Listen for round end events
     const roundEndSub = gameChannel.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
       const { nextRound, nextNarratorId, scores } = payload as any;
       
@@ -258,13 +287,13 @@ export const useTriviaGame = () => {
         dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
       });
       
-      // Set next narrator and show round bridge
+      // Set next narrator and show round bridge for ALL players
       setNextNarrator(nextNarratorId);
       setShowRoundBridge(true);
       
       // After round bridge is shown, prepare for the next round
       setTimeout(() => {
-        // CRITICAL FIX: Update the narrator ID in the current round state to switch views
+        // Update the narrator ID in the current round state to switch views for all players
         setCurrentRound(prev => ({
           ...prev,
           roundNumber: nextRound,
@@ -276,6 +305,7 @@ export const useTriviaGame = () => {
       }, 6500); // Slightly longer than the bridge page display time
     });
 
+    // Return cleanup functions
     return () => { 
       void nextQuestionSub;
       void scoreUpdateSub;
@@ -293,6 +323,7 @@ export const useTriviaGame = () => {
     const scores = state.players.map(p => ({ id: p.id, score: p.score || 0 }));
     console.log('[useTriviaGame] Broadcasting score update to all clients:', scores);
     
+    // Send score updates to all players
     gameChannel.send({
       type: 'broadcast',
       event: 'SCORE_UPDATE',
@@ -306,9 +337,11 @@ export const useTriviaGame = () => {
   ) => {
     if (!gameChannel) return;
     
+    // Use provided scores or get current scores from game state
     const payloadScores = scores ?? state.players.map(p => ({ id: p.id, score: p.score || 0 }));
     console.log('[useTriviaGame] Broadcasting next question with scores:', payloadScores);
     
+    // Send next question event to all players
     gameChannel.send({
       type: 'broadcast',
       event: 'NEXT_QUESTION',
@@ -319,8 +352,10 @@ export const useTriviaGame = () => {
   const broadcastRoundEnd = (nextNarratorId: string) => {
     if (!gameChannel) return;
     
+    // Get current scores from game state
     const scores = state.players.map(p => ({ id: p.id, score: p.score || 0 }));
     
+    // Send round end event to all players
     gameChannel.send({
       type: 'broadcast',
       event: 'ROUND_END',
@@ -336,20 +371,25 @@ export const useTriviaGame = () => {
   // Question management helpers
   // ────────────────────────────────────────────────────────────
   const advanceQuestionLocally = (nextIndex: number) => {
+    // Update local state to move to the next question
     setCurrentRound(prev => ({
       ...prev,
       currentQuestionIndex: nextIndex,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER
     }));
+    
+    // Reset the list of players who have answered
     setAnsweredPlayers(new Set());
     setShowPendingAnswers(false);
   };
 
   const startNextRound = () => {
+    // Hide the round bridge
     setShowRoundBridge(false);
     
-    // IMPORTANT: Make sure the narratorId is properly updated when starting the new round
+    // Ensure the narratorId is properly updated when starting the new round
+    // This is critical for the view transition between narrator and player roles
     setCurrentRound(prev => ({
       ...prev,
       narratorId: nextNarrator,
@@ -360,6 +400,7 @@ export const useTriviaGame = () => {
   //  Correct answer
   // ────────────────────────────────────────────────────────────
   const handleCorrectAnswer = useCallback((playerId: string) => {
+    // Award points for correct answer
     const newScore = (state.players.find(p => p.id === playerId)?.score || 0) + 10;
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
     
@@ -377,7 +418,7 @@ export const useTriviaGame = () => {
       broadcastRoundEnd(nextNarratorId);
       playAudio('success');
       
-      // FIX: Explicitly show the round bridge for the narrator too
+      // Show the round bridge for ALL players, including the current narrator
       setShowRoundBridge(true);
       setNextNarrator(nextNarratorId);
     } else {
@@ -398,6 +439,7 @@ export const useTriviaGame = () => {
   //  Wrong answer
   // ────────────────────────────────────────────────────────────
   const handleWrongAnswer = useCallback((playerId: string) => {
+    // Deduct points for wrong answer
     const newScore = (state.players.find(p => p.id === playerId)?.score || 0) - 5;
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
     
@@ -407,6 +449,7 @@ export const useTriviaGame = () => {
     }, 100);
 
     setCurrentRound(prev => {
+      // Remove the player who answered incorrectly
       const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);
       
       // If no more answers, advance to next question or round
@@ -418,7 +461,7 @@ export const useTriviaGame = () => {
           const nextNarratorId = getNextNarrator();
           broadcastRoundEnd(nextNarratorId);
           
-          // FIX: Explicitly show the round bridge for the narrator too
+          // Show the round bridge for ALL players, including the current narrator
           setShowRoundBridge(true);
           setNextNarrator(nextNarratorId);
           
@@ -458,7 +501,7 @@ export const useTriviaGame = () => {
       const nextNarratorId = getNextNarrator();
       broadcastRoundEnd(nextNarratorId);
       
-      // FIX: Explicitly show the round bridge for the narrator too
+      // Show the round bridge for ALL players, including the current narrator
       setShowRoundBridge(true);
       setNextNarrator(nextNarratorId);
     } else {

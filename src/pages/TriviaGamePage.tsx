@@ -92,19 +92,21 @@ const TriviaGamePage = () => {
     }
     
     return () => clearTimeout(timer);
-  }, [isNarrator, playerAnswers, currentQuestion, state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
+  }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
   
   // Debug and player answers effect
   useEffect(() => {
     console.log('[TriviaGamePage] Player answers updated:', playerAnswers);
     console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
+    console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
+    console.log('[TriviaGamePage] Current round:', currentRound);
     
     // Force showPendingAnswers to true when there are player answers
     if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
       console.log('[TriviaGamePage] Setting showPendingAnswers to true');
       setShowPendingAnswers(true);
     }
-  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator]);
+  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator, currentRound]);
   
   const handleBackToLobby = () => {
     navigate('/waiting-room');
@@ -155,7 +157,7 @@ const TriviaGamePage = () => {
           </div>
         </div>
         
-        {/* Show round bridge between rounds */}
+        {/* Show round bridge between rounds for ALL players */}
         {showRoundBridge && nextNarrator ? (
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
@@ -163,7 +165,7 @@ const TriviaGamePage = () => {
             onCountdownComplete={startNextRound}
           />
         ) : (
-          /* Narrator or player view based on role */
+          /* Narrator or player view based on role - dynamically determined by isNarrator */
           isNarrator ? (
             <NarratorView
               currentQuestion={currentQuestion}

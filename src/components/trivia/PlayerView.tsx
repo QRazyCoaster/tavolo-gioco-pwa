@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Player } from '@/context/GameContext';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
@@ -36,22 +35,29 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   // Use the players directly from GameContext to ensure we always have the latest scores
   const currentPlayers = state.players;
 
+  // Reset the pressed state when the question changes or when player role changes
   useEffect(() => {
     setIsPressed(hasAnswered);
-  }, [questionNumber, roundNumber, hasAnswered]);
+  }, [questionNumber, roundNumber, hasAnswered, isCurrentPlayerNarrator]);
 
   const handlePress = () => {
+    // Don't allow buzzer press if player already answered or is the narrator
     if (hasAnswered || isCurrentPlayerNarrator) return;
+    
+    // Update local UI state
     setIsPressed(true);
 
+    // Play buzzer sound
     if (window.myBuzzer) {
       window.myBuzzer.play().catch(() => playAudio('buzzer'));
     } else {
       playAudio('buzzer');
     }
 
+    // Notify game system
     onBuzzerPressed();
 
+    // Show feedback to the player
     toast({
       title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',
       description: language === 'it' ? 'Sei in attesa di rispondere' : 'Waiting for your turn to answer'
@@ -60,6 +66,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto h-full">
+      {/* Big buzzer button */}
       <div className="flex justify-center items-center mb-8" style={{ height: '40vh' }}>
         <Button
           className={`w-64 h-64 rounded-full text-2xl font-bold shadow-xl transition-all duration-300 flex items-center justify-center ${
@@ -78,12 +85,14 @@ const PlayerView: React.FC<PlayerViewProps> = ({
         </Button>
       </div>
 
+      {/* Narrator notification */}
       {isCurrentPlayerNarrator && (
         <div className="mb-4 bg-blue-100 text-blue-800 p-3 rounded-lg text-center">
           {language === 'it' ? 'Sei il narratore di questo round!' : 'You are the narrator for this round!'}
         </div>
       )}
 
+      {/* Round and question counter */}
       <div className="mb-4">
         <div className="bg-primary/10 px-4 py-2 rounded-md font-semibold text-center">
           {language === 'it'
@@ -92,13 +101,14 @@ const PlayerView: React.FC<PlayerViewProps> = ({
         </div>
       </div>
 
+      {/* Answer status notification */}
       {hasAnswered && (
         <div className="mb-4 bg-green-100 text-green-800 p-3 rounded-lg text-center">
           {language === 'it' ? 'Ti sei prenotato! Attendi il tuo turno.' : 'You are queued! Waiting for your turn.'}
         </div>
       )}
 
-      {/* Use separate PlayerRankings component with the latest players data from context */}
+      {/* Player rankings */}
       <PlayerRankings players={currentPlayers} />
     </div>
   );
