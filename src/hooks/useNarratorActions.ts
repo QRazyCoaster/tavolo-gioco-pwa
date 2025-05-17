@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
@@ -25,8 +26,8 @@ export const useNarratorActions = (
     const player = state.players.find(p => p.id === playerId);
     if (!player) return;
     
-    // Award 1 point for correct answer
-    const newScore = (player.score || 0) + 1;
+    // Award 10 points for correct answer (changed from 1 to 10)
+    const newScore = (player.score || 0) + 10;
     dispatch({
       type: 'UPDATE_SCORE',
       payload: {

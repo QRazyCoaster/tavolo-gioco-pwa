@@ -104,7 +104,7 @@ export const useTriviaGame = () => {
     setCurrentRound,
     setAnsweredPlayers,
     setShowPendingAnswers,
-    (idx, scores) => broadcastNextQuestion(idx, state.players, scores)
+    (idx: number) => broadcastNextQuestion(idx, state.players)
   );
 
   const { handlePlayerBuzzer } = usePlayerActions(
@@ -166,8 +166,26 @@ export const useTriviaGame = () => {
     showPendingAnswers,
     setShowPendingAnswers,
     handlePlayerBuzzer,
-    handleCorrectAnswer,
-    handleWrongAnswer,
+    handleCorrectAnswer: (playerId: string) => {
+      handleCorrectAnswer(playerId);
+      // Clear player answers after handling to hide the UI panel
+      setTimeout(() => {
+        setCurrentRound(prev => ({
+          ...prev,
+          playerAnswers: prev.playerAnswers.filter(p => p.playerId !== playerId)
+        }));
+      }, 500); // Short delay to allow animation
+    },
+    handleWrongAnswer: (playerId: string) => {
+      handleWrongAnswer(playerId);
+      // Clear player answers after handling to hide the UI panel
+      setTimeout(() => {
+        setCurrentRound(prev => ({
+          ...prev,
+          playerAnswers: prev.playerAnswers.filter(p => p.playerId !== playerId)
+        }));
+      }, 500); // Short delay to allow animation
+    },
     handleNextQuestion,
     showRoundBridge,
     nextNarrator: state.players.find(p => p.id === nextNarrator),
