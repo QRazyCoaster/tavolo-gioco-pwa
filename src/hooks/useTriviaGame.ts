@@ -123,9 +123,7 @@ export const useTriviaGame = () => {
   );
 
   // ───── Listen for broadcasts ─────
-  useBroadcastListeners(
-    gameChannelRef.current
-  );
+  useBroadcastListeners(gameChannelRef.current);
 
   // ───── Supabase INSERT listener ─────
   useNarratorSubscription(
@@ -138,13 +136,7 @@ export const useTriviaGame = () => {
   );
 
   // ───── Question Manager ─────
-  const { currentQuestion, questionNumber, totalQuestions } = useQuestionManager(
-    currentRound,
-    setCurrentRound,
-    setAnsweredPlayers,
-    setShowPendingAnswers,
-    (i: number) => broadcastNextQuestion(i, state.players)
-  );
+  const { currentQuestion, questionNumber, totalQuestions } = useQuestionManager(currentRound);
 
   // ───── Player buzzing ─────
   const { handlePlayerBuzzer } = usePlayerActions(

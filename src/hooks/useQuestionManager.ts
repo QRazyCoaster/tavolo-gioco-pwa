@@ -16,8 +16,8 @@ export const useQuestionManager = (currentRound: Round) => {
         textIt: 'Nessuna domanda disponibile',
         answerEn: '',
         answerIt: '',
-        categoryId: 'general', // Added missing property
-        difficulty: 'easy'     // Added missing property
+        categoryId: 'general', 
+        difficulty: 'easy'     
       };
     }
     
