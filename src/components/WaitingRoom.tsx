@@ -131,7 +131,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           isHost: p.is_host === true,
           score: p.score || 0,
           buzzer_sound_url: p.buzzer_sound_url,
-          narrator_order: p.narrator_order // Include narrator_order
+          narrator_order: p.narrator_order // This is now valid with our updated Player interface
         }));
         
         // Update current player if needed

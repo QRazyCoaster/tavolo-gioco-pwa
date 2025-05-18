@@ -1,4 +1,3 @@
-
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
@@ -56,7 +55,7 @@ export const useTriviaGame = () => {
     setCurrentRound(prev => ({ ...prev, playerAnswers: [] }));
   }, []);
 
-  /* ──────────── hooks initialization ──────────��── */
+  /* ──────────── hooks initialization ──────────── */
   
   // Initialize the game channel
   const gameChannelRef = useGameChannel(state.gameId);
