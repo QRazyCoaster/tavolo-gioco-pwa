@@ -1,68 +1,54 @@
-import { useState } from 'react';
-import { broadcastRoundEnd } from '@/utils/triviaBroadcast';
-import { mockQuestions, QUESTIONS_PER_ROUND, QUESTION_TIMER } from '@/utils/triviaConstants';
-import { TriviaQuestion } from '@/types/trivia';
-import { Player } from '@/context/GameContext';
 
-type NextNarratorResult = { nextNarratorId: string; isGameOver: boolean };
+import { useState } from 'react';
+import { Round, TriviaQuestion } from '@/types/trivia';
+import { mockQuestions, QUESTIONS_PER_ROUND, QUESTION_TIMER } from '@/utils/triviaConstants';
 
 export const useRoundTransition = (
-  roundNumber: number,
-  players: Player[],
-  getNextNarrator: () => NextNarratorResult
+  currentRound: Round,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
+  mockQuestionsData: any[], 
+  questionsPerRound: number
 ) => {
-  const [showRoundBridge, setShowRoundBridge] = useState(false);
   const [nextNarrator, setNextNarrator] = useState('');
+  const [nextRoundNumber, setNextRoundNumber] = useState(1);
   const [gameOver, setGameOver] = useState(false);
 
-  const handleRoundEnd = () => {
-    // Determine next narrator
-    const { nextNarratorId, isGameOver } = getNextNarrator();
-    setNextNarrator(nextNarratorId);
-    
-    // Broadcast round end to all clients
-    broadcastRoundEnd(roundNumber, nextNarratorId, players, isGameOver);
-    
-    // Show end screen if game is over
-    if (isGameOver) {
-      console.log("[useRoundTransition] Game over - last narrator reached");
-      setShowRoundBridge(true);
-      setTimeout(() => {
-        setGameOver(true);
-      }, 6500);
-    } else {
-      // Otherwise show round bridge
-      setShowRoundBridge(true);
-    }
-
-    return { nextNarratorId, isGameOver };
+  // Get new questions for the next round
+  const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] => {
+    return mockQuestionsData
+      .slice(0, questionsPerRound)
+      .map(q => ({ 
+        ...q, 
+        id: `r${nextRound}-${q.id}` 
+      }));
   };
 
-  const getNewRoundQuestions = (nextRound: number) => {
-    return mockQuestions
-      .slice(0, QUESTIONS_PER_ROUND)
-      .map(q => ({ ...q, id: `r${nextRound}-${q.id}` })) as TriviaQuestion[];
-  };
-
-  const startNextRound = (narratorId: string, nextRound: number) => {
-    return {
-      roundNumber: nextRound,
-      narratorId,
-      questions: getNewRoundQuestions(nextRound),
+  // Start the next round with new questions and reset state
+  const startNextRound = () => {
+    console.log('[useRoundTransition] Starting round', nextRoundNumber, 'with narrator', nextNarrator);
+    
+    setCurrentRound({
+      roundNumber: nextRoundNumber,
+      narratorId: nextNarrator,
+      questions: getNewRoundQuestions(nextRoundNumber),
       currentQuestionIndex: 0,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER
-    };
+    });
+    
+    setShowRoundBridge(false);
   };
 
   return {
-    showRoundBridge,
+    showRoundBridge: false, // Default value
     setShowRoundBridge,
     nextNarrator,
     setNextNarrator,
+    nextRoundNumber,
+    setNextRoundNumber,
     gameOver,
     setGameOver,
-    handleRoundEnd,
     getNewRoundQuestions,
     startNextRound
   };

@@ -1,14 +1,16 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
 import {
   mockQuestions,
   QUESTION_TIMER,
-  QUESTIONS_PER_ROUND
+  QUESTIONS_PER_ROUND,
+  MAX_ROUNDS
 } from '@/utils/triviaConstants';
 import {
   broadcastNextQuestion,
+  broadcastRoundEnd,
   broadcastScoreUpdate
 } from '@/utils/triviaBroadcast';
 import { useQuestionManager } from './useQuestionManager';
@@ -52,10 +54,11 @@ export const useTriviaGame = () => {
     setCurrentRound(prev => ({ ...prev, playerAnswers: [] }));
   }, []);
 
-  /* ──────────── hooks initialization ───────────── */
+  /* ──────────── hooks initialization ──────────��── */
   
   // Initialize the game channel
-  const gameChannel = useGameChannel(state.gameId);
+  const gameChannelRef = useGameChannel(state.gameId);
+  const gameChannel = gameChannelRef.current;
 
   // Question and timer management
   const { 
@@ -64,14 +67,38 @@ export const useTriviaGame = () => {
     totalQuestions,
   } = useQuestionManager(currentRound);
   
-  // Player actions
+  // Get next narrator function - need to define this here since it needs access to state
+  const getNextNarrator = useCallback(() => {
+    // Default to first player if something goes wrong
+    if (!state.players.length) {
+      return { nextNarratorId: '', isGameOver: true };
+    }
+
+    // Check if we've reached the maximum number of rounds
+    if (currentRound.roundNumber >= MAX_ROUNDS) {
+      return { nextNarratorId: '', isGameOver: true };
+    }
+
+    // Choose next narrator (simple round-robin)
+    const nextNarratorIndex = currentRound.roundNumber % state.players.length;
+    const nextNarratorId = state.players[nextNarratorIndex]?.id || state.players[0].id;
+    return { nextNarratorId, isGameOver: false };
+  }, [state.players, currentRound.roundNumber]);
+
+  // Round transitions
   const { 
-    handlePlayerBuzzer 
-  } = usePlayerActions(
-    state, 
-    currentRound, 
-    setAnsweredPlayers, 
-    gameChannel
+    setShowRoundBridge: setShowRoundBridgeInternal,
+    nextRoundNumber,
+    setNextRoundNumber,
+    setNextNarrator: setNextNarratorInternal,
+    setGameOver: setGameOverInternal,
+    startNextRound: startNextRoundFn
+  } = useRoundTransition(
+    currentRound,
+    setCurrentRound,
+    setShowRoundBridge,
+    mockQuestions,
+    QUESTIONS_PER_ROUND
   );
 
   // Narrator actions
@@ -80,24 +107,36 @@ export const useTriviaGame = () => {
     handleWrongAnswer, 
     handleNextQuestion 
   } = useNarratorActions(
-    state, 
-    currentRound, 
-    setCurrentRound, 
-    gameChannel, 
-    setAnsweredPlayers, 
+    state,
+    currentRound,
+    setCurrentRound,
+    gameChannel,
+    setAnsweredPlayers,
     setShowPendingAnswers,
     setShowRoundBridge,
     setGameOver,
     dispatch
   );
 
+  // Player actions
+  const { 
+    handlePlayerBuzzer 
+  } = usePlayerActions(
+    state.gameId,
+    currentRound.currentQuestionIndex,
+    currentRound.questions,
+    setAnsweredPlayers,
+    setCurrentRound,
+    setShowPendingAnswers
+  );
+
   // Keep track of time
   const { 
     timeLeft 
   } = useNarratorTimer(
-    isNarrator, 
-    currentRound, 
-    setCurrentRound, 
+    isNarrator,
+    currentRound,
+    setCurrentRound,
     handleNextQuestion
   );
 
@@ -125,17 +164,10 @@ export const useTriviaGame = () => {
     state.players
   );
 
-  // Handle round transitions
-  const { 
-    startNextRound, 
-    nextRoundNumber 
-  } = useRoundTransition(
-    currentRound,
-    setCurrentRound,
-    setShowRoundBridge,
-    mockQuestions,
-    QUESTIONS_PER_ROUND
-  );
+  // Handle starting the next round
+  const startNextRound = useCallback(() => {
+    startNextRoundFn();
+  }, [startNextRoundFn]);
 
   /* ── Debug logs ─────────────────────────────────── */
   console.log('[useTriviaGame] Current round:', currentRound);

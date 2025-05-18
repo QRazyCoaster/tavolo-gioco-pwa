@@ -9,13 +9,15 @@ export const useQuestionManager = (currentRound: Round) => {
     const index = currentRound?.currentQuestionIndex || 0;
     
     if (!questions.length) {
-      // Return a fallback question if the array is empty
+      // Return a fallback question if the array is empty - now with all required properties
       return {
         id: 'fallback',
         textEn: 'No questions available',
         textIt: 'Nessuna domanda disponibile',
         answerEn: '',
-        answerIt: ''
+        answerIt: '',
+        categoryId: 'general', // Added missing property
+        difficulty: 'easy'     // Added missing property
       };
     }
     

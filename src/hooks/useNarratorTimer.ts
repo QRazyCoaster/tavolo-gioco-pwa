@@ -1,22 +1,32 @@
 
 import { useEffect } from 'react';
+import { Round } from '@/types/trivia';
 
 export const useNarratorTimer = (
   isNarrator: boolean,
-  showRoundBridge: boolean,
-  gameOver: boolean,
-  setCurrentRound: React.Dispatch<React.SetStateAction<any>>,
-  handleTimeUp: () => void
+  currentRound: Round,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  handleNextQuestion: () => void
 ) => {
   useEffect(() => {
-    if (!isNarrator || showRoundBridge || gameOver) return;
-    const t = setInterval(() => {
+    // Only run timer for narrator and when we have a valid timeLeft
+    if (!isNarrator) return;
+    
+    const timer = setInterval(() => {
       setCurrentRound(prev => {
-        const tl = Math.max(0, prev.timeLeft - 1);
-        if (tl === 0) handleTimeUp();
-        return { ...prev, timeLeft: tl };
+        if (prev.timeLeft <= 0) {
+          clearInterval(timer);
+          handleNextQuestion();
+          return prev;
+        }
+        return { ...prev, timeLeft: prev.timeLeft - 1 };
       });
     }, 1000);
-    return () => clearInterval(t);
-  }, [isNarrator, showRoundBridge, gameOver, setCurrentRound, handleTimeUp]);
+    
+    return () => clearInterval(timer);
+  }, [isNarrator, setCurrentRound, handleNextQuestion]);
+
+  return {
+    timeLeft: currentRound?.timeLeft || 0
+  };
 };

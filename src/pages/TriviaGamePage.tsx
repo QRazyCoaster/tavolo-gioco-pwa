@@ -163,7 +163,7 @@ const TriviaGamePage = () => {
           </div>
         </div>
 
-        {showRoundBridge && nextNarrator ? (
+        {showRoundBridge ? (
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
             nextNarrator={nextNarrator}
