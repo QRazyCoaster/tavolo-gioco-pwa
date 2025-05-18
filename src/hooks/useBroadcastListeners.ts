@@ -63,9 +63,22 @@ export const useBroadcastListeners = (
     ch.on('broadcast', { event: 'BUZZ' }, ({ payload }) => {
       const { playerId, playerName, questionIndex } = payload as any;
       
+      console.log('[useBroadcastListeners] Received BUZZ broadcast:', { playerId, playerName, questionIndex });
+      
       setCurrentRound(prev => {
-        if (questionIndex !== prev.currentQuestionIndex) return prev;
-        if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev;
+        // Make sure we're on the same question
+        if (questionIndex !== prev.currentQuestionIndex) {
+          console.log('[useBroadcastListeners] Ignoring BUZZ for different question index');
+          return prev;
+        }
+        
+        // Avoid duplicates
+        if (prev.playerAnswers.some(a => a.playerId === playerId)) {
+          console.log('[useBroadcastListeners] Player already in answer queue, ignoring');
+          return prev;
+        }
+        
+        console.log('[useBroadcastListeners] Adding player to answer queue:', playerId, playerName);
         
         return {
           ...prev,
@@ -75,6 +88,7 @@ export const useBroadcastListeners = (
           ]
         };
       });
+      
       setShowPendingAnswers(true);
     });
 
@@ -83,6 +97,13 @@ export const useBroadcastListeners = (
       
       console.log('[useBroadcastListeners] Received ROUND_END broadcast:', payload);
       
+      // Make sure to set the next narrator ID immediately so the round bridge shows it
+      if (nextNarratorId) {
+        console.log('[useBroadcastListeners] Setting next narrator ID:', nextNarratorId);
+        setNextNarrator(nextNarratorId);
+      }
+      
+      // Update scores if provided
       if (scores && Array.isArray(scores)) {
         scores.forEach((s: any) => {
           if (s && s.id && typeof s.score === 'number') {
@@ -93,10 +114,7 @@ export const useBroadcastListeners = (
 
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
-      
-      // Store the next narrator ID for the round bridge
-      console.log('[useBroadcastListeners] Setting next narrator ID:', nextNarratorId);
-      setNextNarrator(nextNarratorId || '');
+      setShowRoundBridge(true);
       
       // Handle game over state
       if (isGameOver) {
@@ -104,16 +122,18 @@ export const useBroadcastListeners = (
         setTimeout(() => {
           setGameOver(true);
         }, 6500); // Wait for round bridge to complete
-      } else {
-        setShowRoundBridge(true);
+        return;
       }
 
+      // After delay, set up the new round
       setTimeout(() => {
         if (!isGameOver) {
+          console.log('[useBroadcastListeners] Creating new round:', nextRound, 'with narrator:', nextNarratorId);
+          
           const newQuestions = mockQuestions
             .slice(0, QUESTIONS_PER_ROUND)
             .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
-
+          
           setCurrentRound({
             roundNumber: nextRound,
             narratorId: nextNarratorId,
@@ -123,7 +143,7 @@ export const useBroadcastListeners = (
             timeLeft: QUESTION_TIMER
           });
         }
-      }, 6500);
+      }, 6500); // Wait for round bridge to complete
     });
 
     return () => { /* listeners live for lifetime of channel */ };

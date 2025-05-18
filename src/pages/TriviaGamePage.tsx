@@ -146,7 +146,7 @@ const TriviaGamePage = () => {
 
   // Find the actual player object that corresponds to the nextNarrator ID
   const nextNarratorPlayer = state.players.find(player => player.id === nextNarrator) || null;
-  console.log('[TriviaGamePage] Next narrator player:', nextNarratorPlayer?.name || 'Not found');
+  console.log('[TriviaGamePage] Next narrator player:', nextNarratorPlayer?.name || 'Not found', 'ID:', nextNarrator);
 
   /* ---- Main game view ---- */
   return (

@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { supabase } from '@/supabaseClient';
@@ -5,7 +6,7 @@ import { playAudio } from '@/utils/audioUtils';
 import { PlayerAnswer } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/LanguageContext';
-import { getGameChannel } from '@/utils/triviaBroadcast';   // ← NEW
+import { getGameChannel } from '@/utils/triviaBroadcast';
 
 export const usePlayerActions = (
   gameId: string | null,
@@ -20,8 +21,12 @@ export const usePlayerActions = (
   const { language } = useLanguage();
 
   const handlePlayerBuzzer = useCallback(async () => {
-    if (!state.currentPlayer || !gameId) return;
+    if (!state.currentPlayer || !gameId) {
+      console.error('[handlePlayerBuzzer] Missing player or game ID');
+      return;
+    }
 
+    // Play buzzer sound
     window.myBuzzer
       ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
       : playAudio('buzzer');
@@ -32,21 +37,52 @@ export const usePlayerActions = (
       return;
     }
 
+    console.log('[handlePlayerBuzzer] Player buzzing in:', state.currentPlayer.name, state.currentPlayer.id);
+
     // optimistic UI ----------------------------------------------------------
     const optimistic: PlayerAnswer = {
       playerId: state.currentPlayer.id,
       playerName: state.currentPlayer.name,
       timestamp: Date.now()
     };
+    
     setCurrentRound(prev => {
-      if (prev.playerAnswers.some(a => a.playerId === optimistic.playerId)) return prev;
+      if (prev.playerAnswers.some(a => a.playerId === optimistic.playerId)) {
+        console.log('[handlePlayerBuzzer] Player already in queue, skipping optimistic update');
+        return prev;
+      }
+      console.log('[handlePlayerBuzzer] Adding player to queue (optimistic update):', optimistic);
       return { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] };
     });
+    
     setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
     setShowPendingAnswers(true);
 
     // write + broadcast ------------------------------------------------------
     try {
+      console.log('[handlePlayerBuzzer] Sending database update...');
+      
+      // First broadcast to ensure real-time updates (even if DB operation fails)
+      const ch = getGameChannel();
+      if (ch) {
+        ch.send({
+          type: 'broadcast',
+          event: 'BUZZ',
+          payload: {
+            playerId: state.currentPlayer.id,
+            playerName: state.currentPlayer.name,
+            questionIndex: currentQuestionIndex
+          }
+        }).then(() => {
+          console.log('[handlePlayerBuzzer] Buzz broadcast sent successfully');
+        }).catch(err => {
+          console.error('[handlePlayerBuzzer] Error broadcasting buzz:', err);
+        });
+      } else {
+        console.error('[handlePlayerBuzzer] No game channel available');
+      }
+
+      // Then update the database for persistence
       const { error } = await supabase
         .from('player_answers')
         .insert({
@@ -58,20 +94,8 @@ export const usePlayerActions = (
 
       if (error && error.code !== '23505') {
         console.error('[handlePlayerBuzzer] insert error:', error);
-      }
-
-      /* ── NEW: broadcast so narrator never misses the buzz ─────────────────*/
-      const ch = getGameChannel();
-      if (ch) {
-        ch.send({
-          type: 'broadcast',
-          event: 'BUZZ',
-          payload: {
-            playerId: state.currentPlayer.id,
-            playerName: state.currentPlayer.name,
-            questionIndex: currentQuestionIndex
-          }
-        });
+      } else {
+        console.log('[handlePlayerBuzzer] Database updated successfully');
       }
     } catch (err) {
       console.error('[handlePlayerBuzzer] network error', err);

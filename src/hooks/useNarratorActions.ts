@@ -50,7 +50,17 @@ export const useNarratorActions = (
         payload: { playerId, score: newScore }
       });
 
-      // Remove from pending answers
+      // Get updated players array with new score for broadcasting
+      const updatedPlayers = state.players.map(p => 
+        p.id === playerId 
+          ? { ...p, score: newScore } 
+          : p
+      );
+
+      // IMPORTANT: Immediately broadcast score update to all players first
+      broadcastScoreUpdate(updatedPlayers);
+
+      // Remove from pending answers after broadcasting the score
       const updatedAnswers = currentRound.playerAnswers.filter(
         a => a.playerId !== playerId
       );
@@ -60,16 +70,6 @@ export const useNarratorActions = (
         ...prev,
         playerAnswers: updatedAnswers
       }));
-
-      // Get updated players array with new score
-      const updatedPlayers = state.players.map(p => 
-        p.id === playerId 
-          ? { ...p, score: newScore } 
-          : p
-      );
-
-      // Broadcast score update to all players
-      broadcastScoreUpdate(updatedPlayers);
       
       // Automatically move to the next question after awarding points
       setTimeout(() => {
@@ -103,7 +103,17 @@ export const useNarratorActions = (
         payload: { playerId, score: newScore }
       });
 
-      // Remove from pending answers
+      // Get updated players array with new score for broadcasting
+      const updatedPlayers = state.players.map(p => 
+        p.id === playerId 
+          ? { ...p, score: newScore } 
+          : p
+      );
+
+      // IMPORTANT: Immediately broadcast score update to all players first
+      broadcastScoreUpdate(updatedPlayers);
+
+      // Remove from pending answers after broadcasting the score
       const updatedAnswers = currentRound.playerAnswers.filter(
         a => a.playerId !== playerId
       );
@@ -113,16 +123,6 @@ export const useNarratorActions = (
         ...prev,
         playerAnswers: updatedAnswers
       }));
-
-      // Get updated players array with new score
-      const updatedPlayers = state.players.map(p => 
-        p.id === playerId 
-          ? { ...p, score: newScore } 
-          : p
-      );
-
-      // Broadcast score update to all players
-      broadcastScoreUpdate(updatedPlayers);
       
       // If this was the last player in queue, automatically move to next question
       if (updatedAnswers.length === 0) {
@@ -186,11 +186,19 @@ export const useNarratorActions = (
         
       } else {
         // End of round but not end of game
-        // Choose next narrator (could be improved with a more strategic selection)
-        const nextNarratorIndex = currentRound.roundNumber % state.players.length;
-        const nextNarratorId = state.players[nextNarratorIndex]?.id || state.players[0].id;
+        // Get the next narrator based on narrator_order
+        const sortedByOrder = [...state.players].sort((a, b) => 
+          (a.narrator_order || 999) - (b.narrator_order || 999)
+        );
         
-        console.log(`[useNarratorActions] Next narrator: ${nextNarratorId}`);
+        // Find the current narrator's position
+        const currentNarratorIndex = sortedByOrder.findIndex(p => p.id === currentRound.narratorId);
+        
+        // Calculate next narrator index (circular)
+        const nextIndex = (currentNarratorIndex + 1) % sortedByOrder.length;
+        const nextNarratorId = sortedByOrder[nextIndex]?.id || sortedByOrder[0].id;
+        
+        console.log(`[useNarratorActions] Next narrator: ${nextNarratorId} (${sortedByOrder[nextIndex]?.name})`);
         
         // Broadcast round end to all players
         broadcastRoundEnd(

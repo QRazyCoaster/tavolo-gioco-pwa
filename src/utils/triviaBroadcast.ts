@@ -97,8 +97,11 @@ export const broadcastRoundEnd = (
     score: Math.max(MIN_SCORE_LIMIT, p.score || 0) 
   }));
   
+  // Find the next narrator player object
+  const nextNarratorPlayer = nextNarratorId ? players.find(p => p.id === nextNarratorId) : null;
+  
   console.log(
-    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId}, game over: ${isGameOver}`
+    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId} (${nextNarratorPlayer?.name || 'Unknown'}), game over: ${isGameOver}`
   );
   
   // Send round end event to all players
@@ -109,7 +112,8 @@ export const broadcastRoundEnd = (
       nextRound: currentRoundNumber + 1,
       nextNarratorId,
       scores,
-      isGameOver
+      isGameOver,
+      nextNarratorName: nextNarratorPlayer?.name // Add narrator name to payload
     }
   }).then(() => {
     console.log('[triviaBroadcast] Round end broadcast sent successfully');
@@ -117,18 +121,20 @@ export const broadcastRoundEnd = (
     // Update the database with the next narrator info
     if (!isGameOver && nextNarratorId) {
       // Find the next narrator player
-      const nextNarrator = players.find(p => p.id === nextNarratorId);
-      if (nextNarrator && nextNarrator.name) {
+      if (nextNarratorPlayer && nextNarratorPlayer.name) {
+        console.log(`[triviaBroadcast] Updating database with new narrator: ${nextNarratorPlayer.name} for round ${currentRoundNumber + 1}`);
+        
         supabase
           .from('games')
           .update({ 
             current_round: currentRoundNumber + 1,
-            host_name: nextNarrator.name  // Update host_name to the next narrator
+            current_narrator_id: nextNarratorId,  // Add the narrator ID
+            host_name: nextNarratorPlayer.name    // Update host_name to the next narrator
           })
           .eq('id', sessionStorage.getItem('gameId'))
           .then(({ error }) => {
             if (error) {
-              console.error('[triviaBroadcast] Error updating current_round:', error);
+              console.error('[triviaBroadcast] Error updating game with new narrator:', error);
             } else {
               console.log('[triviaBroadcast] Successfully updated current_round and host_name in database');
             }
