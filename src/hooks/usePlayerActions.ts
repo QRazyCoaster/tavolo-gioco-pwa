@@ -66,6 +66,7 @@ export const usePlayerActions = (
       let success = false;
       
       while (attempts < maxAttempts && !success) {
+        console.log(`[handlePlayerBuzzer] Sending answer attempt ${attempts + 1} for player ${state.currentPlayer.id}`);
         const { error } = await supabase
           .from('player_answers')
           .insert({ 
@@ -78,12 +79,15 @@ export const usePlayerActions = (
         if (!error || error.code === '23505') {
           // Success or duplicate entry (player already buzzed)
           success = true;
+          console.log(`[handlePlayerBuzzer] Player answer recorded successfully: ${state.currentPlayer.id}`);
         } else {
           console.error(`[handlePlayerBuzzer] insert error attempt ${attempts + 1}:`, error);
           attempts++;
           if (attempts < maxAttempts) {
             // Wait with exponential backoff
-            await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempts)));
+            const delay = 300 * Math.pow(2, attempts);
+            console.log(`[handlePlayerBuzzer] Retrying after ${delay}ms`);
+            await new Promise(r => setTimeout(r, delay));
           }
         }
       }

@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Player } from '@/context/GameContext';
@@ -22,8 +21,9 @@ export const useNarratorActions = (
     const currentScore = state.players.find(p => p.id === playerId)?.score || 0;
     const newScore = currentScore + CORRECT_ANSWER_POINTS;
     
-    // Update local state
-    dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
+    // Update local state - make sure to apply the MIN_SCORE_LIMIT though this shouldn't be needed for correct answers
+    const limitedScore = Math.max(MIN_SCORE_LIMIT, newScore);
+    dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: limitedScore } });
     
     // Broadcast score update immediately to all players
     setTimeout(() => {
@@ -39,7 +39,7 @@ export const useNarratorActions = (
       
       // Build updated scores array with the new score included
       const updatedPlayers = state.players.map(p => 
-        p.id === playerId ? {...p, score: newScore} : p
+        p.id === playerId ? {...p, score: limitedScore} : p
       );
       
       broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
@@ -55,7 +55,7 @@ export const useNarratorActions = (
       
       // Build fresh score array including the new score
       const updatedScores = state.players.map(p =>
-        p.id === playerId ? { id: p.id, score: newScore } : { id: p.id, score: p.score || 0 }
+        p.id === playerId ? { id: p.id, score: limitedScore } : { id: p.id, score: p.score || 0 }
       );
       broadcastNextQuestion(nextIdx, state.players, updatedScores);
       playAudio('success');

@@ -1,18 +1,29 @@
 
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Player } from '@/context/GameContext';
+import { MIN_SCORE_LIMIT } from './triviaConstants';
 
 // ─────────────────────────────────────────────────────────────
 //  Shared broadcast channel (singleton)
 // ─────────────────────────────────────────────────────────────
 let gameChannel: RealtimeChannel | null = null;
+let activeSubscriptions: string[] = [];
 
 export const setGameChannel = (channel: RealtimeChannel) => {
+  if (gameChannel) {
+    console.log('[triviaBroadcast] Replacing existing game channel');
+  }
   gameChannel = channel;
   console.log('[triviaBroadcast] Game channel set');
 };
 
 export const getGameChannel = () => gameChannel;
+
+export const cleanupChannel = () => {
+  console.log('[triviaBroadcast] Cleaning up game channel and subscriptions');
+  gameChannel = null;
+  activeSubscriptions = [];
+};
 
 export const broadcastScoreUpdate = (players: Player[]) => {
   if (!gameChannel) {
@@ -20,8 +31,11 @@ export const broadcastScoreUpdate = (players: Player[]) => {
     return;
   }
   
-  // Get current scores from game state
-  const scores = players.map(p => ({ id: p.id, score: p.score || 0 }));
+  // Get current scores from game state, ensuring we respect the minimum score limit
+  const scores = players.map(p => ({ 
+    id: p.id, 
+    score: Math.max(MIN_SCORE_LIMIT, p.score || 0)
+  }));
   console.log('[triviaBroadcast] Broadcasting score update to all clients:', scores);
   
   // Send score updates to all players
@@ -46,8 +60,11 @@ export const broadcastNextQuestion = (
     return;
   }
   
-  // Use provided scores or get current scores from game state
-  const payloadScores = scores ?? players.map(p => ({ id: p.id, score: p.score || 0 }));
+  // Use provided scores or get current scores from game state, applying minimum score limit
+  const payloadScores = scores 
+    ? scores.map(s => ({ id: s.id, score: Math.max(MIN_SCORE_LIMIT, s.score) }))
+    : players.map(p => ({ id: p.id, score: Math.max(MIN_SCORE_LIMIT, p.score || 0) }));
+    
   console.log('[triviaBroadcast] Broadcasting next question with scores:', payloadScores);
   
   // Send next question event to all players
@@ -72,8 +89,11 @@ export const broadcastRoundEnd = (
     return;
   }
   
-  // Get current scores from game state
-  const scores = players.map(p => ({ id: p.id, score: p.score || 0 }));
+  // Get current scores from game state, applying minimum score limit
+  const scores = players.map(p => ({ 
+    id: p.id, 
+    score: Math.max(MIN_SCORE_LIMIT, p.score || 0) 
+  }));
   console.log('[triviaBroadcast] Broadcasting round end with new narrator:', nextNarratorId);
   
   // Send round end event to all players
