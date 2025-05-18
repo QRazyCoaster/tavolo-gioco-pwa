@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,17 +22,37 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   
   // Ref to track if subscriptions are already set up
   const subscriptionsSetup = useRef(false);
+  
   // Refs to store channels for cleanup
   const playerChannelRef = useRef<any>(null);
   const gameChannelRef = useRef<any>(null);
+  
   // State to track if component is mounted
-  const [isMounted, setIsMounted] = useState(true);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    // Set mounted state
-    setIsMounted(true);
+    // Set mounted ref
+    isMounted.current = true;
     
-    // Guard against multiple subscription setups
+    return () => {
+      // Set unmounted on cleanup
+      isMounted.current = false;
+      
+      // Clean up channels explicitly
+      if (playerChannelRef.current) {
+        supabase.removeChannel(playerChannelRef.current);
+        playerChannelRef.current = null;
+      }
+      if (gameChannelRef.current) {
+        supabase.removeChannel(gameChannelRef.current);
+        gameChannelRef.current = null;
+      }
+      subscriptionsSetup.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Guard against multiple subscription setups and ensure we have a game ID
     if (subscriptionsSetup.current || !state.gameId) {
       return;
     }
@@ -58,7 +77,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         console.log('[WaitingRoom] Initial game status check:', data);
         
         // If game is already active, redirect immediately
-        if (data && data.status === 'active' && isMounted) {
+        if (data && data.status === 'active' && isMounted.current) {
           console.log('[WaitingRoom] Game already active, redirecting player');
           
           // Update state
@@ -103,7 +122,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           return;
         }
         
-        if (!isMounted) return;
+        if (!isMounted.current) return;
         
         console.log(`[WaitingRoom] Fetched ${data.length} players`);
         const mapped = data.map(p => ({
@@ -111,7 +130,8 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           name: p.name,
           isHost: p.is_host === true,
           score: p.score || 0,
-          buzzer_sound_url: p.buzzer_sound_url
+          buzzer_sound_url: p.buzzer_sound_url,
+          narrator_order: p.narrator_order // Include narrator_order
         }));
         
         // Update current player if needed
@@ -136,14 +156,15 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'players', filter: `game_id=eq.${state.gameId}` },
         payload => {
-          if (!isMounted) return;
+          if (!isMounted.current) return;
           console.log('[WaitingRoom] New player joined:', payload.new);
           const p: Player = {
             id: payload.new.id,
             name: payload.new.name,
             isHost: payload.new.is_host === true,
             score: payload.new.score || 0,
-            buzzer_sound_url: payload.new.buzzer_sound_url
+            buzzer_sound_url: payload.new.buzzer_sound_url,
+            narrator_order: payload.new.narrator_order // Include narrator_order
           };
           dispatch({ type: 'ADD_PLAYER', payload: p });
         }
@@ -160,7 +181,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
         payload => {
-          if (!isMounted) return;
+          if (!isMounted.current) return;
           console.log('[WaitingRoom] Game update detected:', payload.new);
           
           // Specifically check for active status
@@ -192,12 +213,14 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             
             // Add a short delay to ensure the toast is seen
             setTimeout(() => {
-              if (gameType === 'trivia') {
-                console.log('[WaitingRoom] Player navigating to /trivia');
-                navigate('/trivia');
-              } else {
-                console.log('[WaitingRoom] Player navigating to /game');
-                navigate('/game');
+              if (isMounted.current) {
+                if (gameType === 'trivia') {
+                  console.log('[WaitingRoom] Player navigating to /trivia');
+                  navigate('/trivia');
+                } else {
+                  console.log('[WaitingRoom] Player navigating to /game');
+                  navigate('/game');
+                }
               }
             }, 800);
           }
@@ -208,19 +231,6 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
     // Store channel reference
     gameChannelRef.current = gameChannel;
 
-    return () => {
-      console.log('[WaitingRoom] Cleaning up subscriptions');
-      setIsMounted(false);
-      if (playerChannelRef.current) {
-        supabase.removeChannel(playerChannelRef.current);
-        playerChannelRef.current = null;
-      }
-      if (gameChannelRef.current) {
-        supabase.removeChannel(gameChannelRef.current);
-        gameChannelRef.current = null;
-      }
-      subscriptionsSetup.current = false;
-    };
   }, [state.gameId, dispatch, navigate, toast, language, state.currentPlayer]);
 
   const handleStartGame = () => {

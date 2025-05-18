@@ -43,7 +43,7 @@ export const useGameStarter = () => {
         const hostName = state.players.find(p => p.isHost)?.name || '';
         
         // Update game status to active in database
-        // FIXED: Remove narrator_order field to prevent the column not found error
+        // Removed any reference to narrator_order since it belongs in players table
         const { data, error } = await supabase
           .from('games')
           .update({ 

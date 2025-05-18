@@ -122,14 +122,15 @@ export const broadcastRoundEnd = (
         supabase
           .from('games')
           .update({ 
-            current_round: currentRoundNumber + 1
+            current_round: currentRoundNumber + 1,
+            host_name: nextNarrator.name  // Update host_name to the next narrator
           })
           .eq('id', sessionStorage.getItem('gameId'))
           .then(({ error }) => {
             if (error) {
               console.error('[triviaBroadcast] Error updating current_round:', error);
             } else {
-              console.log('[triviaBroadcast] Successfully updated current_round in database');
+              console.log('[triviaBroadcast] Successfully updated current_round and host_name in database');
             }
           });
       }

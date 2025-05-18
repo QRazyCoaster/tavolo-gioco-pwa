@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
@@ -68,7 +69,7 @@ export const useTriviaGame = () => {
     totalQuestions,
   } = useQuestionManager(currentRound);
   
-  // Get next narrator function - need to define this here since it needs access to state
+  // Get next narrator function - updated to use narrator_order
   const getNextNarrator = useCallback(() => {
     // Default to first player if something goes wrong
     if (!state.players.length) {
@@ -80,11 +81,31 @@ export const useTriviaGame = () => {
       return { nextNarratorId: '', isGameOver: true };
     }
 
-    // Choose next narrator (simple round-robin)
-    const nextNarratorIndex = currentRound.roundNumber % state.players.length;
-    const nextNarratorId = state.players[nextNarratorIndex]?.id || state.players[0].id;
+    // Sort players by narrator_order to determine next narrator
+    const sortedByOrder = [...state.players].sort((a, b) => 
+      (a.narrator_order || 999) - (b.narrator_order || 999)
+    );
+    
+    console.log('[useTriviaGame] Players sorted by narrator_order:', 
+      sortedByOrder.map(p => ({ name: p.name, order: p.narrator_order }))
+    );
+    
+    // Find the current narrator's position
+    const currentNarratorIndex = sortedByOrder.findIndex(p => p.id === currentRound.narratorId);
+    
+    // Calculate next narrator index (circular)
+    const nextIndex = (currentNarratorIndex + 1) % sortedByOrder.length;
+    const nextNarratorId = sortedByOrder[nextIndex]?.id || sortedByOrder[0].id;
+    
+    console.log('[useTriviaGame] Next narrator selected:', { 
+      currentIndex: currentNarratorIndex,
+      nextIndex,
+      nextNarratorId,
+      nextNarratorName: sortedByOrder[nextIndex]?.name
+    });
+    
     return { nextNarratorId, isGameOver: false };
-  }, [state.players, currentRound.roundNumber]);
+  }, [state.players, currentRound.narratorId]);
 
   // Round transitions
   const { 
