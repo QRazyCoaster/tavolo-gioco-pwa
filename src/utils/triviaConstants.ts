@@ -1,47 +1,72 @@
 
-// ─────────────────────────────────────────────────────────────
-//  Game constants
-// ─────────────────────────────────────────────────────────────
-export const QUESTION_TIMER = 90;
+export const QUESTION_TIMER = 20;
 export const QUESTIONS_PER_ROUND = 7;
-export const MIN_SCORE_LIMIT = -420; // New constant for minimum score
-export const CORRECT_ANSWER_POINTS = 10;
-export const WRONG_ANSWER_POINTS = -5;
 
-// ─────────────────────────────────────────────────────────────
-//  Demo questions
-// ─────────────────────────────────────────────────────────────
 export const mockQuestions = [
-  { id: '1', textEn: 'What is the capital of France?', textIt: 'Qual è la capitale della Francia?', answerEn: 'Paris', answerIt: 'Parigi', categoryId: 'geography', difficulty: 'easy' as const },
-  { id: '2', textEn: 'Who painted the Mona Lisa?', textIt: 'Chi ha dipinto la Monna Lisa?', answerEn: 'Leonardo da Vinci', answerIt: 'Leonardo da Vinci', categoryId: 'art', difficulty: 'easy' as const },
-  { id: '3', textEn: 'What is the chemical symbol for water?', textIt: "Qual è il simbolo chimico dell'acqua?", answerEn: 'H2O', answerIt: 'H2O', categoryId: 'science', difficulty: 'easy' as const },
-  { id: '4', textEn: 'What planet is known as the Red Planet?', textIt: 'Quale pianeta è conosciuto come il Pianeta Rosso?', answerEn: 'Mars', answerIt: 'Marte', categoryId: 'astronomy', difficulty: 'easy' as const },
-  { id: '5', textEn: 'Who wrote "Romeo and Juliet"?', textIt: 'Chi ha scritto "Romeo e Giulietta"?', answerEn: 'William Shakespeare', answerIt: 'William Shakespeare', categoryId: 'literature', difficulty: 'easy' as const },
-  {
-    id: '6',
-    textEn: 'In what year did the Titanic sink?',
-    textIt: 'In che anno affondò il Titanic?',
-    answerEn: '1912',
-    answerIt: '1912',
-    categoryId: 'history',
+  { 
+    id: '1', 
+    textEn: 'What is the capital of Italy?', 
+    textIt: 'Qual è la capitale d\'Italia?',
+    categoryId: 'geography',
+    answerEn: 'Rome',
+    answerIt: 'Roma',
     difficulty: 'easy' as const
   },
-  {
-    id: '7',
-    textEn: 'Which gas do plants absorb from the atmosphere?',
-    textIt: 'Quale gas assorbono le piante dall\'atmosfera?',
-    answerEn: 'Carbon dioxide',
-    answerIt: 'Anidride carbonica',
+  { 
+    id: '2', 
+    textEn: 'Which planet is known as the Red Planet?', 
+    textIt: 'Quale pianeta è conosciuto come il Pianeta Rosso?',
     categoryId: 'science',
+    answerEn: 'Mars',
+    answerIt: 'Marte',
     difficulty: 'easy' as const
   },
-  {
-    id: '8',
-    textEn: 'Am i getting good or not? aha',
-    textIt: 'Am i getting good or not? aha?',
-    answerEn: 'Yeye',
-    answerIt: 'yeye',
-    categoryId: 'history',
+  { 
+    id: '3', 
+    textEn: 'Who painted the Mona Lisa?', 
+    textIt: 'Chi ha dipinto la Monna Lisa?',
+    categoryId: 'art',
+    answerEn: 'Leonardo da Vinci',
+    answerIt: 'Leonardo da Vinci',
     difficulty: 'easy' as const
+  },
+  { 
+    id: '4', 
+    textEn: 'What is the largest ocean on Earth?', 
+    textIt: 'Qual è l\'oceano più grande della Terra?',
+    categoryId: 'geography',
+    answerEn: 'Pacific Ocean',
+    answerIt: 'Oceano Pacifico',
+    difficulty: 'medium' as const
+  },
+  { 
+    id: '5', 
+    textEn: 'Which country is known as the Land of the Rising Sun?', 
+    textIt: 'Quale paese è conosciuto come la Terra del Sol Levante?',
+    categoryId: 'geography',
+    answerEn: 'Japan',
+    answerIt: 'Giappone',
+    difficulty: 'medium' as const
+  },
+  { 
+    id: '6', 
+    textEn: 'Which element has the chemical symbol "O"?', 
+    textIt: 'Quale elemento ha il simbolo chimico "O"?',
+    categoryId: 'science',
+    answerEn: 'Oxygen',
+    answerIt: 'Ossigeno',
+    difficulty: 'easy' as const
+  },
+  { 
+    id: '7', 
+    textEn: 'What is the largest mammal in the world?', 
+    textIt: 'Qual è il mammifero più grande del mondo?',
+    categoryId: 'science',
+    answerEn: 'Blue Whale',
+    answerIt: 'Balenottera Azzurra',
+    difficulty: 'medium' as const
   },
 ];
+
+// Minimum score limit (prevent scores from going below this value)
+export const MIN_SCORE_LIMIT = -420;
