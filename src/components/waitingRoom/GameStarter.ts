@@ -39,12 +39,18 @@ export const useGameStarter = () => {
     // Update the database to notify all players that the game has started
     if (state.gameId) {
       try {
+        // Get the host's name
+        const hostName = state.players.find(p => p.isHost)?.name || '';
+        
         // Update game status to active in database
+        // Removed any reference to narrator_order since it belongs in players table
         const { data, error } = await supabase
           .from('games')
           .update({ 
             status: 'active',
-            game_type: game 
+            game_type: game,
+            host_name: hostName,
+            current_round: 1
           })
           .eq('id', state.gameId)
           .select();
@@ -102,7 +108,7 @@ export const useGameStarter = () => {
       });
     }
     
-  }, [navigate, toast, dispatch, state.gameId]);
+  }, [navigate, toast, dispatch, state.gameId, state.players]);
 
   return { handleStartGame };
 };

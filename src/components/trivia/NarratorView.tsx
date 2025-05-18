@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,6 @@ import QuestionCard from './QuestionCard';
 import QuestionInfo from './QuestionInfo';
 import PlayerRankings from './PlayerRankings';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
-
-// NOTE: Pop‑up removed – bottom panel switches between queue & rankings.
 
 interface NarratorViewProps {
   currentQuestion: TriviaQuestion;
@@ -125,7 +124,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         <PlayerRankings players={players} />
       )}
 
-      {/* Manual next question (visible only when queue empty) */}
+      {/* Manual next question (visible only when queue empty and no automatic progression) */}
       {playerAnswers.length === 0 && (
         <Button onClick={onNextQuestion} className="w-full mb-4 bg-blue-600 hover:bg-blue-700">
           {language === 'it' ? 'Prossima Domanda' : 'Next Question'}

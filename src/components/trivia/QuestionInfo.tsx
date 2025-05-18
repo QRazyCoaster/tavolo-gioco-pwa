@@ -18,12 +18,16 @@ const QuestionInfo: React.FC<QuestionInfoProps> = ({
 }) => {
   const { language } = useLanguage();
 
+  // Ensure we have valid numbers for display
+  const safeQuestionNumber = questionNumber || 1;
+  const safeTotalQuestions = totalQuestions || 7; // Default to 7 if undefined
+
   return (
     <div className="flex justify-between items-center mb-4">
       <div className="bg-primary/10 px-4 py-2 rounded-md font-semibold">
         {language === 'it' 
-          ? `Round ${roundNumber} • Domanda ${questionNumber}/${totalQuestions}`
-          : `Round ${roundNumber} • Question ${questionNumber}/${totalQuestions}`}
+          ? `Round ${roundNumber} • Domanda ${safeQuestionNumber}/${safeTotalQuestions}`
+          : `Round ${roundNumber} • Question ${safeQuestionNumber}/${safeTotalQuestions}`}
       </div>
       
       <div className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold ${

@@ -6,6 +6,7 @@ import { playAudio } from '@/utils/audioUtils';
 import { PlayerAnswer } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/LanguageContext';
+import { getGameChannel } from '@/utils/triviaBroadcast';
 
 export const usePlayerActions = (
   gameId: string | null,
@@ -20,89 +21,106 @@ export const usePlayerActions = (
   const { language } = useLanguage();
 
   const handlePlayerBuzzer = useCallback(async () => {
-    // Make sure the current player isn't the narrator, hasn't already answered, and there's a valid game
-    if (!state.currentPlayer || !gameId) return;
+    if (!state.currentPlayer || !gameId) {
+      console.error('[handlePlayerBuzzer] Missing player or game ID');
+      return;
+    }
 
     // Play buzzer sound
-    window.myBuzzer ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
-                    : playAudio('buzzer');
+    window.myBuzzer
+      ? window.myBuzzer.play().catch(() => playAudio('buzzer'))
+      : playAudio('buzzer');
 
-    // Get the current question ID - ensure we're using the correct index
     const questionId = currentQuestions[currentQuestionIndex]?.id;
     if (!questionId) {
       console.error('[handlePlayerBuzzer] Invalid question ID at index', currentQuestionIndex);
       return;
     }
 
+    console.log('[handlePlayerBuzzer] Player buzzing in:', state.currentPlayer.name, state.currentPlayer.id);
+
+    // optimistic UI ----------------------------------------------------------
+    const optimistic: PlayerAnswer = {
+      playerId: state.currentPlayer.id,
+      playerName: state.currentPlayer.name,
+      timestamp: Date.now()
+    };
+    
+    setCurrentRound(prev => {
+      if (prev.playerAnswers.some(a => a.playerId === optimistic.playerId)) {
+        console.log('[handlePlayerBuzzer] Player already in queue, skipping optimistic update');
+        return prev;
+      }
+      console.log('[handlePlayerBuzzer] Adding player to queue (optimistic update):', optimistic);
+      return { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] };
+    });
+    
+    setAnsweredPlayers(prev => {
+      const newSet = new Set(prev);
+      newSet.add(state.currentPlayer!.id);
+      return newSet;
+    });
+    
+    setShowPendingAnswers(true);
+
+    // write + broadcast ------------------------------------------------------
     try {
-      // First optimistically update local state for quick UI feedback
-      const optimistic: PlayerAnswer = {
-        playerId: state.currentPlayer.id,
-        playerName: state.currentPlayer.name,
-        timestamp: Date.now()
-      };
+      console.log('[handlePlayerBuzzer] Sending database update and broadcast...');
       
-      // Add the player to the answer list if not already there
-      setCurrentRound(prev => {
-        const alreadyAnswered = prev.playerAnswers.some(a => a.playerId === optimistic.playerId);
-        if (alreadyAnswered) return prev;
-        
-        return { 
-          ...prev, 
-          playerAnswers: [...prev.playerAnswers, optimistic] 
-        };
-      });
-      
-      // Mark this player as having answered
-      setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
-      
-      // Make sure the narrator sees the pending answers
-      setShowPendingAnswers(true);
-
-      // Then store the answer in the database with retry mechanism
-      // We'll try up to 3 times with exponential backoff
-      let attempts = 0;
-      const maxAttempts = 3;
-      let success = false;
-      
-      while (attempts < maxAttempts && !success) {
-        console.log(`[handlePlayerBuzzer] Sending answer attempt ${attempts + 1} for player ${state.currentPlayer.id}`);
-        const { error } = await supabase
-          .from('player_answers')
-          .insert({ 
-            game_id: gameId, 
-            question_id: questionId, 
-            player_id: state.currentPlayer.id,
-            created_at: new Date().toISOString() // Explicitly set timestamp
-          });
-
-        if (!error || error.code === '23505') {
-          // Success or duplicate entry (player already buzzed)
-          success = true;
-          console.log(`[handlePlayerBuzzer] Player answer recorded successfully: ${state.currentPlayer.id}`);
-        } else {
-          console.error(`[handlePlayerBuzzer] insert error attempt ${attempts + 1}:`, error);
-          attempts++;
-          if (attempts < maxAttempts) {
-            // Wait with exponential backoff
-            const delay = 300 * Math.pow(2, attempts);
-            console.log(`[handlePlayerBuzzer] Retrying after ${delay}ms`);
-            await new Promise(r => setTimeout(r, delay));
+      // First broadcast to ensure real-time updates (even if DB operation fails)
+      const ch = getGameChannel();
+      if (ch) {
+        ch.send({
+          type: 'broadcast',
+          event: 'BUZZ',
+          payload: {
+            playerId: state.currentPlayer.id,
+            playerName: state.currentPlayer.name,
+            questionIndex: currentQuestionIndex
           }
-        }
+        }).then(() => {
+          console.log('[handlePlayerBuzzer] Buzz broadcast sent successfully');
+        }).catch(err => {
+          console.error('[handlePlayerBuzzer] Error broadcasting buzz:', err);
+        });
+      } else {
+        console.error('[handlePlayerBuzzer] No game channel available');
       }
 
-      // Show feedback to the player
-      toast({
-        title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',
-        description: language === 'it' ? 'Sei in attesa di rispondere' : 'Waiting for your turn to answer'
-      });
+      // Then update the database for persistence
+      const { error } = await supabase
+        .from('player_answers')
+        .insert({
+          game_id: gameId,
+          question_id: questionId,
+          player_id: state.currentPlayer.id,
+          created_at: new Date().toISOString()
+        });
+
+      if (error && error.code !== '23505') {
+        console.error('[handlePlayerBuzzer] insert error:', error);
+      } else {
+        console.log('[handlePlayerBuzzer] Database updated successfully');
+      }
     } catch (err) {
       console.error('[handlePlayerBuzzer] network error', err);
     }
-  }, [state.currentPlayer, gameId, currentQuestionIndex, setAnsweredPlayers, setCurrentRound, setShowPendingAnswers, toast, language, currentQuestions]);
 
-  return {
-    handlePlayerBuzzer
-  };
+    toast({
+      title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',
+      description: language === 'it' ? 'Sei in attesa di rispondere' : 'Waiting for your turn to answer'
+    });
+  }, [
+    state.currentPlayer,
+    gameId,
+    currentQuestionIndex,
+    currentQuestions,
+    setAnsweredPlayers,
+    setCurrentRound,
+    setShowPendingAnswers,
+    toast,
+    language
+  ]);
+
+  return { handlePlayerBuzzer };
 };
