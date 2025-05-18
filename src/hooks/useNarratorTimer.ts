@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Round } from '@/types/trivia';
 
@@ -9,24 +8,21 @@ export const useNarratorTimer = (
   handleNextQuestion: () => void
 ) => {
   useEffect(() => {
-    // Only run timer for narrator and when we have a valid timeLeft
-    if (!isNarrator) return;
-    
-    const timer = setInterval(() => {
+    if (!isNarrator) return;                     // run ONLY for narrator
+
+    const t = setInterval(() => {
       setCurrentRound(prev => {
         if (prev.timeLeft <= 0) {
-          clearInterval(timer);
+          clearInterval(t);
           handleNextQuestion();
           return prev;
         }
         return { ...prev, timeLeft: prev.timeLeft - 1 };
       });
     }, 1000);
-    
-    return () => clearInterval(timer);
+
+    return () => clearInterval(t);
   }, [isNarrator, setCurrentRound, handleNextQuestion]);
 
-  return {
-    timeLeft: currentRound?.timeLeft || 0
-  };
+  return { timeLeft: currentRound.timeLeft };
 };
