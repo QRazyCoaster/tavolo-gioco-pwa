@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Round } from '@/types/trivia';
@@ -21,18 +20,29 @@ export const useBroadcastListeners = (
     if (!ch) return;
 
     ch.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] Received NEXT_QUESTION broadcast:', payload);
       const { questionIndex, scores } = payload as any;
+      
+      // Reset all game state for the new question
       setCurrentRound(prev => ({
         ...prev,
         currentQuestionIndex: questionIndex,
         playerAnswers: [],
         timeLeft: QUESTION_TIMER
       }));
+      
+      // Clear the answered players set
       setAnsweredPlayers(new Set());
+      
+      // Hide pending answers panel
       setShowPendingAnswers(false);
-      scores?.forEach((s: any) =>
-        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-      );
+      
+      // Update scores if provided
+      if (scores && Array.isArray(scores)) {
+        scores.forEach((s: any) =>
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+        );
+      }
     });
 
     ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {

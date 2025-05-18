@@ -124,7 +124,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         <PlayerRankings players={players} />
       )}
 
-      {/* Manual next question (visible only when queue empty) */}
+      {/* Manual next question (visible only when queue empty and no automatic progression) */}
       {playerAnswers.length === 0 && (
         <Button onClick={onNextQuestion} className="w-full mb-4 bg-blue-600 hover:bg-blue-700">
           {language === 'it' ? 'Prossima Domanda' : 'Next Question'}

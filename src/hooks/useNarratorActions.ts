@@ -67,6 +67,11 @@ export const useNarratorActions = (
           ? { ...p, score: newScore } 
           : p
       ));
+      
+      // Automatically move to the next question after awarding points
+      setTimeout(() => {
+        handleNextQuestion();
+      }, 1500); // Give a short delay so players can see their score update
     },
     [state.currentPlayer, state.players, currentRound, setCurrentRound, dispatch]
   );
@@ -112,6 +117,14 @@ export const useNarratorActions = (
           ? { ...p, score: newScore } 
           : p
       ));
+      
+      // No automatic next question after wrong answer - let other players try
+      // If this was the last player in queue, automatically move to next question
+      if (updatedAnswers.length === 0) {
+        setTimeout(() => {
+          handleNextQuestion();
+        }, 1500);
+      }
     },
     [state.currentPlayer, state.players, currentRound, setCurrentRound, dispatch]
   );
