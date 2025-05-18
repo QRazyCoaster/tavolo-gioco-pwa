@@ -146,10 +146,7 @@ const TriviaGamePage = () => {
 
   // Create a wrapper function for startNextRound that adapts it to what RoundBridgePage expects
   const handleStartNextRound = () => {
-    if (nextNarrator && nextRoundNumber) {
-      return startNextRound(nextNarrator.id, nextRoundNumber);
-    }
-    return safeCurrentRound;
+    startNextRound();          // ← no args needed now
   };
 
   /* ---- Main game view ---- */
