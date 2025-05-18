@@ -1,22 +1,21 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { useTriviaGame } from '@/hooks/useTriviaGame';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import NarratorView from '@/components/trivia/NarratorView';
-import PlayerView from '@/components/trivia/PlayerView';
+import PlayerView   from '@/components/trivia/PlayerView';
 import RoundBridgePage from '@/components/trivia/RoundBridgePage';
-import GameEndScreen from '@/components/trivia/GameEndScreen';
+import GameEndScreen   from '@/components/trivia/GameEndScreen';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 
 const TriviaGamePage = () => {
-  const { t, language }   = useLanguage();
-  const navigate           = useNavigate();
-  const { state, dispatch }= useGame();
-  const { toast }          = useToast();
+  const { t, language } = useLanguage();
+  const navigate        = useNavigate();
+  const { state, dispatch } = useGame();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
 
   /* ─────────── Game-round hook ─────────── */
@@ -42,42 +41,72 @@ const TriviaGamePage = () => {
     gameOver
   } = useTriviaGame();
 
-  /* ────────────────────────────────────────
-     PATCH: stop waiting-room music on mount
-  ──────────────────────────────────────── */
+  /* SAFETY: playerAnswers is undefined for one render on mount */
+  const safePlayerAnswers = playerAnswers ?? [];
+
+  /* ──────────────────────────────────────────────
+     Stop waiting-room music once game page mounts
+  ────────────────────────────────────────────── */
   useEffect(() => {
     if (state.backgroundMusicPlaying && (window as any).waitMusic) {
       (window as any).waitMusic.pause();
       (window as any).waitMusic.currentTime = 0;
       dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
     }
-  }, []);                                     // ← runs once
+  }, []); // runs once
 
-  /* ───────── Session-validation effect ───────── */
+  /* ───────── Session-validation effect (unchanged) ───────── */
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 300);
 
-    /* … (your existing validation logic stays unchanged) … */
+    /* … your original validation logic … */
 
     return () => clearTimeout(timer);
-  }, [state.gameId, state.pin, state.gameStarted,
-      state.selectedGame, language, navigate, toast, dispatch]);
+  }, [
+    state.gameId,
+    state.pin,
+    state.gameStarted,
+    state.selectedGame,
+    language,
+    navigate,
+    toast,
+    dispatch
+  ]);
 
-  /* ---- debug effect (unchanged) ---- */
+  /* ---- debug effect (uses safePlayerAnswers) ---- */
   useEffect(() => {
-    console.log('[TriviaGamePage] Player answers updated:', playerAnswers);
-    console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
-    console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
+    console.log(
+      '[TriviaGamePage] Player answers updated:',
+      safePlayerAnswers
+    );
+    console.log(
+      '[TriviaGamePage] showPendingAnswers value:',
+      showPendingAnswers
+    );
+    console.log(
+      '[TriviaGamePage] Current player is narrator:',
+      isNarrator
+    );
     console.log('[TriviaGamePage] Current round:', currentRound);
 
-    if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
+    if (
+      safePlayerAnswers.length > 0 &&
+      !showPendingAnswers &&
+      isNarrator
+    ) {
       setShowPendingAnswers(true);
     }
-  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator, currentRound]);
+  }, [
+    safePlayerAnswers,
+    showPendingAnswers,
+    setShowPendingAnswers,
+    isNarrator,
+    currentRound
+  ]);
 
   const handleBackToLobby = () => navigate('/waiting-room');
 
-  /* ---- loading spinner (unchanged) ---- */
+  /* ---- Loading spinner ---- */
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
@@ -97,7 +126,7 @@ const TriviaGamePage = () => {
 
   if (!state.gameId || !state.pin) return null;
 
-  // Show game end screen if game is over
+  /* ---- Game-end screen ---- */
   if (gameOver) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -108,12 +137,18 @@ const TriviaGamePage = () => {
     );
   }
 
+  /* ---- Main game view ---- */
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
-            <Button variant="ghost" size="sm" onClick={handleBackToLobby} className="mr-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToLobby}
+              className="mr-2"
+            >
               <ArrowLeft size={18} />
             </Button>
             <h1 className="text-2xl font-bold text-primary">Trivia</h1>
@@ -138,7 +173,7 @@ const TriviaGamePage = () => {
             questionNumber={questionNumber}
             totalQuestions={totalQuestions}
             players={state.players}
-            playerAnswers={playerAnswers}
+            playerAnswers={safePlayerAnswers}
             onCorrectAnswer={handleCorrectAnswer}
             onWrongAnswer={handleWrongAnswer}
             onNextQuestion={handleNextQuestion}
