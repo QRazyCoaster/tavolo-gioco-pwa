@@ -1,68 +1,52 @@
-
 import { useState } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
 import {
   mockQuestions,
   QUESTIONS_PER_ROUND,
-  QUESTION_TIMER,
-  MAX_ROUNDS
+  QUESTION_TIMER
 } from '@/utils/triviaConstants';
 
+/**
+ * Handles the hand-off between rounds and decides when the game is over.
+ * It is purely local to the current tab – broadcast happens elsewhere.
+ */
 export const useRoundTransition = (
-  currentRound: Round,
-  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
-  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
-  mockQuestionsData: any[],
-  questionsPerRound: number
+  mockQuestionsData: typeof mockQuestions
 ) => {
-  const [nextNarrator, setNextNarrator] = useState<string>('');
-  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
-  const [showRoundBridge, setShowRoundBridgeState] = useState<boolean>(false);
-  const [gameOver, setGameOver] = useState(false);
+  const [nextNarrator,      setNextNarrator]      = useState<string>('');
+  const [nextRoundNumber,   setNextRoundNumber]   = useState<number>(1);
+  const [showRoundBridge,   setShowRoundBridge]   = useState<boolean>(false);
+  const [gameOver,          setGameOver]          = useState<boolean>(false);
 
-  /* one helper -------------------------------------------------------------- */
-  const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] =>
+  /* helper – slice a fresh set of questions every round */
+  const getNewRoundQuestions = (round: number): TriviaQuestion[] =>
     mockQuestionsData
       .slice(0, QUESTIONS_PER_ROUND)
-      .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
+      .map(q => ({ ...q, id: `r${round}-${q.id}` }));
 
-  /* exactly what useTriviaGame expects -------------------------------------- */
-  const startNextRound = (narratorId: string, nextRound: number): Round => {
-    console.log(
-      '[useRoundTransition] Spawning round',
-      nextRound,
-      'with narrator',
-      narratorId
-    );
-
-    const newRound: Round = {
-      roundNumber: nextRound,
+  /**
+   * Spawns the next Round object and hides the bridge for all tabs.
+   * The caller is responsible for `setCurrentRound(newRound)`.
+   */
+  const startNextRound = (narratorId: string, round: number): Round => {
+    setShowRoundBridge(false);
+    setNextNarrator('');
+    return {
+      roundNumber: round,
       narratorId,
-      questions: getNewRoundQuestions(nextRound),
+      questions: getNewRoundQuestions(round),
       currentQuestionIndex: 0,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER
     };
-
-    // Hide the bridge for everyone
-    setShowRoundBridge(false);
-    // Reset helper state
-    setNextNarrator('');
-    return newRound;
   };
 
-  /* ------------------------------------------------------------------------ */
   return {
-    /* bridge helpers requested by other hooks */
-    nextNarrator,
-    setNextNarrator,
-    nextRoundNumber,
-    setNextRoundNumber,
-    gameOver,
-    setGameOver,
-    showRoundBridge,
-    setShowRoundBridge,
-    getNewRoundQuestions,
+    /* external API */
+    showRoundBridge, setShowRoundBridge,
+    nextNarrator,    setNextNarrator,
+    nextRoundNumber, setNextRoundNumber,
+    gameOver,        setGameOver,
     startNextRound
   };
 };
