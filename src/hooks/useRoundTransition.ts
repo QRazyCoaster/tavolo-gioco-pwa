@@ -1,56 +1,60 @@
-
 import { useState } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
-import { mockQuestions, QUESTIONS_PER_ROUND, QUESTION_TIMER, MAX_ROUNDS } from '@/utils/triviaConstants';
+import {
+  mockQuestions,
+  QUESTIONS_PER_ROUND,
+  QUESTION_TIMER,
+  MAX_ROUNDS
+} from '@/utils/triviaConstants';
 
 export const useRoundTransition = (
   currentRound: Round,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
-  mockQuestionsData: any[], 
+  mockQuestionsData: any[],
   questionsPerRound: number
 ) => {
   const [nextNarrator, setNextNarrator] = useState<string>('');
-  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
-  const [gameOver, setGameOver] = useState<boolean>(false);
+  const [gameOver, setGameOver]         = useState(false);
 
-  // Get new questions for the next round
-  const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] => {
-    // Make sure we're using the proper count of questions (QUESTIONS_PER_ROUND)
-    return mockQuestionsData
+  /* one helper -------------------------------------------------------------- */
+  const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] =>
+    mockQuestionsData
       .slice(0, QUESTIONS_PER_ROUND)
-      .map(q => ({ 
-        ...q, 
-        id: `r${nextRound}-${q.id}` 
-      }));
-  };
+      .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
 
-  // Start the next round with new questions and reset state
-  const startNextRound = () => {
-    console.log('[useRoundTransition] Starting round', nextRoundNumber, 'with narrator', nextNarrator);
-    
-    setCurrentRound({
-      roundNumber: nextRoundNumber,
-      narratorId: nextNarrator,
-      questions: getNewRoundQuestions(nextRoundNumber),
+  /* exactly what useTriviaGame expects -------------------------------------- */
+  const startNextRound = (narratorId: string, nextRound: number): Round => {
+    console.log(
+      '[useRoundTransition] Spawning round',
+      nextRound,
+      'with narrator',
+      narratorId
+    );
+
+    const newRound: Round = {
+      roundNumber: nextRound,
+      narratorId,
+      questions: getNewRoundQuestions(nextRound),
       currentQuestionIndex: 0,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER
-    });
-    
+    };
+
+    // Hide the bridge for everyone
     setShowRoundBridge(false);
+    // Reset helper state
+    setNextNarrator('');
+    return newRound;
   };
 
+  /* ------------------------------------------------------------------------ */
   return {
-    showRoundBridge: false, // Default value
-    setShowRoundBridge,
+    /* bridge helpers requested by other hooks */
     nextNarrator,
     setNextNarrator,
-    nextRoundNumber,
-    setNextRoundNumber,
     gameOver,
     setGameOver,
-    getNewRoundQuestions,
     startNextRound
   };
 };
