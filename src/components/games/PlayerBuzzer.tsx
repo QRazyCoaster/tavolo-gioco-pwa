@@ -2,7 +2,7 @@
 import React from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from "@/components/ui/button";
-import { GamepadIcon, LoaderCircle } from "lucide-react";
+import { GamepadIcon } from "lucide-react";
 import { Player } from '@/context/GameContext';
 
 interface PlayerBuzzerProps {
@@ -28,23 +28,16 @@ const PlayerBuzzer: React.FC<PlayerBuzzerProps> = ({
         variant="default"
         className={`w-full py-8 text-lg flex items-center justify-center gap-2 ${
           hasAnswered
-            ? "bg-blue-400 hover:bg-blue-400 cursor-not-allowed"
+            ? "bg-gray-400 hover:bg-gray-400 cursor-not-allowed"
             : ""
         }`}
         onClick={onPlayerBuzz}
         disabled={hasAnswered}
       >
-        {hasAnswered ? (
-          <>
-            <LoaderCircle size={24} className="animate-spin" />
-            {language === 'it' ? "IN ATTESA" : "WAITING"}
-          </>
-        ) : (
-          <>
-            <GamepadIcon size={24} />
-            {language === 'it' ? "BUZZER" : "BUZZ IN"}
-          </>
-        )}
+        <GamepadIcon size={24} />
+        {hasAnswered
+          ? (language === 'it' ? "IN ATTESA" : "WAITING") 
+          : (language === 'it' ? "BUZZER" : "BUZZ IN")}
       </Button>
     </div>
   );

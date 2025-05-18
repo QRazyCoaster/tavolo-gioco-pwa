@@ -13,14 +13,13 @@ export async function createGame({ gameType, hostName }) {
     // 1. Generate a PIN for the game
     const pinCode = generateGamePin();
     
-    // 2. Insert a new game record - without narrator_order field (it belongs in players)
+    // 2. Insert a new game record
     const { data: game, error } = await supabase
       .from('games')
       .insert({
         pin_code: pinCode,
         status: 'waiting',
-        game_type: gameType,
-        host_name: hostName  // Add host_name to the game record
+        game_type: gameType
       })
       .select()
       .single();
@@ -32,14 +31,13 @@ export async function createGame({ gameType, hostName }) {
     
     console.log('[CREATE_GAME] Game created:', game);
     
-    // 3. Create a host player - now with narrator_order=1 (first to join)
+    // 3. Create a host player
     const { data: host, error: hostError } = await supabase
       .from('players')
       .insert({
         game_id: game.id,
         name: hostName,
-        is_host: true,
-        narrator_order: 1  // Set explicit narrator_order for host
+        is_host: true
       })
       .select()
       .single();
@@ -87,8 +85,7 @@ export async function createGame({ gameType, hostName }) {
         name: host.name,
         isHost: host.is_host === true,
         score: host.score || 0,
-        buzzer_sound_url: hostBuzzerSound,
-        narrator_order: 1  // Include narrator_order in returned data
+        buzzer_sound_url: hostBuzzerSound
       }
     };
     

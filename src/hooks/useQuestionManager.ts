@@ -1,47 +1,40 @@
 
-import { useMemo } from 'react';
-import { Round, TriviaQuestion } from '@/types/trivia';
+import { useState } from 'react';
+import { TriviaQuestion, Round } from '@/types/trivia';
+import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
+import { playAudio } from '@/utils/audioUtils';
 
-export const useQuestionManager = (currentRound: Round) => {
-  // Safely get the current question
-  const currentQuestion = useMemo((): TriviaQuestion => {
-    const questions = currentRound?.questions || [];
-    const index = currentRound?.currentQuestionIndex || 0;
+export const useQuestionManager = (
+  currentRound: Round,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>,
+  broadcastNextQuestion: (nextIndex: number) => void
+) => {
+  const advanceQuestionLocally = (nextIndex: number) => {
+    // Update local state to move to the next question
+    setCurrentRound(prev => ({
+      ...prev,
+      currentQuestionIndex: nextIndex,
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    }));
     
-    if (!questions.length) {
-      // Return a fallback question if the array is empty - now with all required properties
-      return {
-        id: 'fallback',
-        textEn: 'No questions available',
-        textIt: 'Nessuna domanda disponibile',
-        answerEn: '',
-        answerIt: '',
-        categoryId: 'general', // Added missing property
-        difficulty: 'easy'     // Added missing property
-      };
-    }
-    
-    // Ensure we don't go out of bounds
-    const safeIndex = Math.min(index, questions.length - 1);
-    return questions[safeIndex];
-  }, [currentRound]);
+    // Reset the list of players who have answered
+    setAnsweredPlayers(new Set());
+    setShowPendingAnswers(false);
+  };
 
-  // Calculate the 1-based question number (for display)
-  const questionNumber = useMemo(() => {
-    return (currentRound?.currentQuestionIndex || 0) + 1;
-  }, [currentRound]);
-
-  // Get total number of questions in this round
-  const totalQuestions = useMemo(() => {
-    return currentRound?.questions?.length || 0;
-  }, [currentRound]);
-  
-  console.log('[useQuestionManager] Current question number:', questionNumber);
-  console.log('[useQuestionManager] Total questions:', totalQuestions);
+  const handleNextQuestion = () => {
+    playAudio('notification');
+    return currentRound.currentQuestionIndex;
+  };
 
   return {
-    currentQuestion,
-    questionNumber,
-    totalQuestions
+    advanceQuestionLocally,
+    handleNextQuestion,
+    currentQuestion: currentRound.questions[currentRound.currentQuestionIndex],
+    questionNumber: currentRound.currentQuestionIndex + 1,
+    totalQuestions: QUESTIONS_PER_ROUND,
   };
 };

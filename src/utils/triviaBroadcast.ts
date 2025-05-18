@@ -1,30 +1,18 @@
 
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Player } from '@/context/GameContext';
-import { MIN_SCORE_LIMIT } from './triviaConstants';
-import { supabase } from '@/supabaseClient';
 
 // ─────────────────────────────────────────────────────────────
 //  Shared broadcast channel (singleton)
 // ─────────────────────────────────────────────────────────────
 let gameChannel: RealtimeChannel | null = null;
-let activeSubscriptions: string[] = [];
 
 export const setGameChannel = (channel: RealtimeChannel) => {
-  if (gameChannel) {
-    console.log('[triviaBroadcast] Replacing existing game channel');
-  }
   gameChannel = channel;
   console.log('[triviaBroadcast] Game channel set');
 };
 
 export const getGameChannel = () => gameChannel;
-
-export const cleanupChannel = () => {
-  console.log('[triviaBroadcast] Cleaning up game channel and subscriptions');
-  gameChannel = null;
-  activeSubscriptions = [];
-};
 
 export const broadcastScoreUpdate = (players: Player[]) => {
   if (!gameChannel) {
@@ -32,11 +20,8 @@ export const broadcastScoreUpdate = (players: Player[]) => {
     return;
   }
   
-  // Get current scores from game state, ensuring we respect the minimum score limit
-  const scores = players.map(p => ({ 
-    id: p.id, 
-    score: Math.max(MIN_SCORE_LIMIT, p.score || 0)
-  }));
+  // Get current scores from game state
+  const scores = players.map(p => ({ id: p.id, score: p.score || 0 }));
   console.log('[triviaBroadcast] Broadcasting score update to all clients:', scores);
   
   // Send score updates to all players
@@ -61,11 +46,8 @@ export const broadcastNextQuestion = (
     return;
   }
   
-  // Use provided scores or get current scores from game state, applying minimum score limit
-  const payloadScores = scores 
-    ? scores.map(s => ({ id: s.id, score: Math.max(MIN_SCORE_LIMIT, s.score) }))
-    : players.map(p => ({ id: p.id, score: Math.max(MIN_SCORE_LIMIT, p.score || 0) }));
-    
+  // Use provided scores or get current scores from game state
+  const payloadScores = scores ?? players.map(p => ({ id: p.id, score: p.score || 0 }));
   console.log('[triviaBroadcast] Broadcasting next question with scores:', payloadScores);
   
   // Send next question event to all players
@@ -83,27 +65,16 @@ export const broadcastNextQuestion = (
 export const broadcastRoundEnd = (
   currentRoundNumber: number,
   nextNarratorId: string,
-  players: Player[],
-  isGameOver = false
+  players: Player[]
 ) => {
   if (!gameChannel) {
     console.error('[triviaBroadcast] Cannot broadcast round end - game channel not set');
     return;
   }
   
-  // Get current scores from game state, applying minimum score limit
-  const scores = players.map(p => ({ 
-    id: p.id, 
-    score: Math.max(MIN_SCORE_LIMIT, p.score || 0) 
-  }));
-  
-  // Find the next narrator player object
-  const nextNarratorPlayer = nextNarratorId ? players.find(p => p.id === nextNarratorId) : null;
-  const nextNarratorName = nextNarratorPlayer?.name || '';
-  
-  console.log(
-    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId} (${nextNarratorName}), game over: ${isGameOver}`
-  );
+  // Get current scores from game state
+  const scores = players.map(p => ({ id: p.id, score: p.score || 0 }));
+  console.log('[triviaBroadcast] Broadcasting round end with new narrator:', nextNarratorId);
   
   // Send round end event to all players
   gameChannel.send({
@@ -112,36 +83,10 @@ export const broadcastRoundEnd = (
     payload: { 
       nextRound: currentRoundNumber + 1,
       nextNarratorId,
-      scores,
-      isGameOver,
-      nextNarratorName // Add narrator name to payload
+      scores
     }
   }).then(() => {
     console.log('[triviaBroadcast] Round end broadcast sent successfully');
-    
-    // Update the database with the next narrator info
-    if (!isGameOver && nextNarratorId) {
-      // Find the next narrator player
-      if (nextNarratorPlayer && nextNarratorPlayer.name) {
-        console.log(`[triviaBroadcast] Updating database with new narrator: ${nextNarratorPlayer.name} for round ${currentRoundNumber + 1}`);
-        
-        supabase
-          .from('games')
-          .update({ 
-            current_round: currentRoundNumber + 1,
-            current_narrator_id: nextNarratorId,  // Add the narrator ID
-            host_name: nextNarratorPlayer.name    // Update host_name to the next narrator
-          })
-          .eq('id', sessionStorage.getItem('gameId'))
-          .then(({ error }) => {
-            if (error) {
-              console.error('[triviaBroadcast] Error updating game with new narrator:', error);
-            } else {
-              console.log('[triviaBroadcast] Successfully updated current_round and host_name in database');
-            }
-          });
-      }
-    }
   }).catch(error => {
     console.error('[triviaBroadcast] Error broadcasting round end:', error);
   });

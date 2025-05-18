@@ -1,36 +1,19 @@
-
 import { supabase } from '@/supabaseClient';
 import { listBuzzers } from '@/actions/listBuzzers';
-import { getBuzzerUrl } from '@/utils/buzzerUtils';
+import { getBuzzerUrl } from '@/utils/buzzerUtils';   // ⬅️ NEW
 
 export async function joinGame({ gameId, playerName }) {
   try {
     console.log('[JOIN_GAME] Joining game with ID:', gameId);
     console.log('[JOIN_GAME] Player name:', playerName);
     
-    // Get the current count of players to determine the narrator_order
-    const { data: existingPlayers, error: countError } = await supabase
-      .from('players')
-      .select('id')
-      .eq('game_id', gameId);
-      
-    if (countError) {
-      console.error('[JOIN_GAME] Error counting existing players:', countError);
-      throw countError;
-    }
-    
-    // Calculate the narrator_order (count + 1)
-    const narratorOrder = (existingPlayers?.length || 0) + 1;
-    console.log(`[JOIN_GAME] Setting narrator_order to ${narratorOrder} (player #${narratorOrder})`);
-    
-    // 1. Insert the player with narrator_order
+    // 1. Insert the player
     const { data: player, error } = await supabase
       .from('players')
       .insert({
         game_id: gameId,
         name: playerName,
-        is_host: false,
-        narrator_order: narratorOrder // Set the narrator_order based on join sequence
+        is_host: false
       })
       .select()
       .single();
@@ -91,7 +74,7 @@ export async function joinGame({ gameId, playerName }) {
         
         console.log('[JOIN_GAME] Selected buzzer file:', selectedFile.name);
         
-        // Build the public URL the safe way
+        // NEW: build the public URL the safe way
         buzzerSound = getBuzzerUrl(selectedFile.name);
         console.log('[JOIN_GAME] Full buzzer URL for player:', buzzerSound);
 
@@ -117,8 +100,7 @@ export async function joinGame({ gameId, playerName }) {
     return { 
       ...player, 
       isHost: player.is_host === true,
-      buzzer_sound_url: buzzerSound,
-      narrator_order: narratorOrder // Include narrator_order in returned data
+      buzzer_sound_url: buzzerSound
     };
   } catch (error) {
     console.error('[JOIN_GAME] Join game error:', error);

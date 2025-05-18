@@ -9,9 +9,6 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  build: {
-    sourcemap: true,   // emit source-maps so DevTools can map to .ts files
-  },
   plugins: [
     react(),
     mode === 'development' &&

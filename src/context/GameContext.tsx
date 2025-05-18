@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 /* ──────────────── Player type ──────────────── */
@@ -7,7 +8,6 @@ export interface Player {
   isHost: boolean;
   score?: number;
   buzzer_sound_url?: string;
-  narrator_order?: number; // Add the narrator_order property to fix TypeScript errors
 }
 
 /* ──────────────── Game state ──────────────── */

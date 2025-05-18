@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 interface RoundBridgePageProps {
   nextRoundNumber: number;
-  nextNarrator: Player | null;
+  nextNarrator: Player;
   onCountdownComplete: () => void;
 }
 
@@ -18,11 +18,6 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
 }) => {
   const { language } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<number>(6);
-  
-  // Debug the nextNarrator object to ensure we have the proper data
-  useEffect(() => {
-    console.log('[RoundBridgePage] Next narrator:', nextNarrator);
-  }, [nextNarrator]);
   
   // Countdown effect
   useEffect(() => {
@@ -65,9 +60,7 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
             <h2 className="text-2xl text-center mb-2">
               {language === 'it' ? 'Il narratore sarà:' : 'The narrator will be:'}
             </h2>
-            <p className="text-3xl font-bold text-center text-primary">
-              {nextNarrator?.name || (language === 'it' ? 'In attesa...' : 'Waiting...')}
-            </p>
+            <p className="text-3xl font-bold text-center text-primary">{nextNarrator.name}</p>
           </motion.div>
         </Card>
         
