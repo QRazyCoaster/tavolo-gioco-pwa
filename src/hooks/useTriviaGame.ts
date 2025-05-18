@@ -37,12 +37,16 @@ export const useTriviaGame = () => {
 
   /* ───────── round-transition helpers ───────── */
   const {
-    showRoundBridge, setShowRoundBridge,
-    nextNarrator,    setNextNarrator,
-    nextRoundNumber, setNextRoundNumber,
-    gameOver,        setGameOver,
-    startNextRound
-  } = useRoundTransition();
+  showRoundBridge,
+  setShowRoundBridge,
+  nextNarrator,
+  setNextNarrator,
+  nextRoundNumber,
+  setNextRoundNumber,
+  gameOver,
+  setGameOver,
+  startNextRound
+} = useRoundTransition(currentRound, setCurrentRound);
 
   /* actually switch to the round that startNextRound() produces */
 +  const beginNextRound = () => {
