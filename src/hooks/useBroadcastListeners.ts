@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Round } from '@/types/trivia';
@@ -20,66 +19,45 @@ export const useBroadcastListeners = (
     const ch = gameChannel;
     if (!ch) return;
 
+    // ───── NEXT_QUESTION ─────
     ch.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
-      console.log('[useBroadcastListeners] Received NEXT_QUESTION broadcast:', payload);
+      console.log('[useBroadcastListeners] NEXT_QUESTION', payload);
       const { questionIndex, scores } = payload as any;
-      
-      // Reset all game state for the new question
+
       setCurrentRound(prev => ({
         ...prev,
         currentQuestionIndex: questionIndex,
         playerAnswers: [],
         timeLeft: QUESTION_TIMER
       }));
-      
-      // Clear the answered players set
       setAnsweredPlayers(new Set());
-      
-      // Hide pending answers panel
       setShowPendingAnswers(false);
-      
-      // Update scores if provided
+
       if (scores && Array.isArray(scores)) {
-        console.log('[useBroadcastListeners] Updating scores from NEXT_QUESTION broadcast:', scores);
         scores.forEach((s: any) => {
-          if (s && s.id && typeof s.score === 'number') {
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-          }
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
       }
     });
 
+    // ───── SCORE_UPDATE ─────
     ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
-      console.log('[useBroadcastListeners] Received SCORE_UPDATE broadcast:', payload);
-      if (payload && payload.scores && Array.isArray(payload.scores)) {
+      console.log('[useBroadcastListeners] SCORE_UPDATE', payload);
+      if (payload?.scores && Array.isArray(payload.scores)) {
         payload.scores.forEach((s: any) => {
-          if (s && s.id && typeof s.score === 'number') {
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-          }
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
       }
     });
 
+    // ───── BUZZ ─────
     ch.on('broadcast', { event: 'BUZZ' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] BUZZ', payload);
       const { playerId, playerName, questionIndex } = payload as any;
-      
-      console.log('[useBroadcastListeners] Received BUZZ broadcast:', { playerId, playerName, questionIndex });
-      
+
       setCurrentRound(prev => {
-        // Make sure we're on the same question
-        if (questionIndex !== prev.currentQuestionIndex) {
-          console.log('[useBroadcastListeners] Ignoring BUZZ for different question index');
-          return prev;
-        }
-        
-        // Avoid duplicates
-        if (prev.playerAnswers.some(a => a.playerId === playerId)) {
-          console.log('[useBroadcastListeners] Player already in answer queue, ignoring');
-          return prev;
-        }
-        
-        console.log('[useBroadcastListeners] Adding player to answer queue:', playerId, playerName);
-        
+        if (questionIndex !== prev.currentQuestionIndex) return prev;
+        if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev;
         return {
           ...prev,
           playerAnswers: [
@@ -88,65 +66,41 @@ export const useBroadcastListeners = (
           ]
         };
       });
-      
       setShowPendingAnswers(true);
     });
 
+    // ───── ROUND_END ─────
     ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] ROUND_END', payload);
       const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName } = payload as any;
-      
-      console.log('[useBroadcastListeners] Received ROUND_END broadcast:', payload);
-      
-      // Make sure to set the next narrator ID immediately so the round bridge shows it
+
       if (nextNarratorId) {
-        console.log('[useBroadcastListeners] Setting next narrator ID:', nextNarratorId, 'Name:', nextNarratorName || 'Unknown');
+        console.log('[useBroadcastListeners] setNextNarrator:', nextNarratorId, nextNarratorName);
         setNextNarrator(nextNarratorId);
       }
-      
-      // Update scores if provided
+
       if (scores && Array.isArray(scores)) {
         scores.forEach((s: any) => {
-          if (s && s.id && typeof s.score === 'number') {
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-          }
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
       }
 
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
       setShowRoundBridge(true);
-      
-      // Handle game over state
+
       if (isGameOver) {
-        console.log("[useBroadcastListeners] Game over received from broadcast");
-        setTimeout(() => {
-          setGameOver(true);
-        }, 6500); // Wait for round bridge to complete
-        return;
+        console.log('[useBroadcastListeners] Game over');
+        setTimeout(() => setGameOver(true), 6500);
       }
 
-      // After delay, set up the new round
-      setTimeout(() => {
-        if (!isGameOver) {
-          console.log('[useBroadcastListeners] Creating new round:', nextRound, 'with narrator:', nextNarratorId);
-          
-          const newQuestions = mockQuestions
-            .slice(0, QUESTIONS_PER_ROUND)
-            .map(q => ({ ...q, id: `r${nextRound}-${q.id}` }));
-          
-          setCurrentRound({
-            roundNumber: nextRound,
-            narratorId: nextNarratorId,
-            questions: newQuestions,
-            currentQuestionIndex: 0,
-            playerAnswers: [],
-            timeLeft: QUESTION_TIMER
-          });
-        }
-      }, 6500); // Wait for round bridge to complete
+      // ← **no** automatic call to setCurrentRound here;
+      //    the page’s RoundBridgePage → onCountdownComplete triggers startNextRound()
     });
 
-    return () => { /* listeners live for lifetime of channel */ };
+    // subscribe & keep alive
+    ch.subscribe();
+    // cleanup not needed—listeners live as long as channel
   }, [
     gameChannel,
     setCurrentRound,
