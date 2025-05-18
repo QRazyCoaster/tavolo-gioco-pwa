@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
-import { Round } from '@/types/trivia';
+import { Round, TriviaQuestion } from '@/types/trivia';
 import {
   mockQuestions,
   QUESTION_TIMER,
@@ -29,6 +29,7 @@ export const useTriviaGame = () => {
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
     narratorId: state.players.find(p => p.isHost)?.id || '',
+    // Use mockQuestions that now have the required properties
     questions: mockQuestions
       .slice(0, QUESTIONS_PER_ROUND)
       .map(q => ({ ...q, id: `r1-${q.id}` })),
