@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/context/LanguageContext';
@@ -26,8 +26,13 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   // Refs to store channels for cleanup
   const playerChannelRef = useRef<any>(null);
   const gameChannelRef = useRef<any>(null);
+  // State to track if component is mounted
+  const [isMounted, setIsMounted] = useState(true);
 
   useEffect(() => {
+    // Set mounted state
+    setIsMounted(true);
+    
     // Guard against multiple subscription setups
     if (subscriptionsSetup.current || !state.gameId) {
       return;
@@ -37,12 +42,14 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
     subscriptionsSetup.current = true;
 
     // First, check if the game is already active when component mounts
-    supabase
-      .from('games')
-      .select('status, game_type')
-      .eq('id', state.gameId)
-      .single()
-      .then(({ data, error }) => {
+    const checkGameStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('games')
+          .select('status, game_type')
+          .eq('id', state.gameId)
+          .single();
+          
         if (error) {
           console.error('[WaitingRoom] Error checking initial game status:', error);
           return;
@@ -51,7 +58,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         console.log('[WaitingRoom] Initial game status check:', data);
         
         // If game is already active, redirect immediately
-        if (data && data.status === 'active') {
+        if (data && data.status === 'active' && isMounted) {
           console.log('[WaitingRoom] Game already active, redirecting player');
           
           // Update state
@@ -71,22 +78,32 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             navigate('/game');
           }
         }
-      });
+      } catch (err) {
+        console.error('[WaitingRoom] Error in checkGameStatus:', err);
+      }
+    };
+    
+    checkGameStatus();
 
     // Fetch all players once
-    supabase
-      .from('players')
-      .select('*')
-      .eq('game_id', state.gameId)
-      .then(({ data, error }) => {
+    const fetchPlayers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .eq('game_id', state.gameId);
+          
         if (error) {
           console.error('[WaitingRoom] Error fetching players:', error);
           return;
         }
+        
         if (!data) {
           console.log('[WaitingRoom] No player data received');
           return;
         }
+        
+        if (!isMounted) return;
         
         console.log(`[WaitingRoom] Fetched ${data.length} players`);
         const mapped = data.map(p => ({
@@ -96,6 +113,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           score: p.score || 0,
           buzzer_sound_url: p.buzzer_sound_url
         }));
+        
         // Update current player if needed
         if (state.currentPlayer) {
           const updated = mapped.find(p => p.id === state.currentPlayer!.id);
@@ -104,7 +122,12 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           }
         }
         dispatch({ type: 'ADD_PLAYER_LIST', payload: mapped });
-      });
+      } catch (err) {
+        console.error('[WaitingRoom] Error in fetchPlayers:', err);
+      }
+    };
+    
+    fetchPlayers();
 
     // Subscribe to new players
     const playersChannel = supabase
@@ -113,6 +136,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'players', filter: `game_id=eq.${state.gameId}` },
         payload => {
+          if (!isMounted) return;
           console.log('[WaitingRoom] New player joined:', payload.new);
           const p: Player = {
             id: payload.new.id,
@@ -136,7 +160,8 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
         payload => {
-          console.log('[WaitingRoom] Game updated detected:', payload.new);
+          if (!isMounted) return;
+          console.log('[WaitingRoom] Game update detected:', payload.new);
           
           // Specifically check for active status
           if (payload.new.status === 'active') {
@@ -185,6 +210,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
 
     return () => {
       console.log('[WaitingRoom] Cleaning up subscriptions');
+      setIsMounted(false);
       if (playerChannelRef.current) {
         supabase.removeChannel(playerChannelRef.current);
         playerChannelRef.current = null;

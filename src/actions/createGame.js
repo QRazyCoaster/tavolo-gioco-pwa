@@ -13,7 +13,7 @@ export async function createGame({ gameType, hostName }) {
     // 1. Generate a PIN for the game
     const pinCode = generateGamePin();
     
-    // 2. Insert a new game record
+    // 2. Insert a new game record - without narrator_order field
     const { data: game, error } = await supabase
       .from('games')
       .insert({
