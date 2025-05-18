@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
@@ -40,6 +41,7 @@ export const useTriviaGame = () => {
 
   const gameChannelRef = useGameChannel(state.gameId);
 
+  // Define these variables only once
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
@@ -71,10 +73,6 @@ export const useTriviaGame = () => {
     setCurrentRound,
     handleNextQuestion
   );
-
-
-  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
-  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
   const handleNextQuestion = useCallback(() => {
     const currentIndex = currentRound.currentQuestionIndex;
@@ -133,14 +131,6 @@ export const useTriviaGame = () => {
     setNextNarrator,
     setNextRoundNumber
   ]);
-
-  useNarratorTimer(
-    isNarrator,
-    showRoundBridge,
-    gameOver,
-    setCurrentRound,
-    handleNextQuestion
-  );
 
   useBroadcastListeners(
     gameChannelRef.current,
