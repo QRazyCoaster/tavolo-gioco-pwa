@@ -1,94 +1,116 @@
 import { useEffect } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { Round, TriviaQuestion } from '@/types/trivia';
-import { useGame } from '@/context/GameContext';
-import { mockQuestions, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
+import { Round } from '@/types/trivia';
+import { QUESTION_TIMER } from '@/utils/triviaConstants';
 
 export const useBroadcastListeners = (
-  gameChannel: RealtimeChannel | null
+  gameChannel: RealtimeChannel | null,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>,
+  setNextNarrator: (id: string) => void,
+  setShowRoundBridge: (show: boolean) => void,
+  setGameOver: (over: boolean) => void,
+  dispatch: any,
+  mockQuestions: any[],
+  QUESTIONS_PER_ROUND: number
 ) => {
-  const { state, dispatch } = useGame();
-
   useEffect(() => {
-    if (!gameChannel) return;
+    const ch = gameChannel;
+    if (!ch) return;
 
-    // Add event listener for score updates and other game events
-    const subscription = gameChannel.on('broadcast', { event: 'SCORE_UPDATE' }, (payload) => {
-      console.log('[useBroadcastListeners] Received score update:', payload);
-      
-      if (payload.payload?.scores) {
-        const scores = payload.payload.scores;
-        
-        // Update scores in the game state
-        scores.forEach((scoreUpdate: { id: string; score: number }) => {
-          dispatch({
-            type: 'UPDATE_SCORE',
-            payload: {
-              playerId: scoreUpdate.id,
-              score: scoreUpdate.score
-            }
-          });
+    // ───── NEXT_QUESTION ─────
+    ch.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] NEXT_QUESTION', payload);
+      const { questionIndex, scores } = payload as any;
+
+      setCurrentRound(prev => ({
+        ...prev,
+        currentQuestionIndex: questionIndex,
+        playerAnswers: [],
+        timeLeft: QUESTION_TIMER
+      }));
+      setAnsweredPlayers(new Set());
+      setShowPendingAnswers(false);
+
+      if (scores && Array.isArray(scores)) {
+        scores.forEach((s: any) => {
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
       }
     });
 
-    // Add event listener for next question updates
-    gameChannel.on('broadcast', { event: 'NEXT_QUESTION' }, (payload) => {
-      console.log('[useBroadcastListeners] Received next question update:', payload);
-      
-      if (payload.payload?.scores) {
-        const scores = payload.payload.scores;
-        
-        // Update scores in the game state
-        scores.forEach((scoreUpdate: { id: string; score: number }) => {
-          dispatch({
-            type: 'UPDATE_SCORE',
-            payload: {
-              playerId: scoreUpdate.id,
-              score: scoreUpdate.score
-            }
-          });
+    // ───── SCORE_UPDATE ─────
+    ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] SCORE_UPDATE', payload);
+      if (payload?.scores && Array.isArray(payload.scores)) {
+        payload.scores.forEach((s: any) => {
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
       }
     });
 
-    // Add event listener for round end
-    gameChannel.on('broadcast', { event: 'ROUND_END' }, (payload) => {
-      console.log('[useBroadcastListeners] Received round end:', payload);
-      
-      if (payload.payload?.scores) {
-        const scores = payload.payload.scores;
-        
-        // Update scores in the game state
-        scores.forEach((scoreUpdate: { id: string; score: number }) => {
-          dispatch({
-            type: 'UPDATE_SCORE',
-            payload: {
-              playerId: scoreUpdate.id,
-              score: scoreUpdate.score
-            }
-          });
-        });
-      }
-      
-      // Store the next round information in session storage if available
-      if (payload.payload?.nextRound) {
-        sessionStorage.setItem('nextRound', payload.payload.nextRound.toString());
-      }
-      
-      if (payload.payload?.nextNarratorId) {
-        sessionStorage.setItem('nextNarratorId', payload.payload.nextNarratorId);
-      }
-      
-      if (payload.payload?.isGameOver) {
-        sessionStorage.setItem('gameOver', payload.payload.isGameOver.toString());
-      }
+    // ───── BUZZ ─────
+    ch.on('broadcast', { event: 'BUZZ' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] BUZZ', payload);
+      const { playerId, playerName, questionIndex } = payload as any;
+
+      setCurrentRound(prev => {
+        if (questionIndex !== prev.currentQuestionIndex) return prev;
+        if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev;
+        return {
+          ...prev,
+          playerAnswers: [
+            ...prev.playerAnswers,
+            { playerId, playerName, timestamp: Date.now() }
+          ]
+        };
+      });
+      setShowPendingAnswers(true);
     });
 
-    return () => {
-      if (gameChannel) {
-        gameChannel.unsubscribe();
+    // ───── ROUND_END ─────
+    ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
+      console.log('[useBroadcastListeners] ROUND_END', payload);
+      const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName } = payload as any;
+
+      if (nextNarratorId) {
+        console.log('[useBroadcastListeners] setNextNarrator:', nextNarratorId, nextNarratorName);
+        setNextNarrator(nextNarratorId);
       }
-    };
-  }, [gameChannel, dispatch]);
+
+      if (scores && Array.isArray(scores)) {
+        scores.forEach((s: any) => {
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+        });
+      }
+
+      setAnsweredPlayers(new Set());
+      setShowPendingAnswers(false);
+      setShowRoundBridge(true);
+
+      if (isGameOver) {
+        console.log('[useBroadcastListeners] Game over');
+        setTimeout(() => setGameOver(true), 6500);
+      }
+
+      // ← **no** automatic call to setCurrentRound here;
+      //    the page’s RoundBridgePage → onCountdownComplete triggers startNextRound()
+    });
+
+    // subscribe & keep alive
+    ch.subscribe();
+    // cleanup not needed—listeners live as long as channel
+  }, [
+    gameChannel,
+    setCurrentRound,
+    setAnsweredPlayers,
+    setShowPendingAnswers,
+    setNextNarrator,
+    setShowRoundBridge,
+    setGameOver,
+    dispatch,
+    mockQuestions,
+    QUESTIONS_PER_ROUND
+  ]);
 };

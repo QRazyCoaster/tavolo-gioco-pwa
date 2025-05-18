@@ -1,47 +1,31 @@
-
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Round } from '@/types/trivia';
-import { QUESTION_TIMER } from '@/utils/triviaConstants';
 
+/**
+ * Runs only on the active narrator while a round is live.
+ * When the clock hits 0 it calls handleTimeUp (usually → next question).
+ */
 export const useNarratorTimer = (
   isNarrator: boolean,
   showRoundBridge: boolean,
   gameOver: boolean,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
-  onNextQuestion: () => void
+  handleTimeUp: () => void
 ) => {
-  // Use ref to avoid stale closure issues with the timer
-  const onNextQuestionRef = useRef(onNextQuestion);
-  
-  // Update ref when the function changes
   useEffect(() => {
-    onNextQuestionRef.current = onNextQuestion;
-  }, [onNextQuestion]);
-
-  useEffect(() => {
-    // Only the narrator should run this timer
     if (!isNarrator || showRoundBridge || gameOver) return;
 
-    console.log('[useNarratorTimer] Starting timer for narrator');
-    
-    const timer = setInterval(() => {
-      setCurrentRound((prev) => {
-        // If we've hit zero, handle question end
-        if (prev.timeLeft <= 1) {
-          clearInterval(timer);
-          
-          // Use the ref to ensure we have the latest function
-          setTimeout(() => {
-            console.log('[useNarratorTimer] Time up, calling onNextQuestion');
-            onNextQuestionRef.current();
-          }, 500);
-          
-          return { ...prev, timeLeft: 0 };
+    const id = setInterval(() => {
+      setCurrentRound(prev => {
+        if (prev.timeLeft <= 0) {
+          clearInterval(id);
+          handleTimeUp();
+          return prev;
         }
         return { ...prev, timeLeft: prev.timeLeft - 1 };
       });
-    }, 1000);
+    }, 1_000);
 
-    return () => clearInterval(timer);
-  }, [isNarrator, showRoundBridge, gameOver, setCurrentRound]);
+    return () => clearInterval(id);
+  }, [isNarrator, showRoundBridge, gameOver, setCurrentRound, handleTimeUp]);
 };

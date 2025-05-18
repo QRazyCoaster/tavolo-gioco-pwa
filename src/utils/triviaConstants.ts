@@ -6,8 +6,6 @@ export const QUESTION_TIMER = 90; // 90 seconds per question
 export const QUESTIONS_PER_ROUND = 7; // 7 questions per round (changed from 1)
 export const MAX_ROUNDS = 3; // 3 rounds maximum
 export const MIN_SCORE_LIMIT = -420; // Minimum score limit for players (-420 to allow for maximum of 84 wrong answers)
-export const CORRECT_ANSWER_POINTS = 10; // Points awarded for correct answers
-export const WRONG_ANSWER_POINTS = -5; // Points deducted for wrong answers
 
 // Add mock questions here if they don't exist elsewhere
 export const mockQuestions = [

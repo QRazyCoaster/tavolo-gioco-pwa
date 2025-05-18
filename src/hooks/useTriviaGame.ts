@@ -1,5 +1,4 @@
-
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
 import {
@@ -35,36 +34,36 @@ export const useTriviaGame = () => {
     playerAnswers: [],
     timeLeft: QUESTION_TIMER
   });
-  
-  const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
+  const [answeredPlayers, setAnsweredPlayers]    = useState<Set<string>>(new Set());
   const [showPendingAnswers, setShowPendingAnswers] = useState(false);
-  const [showRoundBridge, setShowRoundBridge] = useState<boolean>(false);
 
   const gameChannelRef = useGameChannel(state.gameId);
 
-  // Calculate these values before using them
-  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
-  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
-
-  // ─── Round Transition Setup ───
+  // ─── Round Transition Setup (PASS setShowRoundBridge here!) ───
   const {
+    showRoundBridge,
+    setShowRoundBridge,
     nextNarrator,
     setNextNarrator,
     nextRoundNumber,
     setNextRoundNumber,
     gameOver,
     setGameOver,
+    getNewRoundQuestions,
     startNextRound
   } = useRoundTransition(
     currentRound,
     setCurrentRound,
-    setShowRoundBridge
+    setShowRoundBridge,       // ← corrected
+    mockQuestions,
+    QUESTIONS_PER_ROUND
   );
+
+  const isNarrator       = state.currentPlayer?.id === currentRound.narratorId;
+  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
   // ───── Next Question Logic ─────
   const handleNextQuestion = useCallback(() => {
-    if (!isNarrator) return;
-    
     const idx = currentRound.currentQuestionIndex;
     const last = idx >= QUESTIONS_PER_ROUND - 1;
 
@@ -101,12 +100,9 @@ export const useTriviaGame = () => {
       broadcastNextQuestion(nextIdx, state.players);
     }
   }, [
-    isNarrator,
     currentRound,
     state.players,
     setCurrentRound,
-    setAnsweredPlayers,
-    setShowPendingAnswers,
     setShowRoundBridge,
     setGameOver,
     setNextNarrator,
@@ -123,7 +119,18 @@ export const useTriviaGame = () => {
   );
 
   // ───── Listen for broadcasts ─────
-  useBroadcastListeners(gameChannelRef.current);
+  useBroadcastListeners(
+    gameChannelRef.current,
+    setCurrentRound,
+    setAnsweredPlayers,
+    setShowPendingAnswers,
+    setNextNarrator,
+    setShowRoundBridge,
+    setGameOver,
+    dispatch,
+    mockQuestions,
+    QUESTIONS_PER_ROUND
+  );
 
   // ───── Supabase INSERT listener ─────
   useNarratorSubscription(
@@ -136,7 +143,13 @@ export const useTriviaGame = () => {
   );
 
   // ───── Question Manager ─────
-  const { currentQuestion, questionNumber, totalQuestions } = useQuestionManager(currentRound);
+  const { currentQuestion, questionNumber, totalQuestions } = useQuestionManager(
+    currentRound,
+    setCurrentRound,
+    setAnsweredPlayers,
+    setShowPendingAnswers,
+    (i: number) => broadcastNextQuestion(i, state.players)
+  );
 
   // ───── Player buzzing ─────
   const { handlePlayerBuzzer } = usePlayerActions(
@@ -158,8 +171,7 @@ export const useTriviaGame = () => {
     setShowPendingAnswers,
     setShowRoundBridge,
     setGameOver,
-    dispatch,
-    isNarrator
+    dispatch
   );
 
   // ───── Expose to page ─────
@@ -176,7 +188,7 @@ export const useTriviaGame = () => {
     setShowPendingAnswers,
     handlePlayerBuzzer,
     handleCorrectAnswer: (pid: string) => handleCorrectAnswer(pid),
-    handleWrongAnswer: (pid: string) => handleWrongAnswer(pid),
+    handleWrongAnswer:   (pid: string) => handleWrongAnswer(pid),
     handleNextQuestion,
     showRoundBridge,
     nextNarrator: state.players.find(p => p.id === nextNarrator) || null,
