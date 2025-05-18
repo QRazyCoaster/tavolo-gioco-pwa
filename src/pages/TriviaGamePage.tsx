@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,6 +10,7 @@ import RoundBridgePage from '@/components/trivia/RoundBridgePage';
 import GameEndScreen   from '@/components/trivia/GameEndScreen';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import { Player } from '@/context/GameContext';
 
 const TriviaGamePage = () => {
   const { t, language } = useLanguage();
@@ -140,6 +140,9 @@ const TriviaGamePage = () => {
     );
   }
 
+  // Find the actual player object that corresponds to the nextNarrator ID
+  const nextNarratorPlayer = state.players.find(player => player.id === nextNarrator) || null;
+
   /* ---- Main game view ---- */
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -166,8 +169,8 @@ const TriviaGamePage = () => {
         {showRoundBridge ? (
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
-            nextNarrator={nextNarrator}
-            onCountdownComplete={startNextRound}
+            nextNarrator={nextNarratorPlayer}
+            onCountdownComplete={() => startNextRound(nextNarrator, nextRoundNumber)}
           />
         ) : isNarrator ? (
           <NarratorView
