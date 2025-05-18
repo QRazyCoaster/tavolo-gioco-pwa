@@ -40,6 +40,10 @@ export const useTriviaGame = () => {
 
   const gameChannelRef = useGameChannel(state.gameId);
 
+  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
+  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
+
+  // 🔁 FIXED: move round transition up ABOVE any references to showRoundBridge
   const {
     showRoundBridge,
     setShowRoundBridge,
@@ -58,6 +62,16 @@ export const useTriviaGame = () => {
     mockQuestions,
     QUESTIONS_PER_ROUND
   );
+
+  // ✅ now safe to call
+  useNarratorTimer(
+    isNarrator,
+    showRoundBridge,
+    gameOver,
+    setCurrentRound,
+    handleNextQuestion
+  );
+
 
   const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
