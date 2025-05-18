@@ -25,7 +25,7 @@ export const useNarratorActions = (
 ) => {
   const { state, dispatch } = useGame();
 
-  /* helper: update score and return fresh players array */
+  /* helper: apply delta and return fresh players array */
   const applyDelta = (playerId: string, delta: number) => {
     const updated = state.players.map(p =>
       p.id === playerId
@@ -37,33 +37,28 @@ export const useNarratorActions = (
     return updated;
   };
 
-  /* ───────────── correct answer ───────────── */
+  /* ── correct ── */
   const handleCorrectAnswer = useCallback(
     (playerId: string) => {
       playAudio('success');
-      const freshPlayers = applyDelta(playerId, CORRECT_ANSWER_POINTS);
+      const fresh = applyDelta(playerId, CORRECT_ANSWER_POINTS);
+      broadcastScoreUpdate(fresh);
 
-      /* sync everyone’s score immediately */
-      broadcastScoreUpdate(freshPlayers);
-
-      const totalQs = 7; // QUESTIONS_PER_ROUND
+      const totalQs = 7;
       const isLast  = currentQuestionIndex >= totalQs - 1;
 
       if (!isLast) {
         const nextIdx = currentQuestionIndex + 1;
-        advanceQuestionLocally(nextIdx);            // ← instant local update
-        broadcastNextQuestion(nextIdx, freshPlayers);
+        advanceQuestionLocally(nextIdx);             // instant card / counter change
+        broadcastNextQuestion(nextIdx, fresh);
         return;
       }
 
-      /* end-of-round */
       const { nextNarratorId, isGameOver } = getNextNarrator();
       setNextNarrator(nextNarratorId);
-      broadcastRoundEnd(roundNumber, nextNarratorId, freshPlayers, isGameOver);
+      broadcastRoundEnd(roundNumber, nextNarratorId, fresh, isGameOver);
       setShowRoundBridge(true);
-      if (isGameOver && setGameOver) {
-        setTimeout(() => setGameOver(true), 6500);
-      }
+      if (isGameOver && setGameOver) setTimeout(() => setGameOver(true), 6500);
     },
     [
       state.players,
@@ -77,18 +72,18 @@ export const useNarratorActions = (
     ]
   );
 
-  /* ───────────── wrong answer ───────────── */
+  /* ── wrong ── */
   const handleWrongAnswer = useCallback(
     (playerId: string) => {
       playAudio('error');
-      const freshPlayers = applyDelta(playerId, WRONG_ANSWER_POINTS);
-      broadcastScoreUpdate(freshPlayers);
+      const fresh = applyDelta(playerId, WRONG_ANSWER_POINTS);
+      broadcastScoreUpdate(fresh);
     },
     [state.players]
   );
 
-  /* ───────────── manual “Next” / timer up ───────────── */
-  const goToNextQuestion = () => {
+  /* ── manual “Next” / timer-up ── */
+  const advance = () => {
     const totalQs = 7;
     const isLast  = currentQuestionIndex >= totalQs - 1;
 
@@ -103,12 +98,10 @@ export const useNarratorActions = (
     setNextNarrator(nextNarratorId);
     broadcastRoundEnd(roundNumber, nextNarratorId, state.players, isGameOver);
     setShowRoundBridge(true);
-    if (isGameOver && setGameOver) {
-      setTimeout(() => setGameOver(true), 6500);
-    }
+    if (isGameOver && setGameOver) setTimeout(() => setGameOver(true), 6500);
   };
 
-  const handleNextQuestion = useCallback(goToNextQuestion, [
+  const handleNextQuestion = useCallback(advance, [
     currentQuestionIndex,
     roundNumber,
     state.players
@@ -116,13 +109,8 @@ export const useNarratorActions = (
 
   const handleTimeUp = useCallback(() => {
     playAudio('error');
-    goToNextQuestion();
-  }, [goToNextQuestion]);
+    advance();
+  }, [advance]);
 
-  return {
-    handleCorrectAnswer,
-    handleWrongAnswer,
-    handleNextQuestion,
-    handleTimeUp
-  };
+  return { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion, handleTimeUp };
 };
