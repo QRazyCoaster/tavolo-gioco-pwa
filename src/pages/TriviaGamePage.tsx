@@ -92,7 +92,7 @@ const TriviaGamePage = () => {
     console.log('[TriviaGamePage] Current round:', safeCurrentRound);
     console.log('[TriviaGamePage] Current player:', state.currentPlayer?.id);
     console.log('[TriviaGamePage] Narrator ID:', safeCurrentRound.narratorId);
-    console.log('[TriviaGamePage] Next narrator ID:', nextNarrator);
+    console.log('[TriviaGamePage] Next narrator ID:', nextNarrator?.id);
 
     if (
       safePlayerAnswers.length > 0 &&
@@ -144,9 +144,13 @@ const TriviaGamePage = () => {
     );
   }
 
-  // Find the actual player object that corresponds to the nextNarrator ID
-  const nextNarratorPlayer = state.players.find(player => player.id === nextNarrator) || null;
-  console.log('[TriviaGamePage] Next narrator player:', nextNarratorPlayer?.name || 'Not found', 'ID:', nextNarrator);
+  // Create a wrapper function for startNextRound that adapts it to what RoundBridgePage expects
+  const handleStartNextRound = () => {
+    if (nextNarrator && nextRoundNumber) {
+      return startNextRound(nextNarrator.id, nextRoundNumber);
+    }
+    return safeCurrentRound;
+  };
 
   /* ---- Main game view ---- */
   return (
@@ -174,8 +178,8 @@ const TriviaGamePage = () => {
         {showRoundBridge ? (
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
-            nextNarrator={nextNarratorPlayer}
-            onCountdownComplete={startNextRound}
+            nextNarrator={nextNarrator}
+            onCountdownComplete={handleStartNextRound}
           />
         ) : isNarrator ? (
           <NarratorView

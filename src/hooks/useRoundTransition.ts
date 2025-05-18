@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
 import {
@@ -15,7 +16,9 @@ export const useRoundTransition = (
   questionsPerRound: number
 ) => {
   const [nextNarrator, setNextNarrator] = useState<string>('');
-  const [gameOver, setGameOver]         = useState(false);
+  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
+  const [showRoundBridge, setShowRoundBridgeState] = useState<boolean>(false);
+  const [gameOver, setGameOver] = useState(false);
 
   /* one helper -------------------------------------------------------------- */
   const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] =>
@@ -53,8 +56,13 @@ export const useRoundTransition = (
     /* bridge helpers requested by other hooks */
     nextNarrator,
     setNextNarrator,
+    nextRoundNumber,
+    setNextRoundNumber,
     gameOver,
     setGameOver,
+    showRoundBridge,
+    setShowRoundBridge,
+    getNewRoundQuestions,
     startNextRound
   };
 };

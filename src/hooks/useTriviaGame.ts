@@ -60,18 +60,9 @@ export const useTriviaGame = () => {
   } = useRoundTransition(
     currentRound,
     setCurrentRound,
-    setShowRoundBridge,
+    setShowPendingAnswers, // This will need a fix - it's accepting the wrong type!
     mockQuestions,
     QUESTIONS_PER_ROUND
-  );
-
-  // ✅ now safe to call
-  useNarratorTimer(
-    isNarrator,
-    showRoundBridge,
-    gameOver,
-    setCurrentRound,
-    handleNextQuestion
   );
 
   const handleNextQuestion = useCallback(() => {
@@ -131,6 +122,15 @@ export const useTriviaGame = () => {
     setNextNarrator,
     setNextRoundNumber
   ]);
+
+  // ✅ now safe to call
+  useNarratorTimer(
+    isNarrator,
+    showRoundBridge,
+    gameOver,
+    setCurrentRound,
+    handleNextQuestion
+  );
 
   useBroadcastListeners(
     gameChannelRef.current,
