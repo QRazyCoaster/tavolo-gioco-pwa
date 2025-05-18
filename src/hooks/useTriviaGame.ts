@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+
+import { useState, useCallback, useRef } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
 import {
@@ -34,15 +35,16 @@ export const useTriviaGame = () => {
     playerAnswers: [],
     timeLeft: QUESTION_TIMER
   });
-  const [answeredPlayers, setAnsweredPlayers]    = useState<Set<string>>(new Set());
+  
+  const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
   const [showPendingAnswers, setShowPendingAnswers] = useState(false);
+  // Move these declarations up to avoid the "used before declaration" error
+  const [showRoundBridge, setShowRoundBridge] = useState<boolean>(false);
 
   const gameChannelRef = useGameChannel(state.gameId);
 
-  // ─── Round Transition Setup (PASS setShowRoundBridge here!) ───
+  // ─── Round Transition Setup ───
   const {
-    showRoundBridge,
-    setShowRoundBridge,
     nextNarrator,
     setNextNarrator,
     nextRoundNumber,
@@ -54,16 +56,19 @@ export const useTriviaGame = () => {
   } = useRoundTransition(
     currentRound,
     setCurrentRound,
-    setShowRoundBridge,       // ← corrected
+    setShowRoundBridge,
     mockQuestions,
     QUESTIONS_PER_ROUND
   );
 
-  const isNarrator       = state.currentPlayer?.id === currentRound.narratorId;
+  // Calculate these values after other declarations
+  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
   const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
   // ───── Next Question Logic ─────
   const handleNextQuestion = useCallback(() => {
+    if (!isNarrator) return;
+    
     const idx = currentRound.currentQuestionIndex;
     const last = idx >= QUESTIONS_PER_ROUND - 1;
 
@@ -100,9 +105,12 @@ export const useTriviaGame = () => {
       broadcastNextQuestion(nextIdx, state.players);
     }
   }, [
+    isNarrator,
     currentRound,
     state.players,
     setCurrentRound,
+    setAnsweredPlayers,
+    setShowPendingAnswers,
     setShowRoundBridge,
     setGameOver,
     setNextNarrator,
@@ -171,7 +179,8 @@ export const useTriviaGame = () => {
     setShowPendingAnswers,
     setShowRoundBridge,
     setGameOver,
-    dispatch
+    dispatch,
+    isNarrator
   );
 
   // ───── Expose to page ─────
@@ -188,7 +197,7 @@ export const useTriviaGame = () => {
     setShowPendingAnswers,
     handlePlayerBuzzer,
     handleCorrectAnswer: (pid: string) => handleCorrectAnswer(pid),
-    handleWrongAnswer:   (pid: string) => handleWrongAnswer(pid),
+    handleWrongAnswer: (pid: string) => handleWrongAnswer(pid),
     handleNextQuestion,
     showRoundBridge,
     nextNarrator: state.players.find(p => p.id === nextNarrator) || null,

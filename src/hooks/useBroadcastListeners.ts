@@ -75,7 +75,7 @@ export const useBroadcastListeners = (
       const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName } = payload as any;
 
       if (nextNarratorId) {
-        console.log('[useBroadcastListeners] setNextNarrator:', nextNarratorId, nextNarratorName);
+        console.log('[useBroadcastListeners] Setting next narrator:', nextNarratorId, nextNarratorName);
         setNextNarrator(nextNarratorId);
       }
 
@@ -93,14 +93,15 @@ export const useBroadcastListeners = (
         console.log('[useBroadcastListeners] Game over');
         setTimeout(() => setGameOver(true), 6500);
       }
-
-      // ← **no** automatic call to setCurrentRound here;
-      //    the page’s RoundBridgePage → onCountdownComplete triggers startNextRound()
     });
 
     // subscribe & keep alive
     ch.subscribe();
-    // cleanup not needed—listeners live as long as channel
+    
+    return () => {
+      // Cleanup function to remove listeners when component unmounts
+      ch.unsubscribe();
+    };
   }, [
     gameChannel,
     setCurrentRound,

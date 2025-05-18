@@ -6,9 +6,9 @@ import { useGame } from '@/context/GameContext';
 import { useTriviaGame } from '@/hooks/useTriviaGame';
 import { Button } from '@/components/ui/button';
 import NarratorView from '@/components/trivia/NarratorView';
-import PlayerView   from '@/components/trivia/PlayerView';
+import PlayerView from '@/components/trivia/PlayerView';
 import RoundBridgePage from '@/components/trivia/RoundBridgePage';
-import GameEndScreen   from '@/components/trivia/GameEndScreen';
+import GameEndScreen from '@/components/trivia/GameEndScreen';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Player } from '@/context/GameContext';
@@ -16,7 +16,7 @@ import { supabase } from '@/supabaseClient';
 
 const TriviaGamePage = () => {
   const { t, language } = useLanguage();
-  const navigate        = useNavigate();
+  const navigate = useNavigate();
   const { state, dispatch } = useGame();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +55,23 @@ const TriviaGamePage = () => {
   };
   const safePlayerAnswers = playerAnswers ?? [];
 
+  // For debugging - track key state changes
+  useEffect(() => {
+    console.log('TriviaGamePage - Current narrator ID:', safeCurrentRound.narratorId);
+    console.log('TriviaGamePage - Current player ID:', state.currentPlayer?.id);
+    console.log('TriviaGamePage - Is narrator:', isNarrator);
+    console.log('TriviaGamePage - Round number:', safeCurrentRound.roundNumber);
+    console.log('TriviaGamePage - Next narrator:', nextNarrator);
+    console.log('TriviaGamePage - Show round bridge:', showRoundBridge);
+  }, [
+    safeCurrentRound.narratorId,
+    safeCurrentRound.roundNumber,
+    state.currentPlayer?.id,
+    isNarrator,
+    nextNarrator,
+    showRoundBridge
+  ]);
+
   /* ──────────────────────────────────────────────
      Stop waiting-room music when game page mounts
   ────────────────────────────────────────────── */
@@ -92,7 +109,10 @@ const TriviaGamePage = () => {
     console.log('[TriviaGamePage] Current round:', safeCurrentRound);
     console.log('[TriviaGamePage] Current player:', state.currentPlayer?.id);
     console.log('[TriviaGamePage] Narrator ID:', safeCurrentRound.narratorId);
-    console.log('[TriviaGamePage] Next narrator ID:', nextNarrator?.id);
+    
+    if (nextNarrator) {
+      console.log('[TriviaGamePage] Next narrator ID:', typeof nextNarrator === 'string' ? nextNarrator : nextNarrator.id);
+    }
 
     if (
       safePlayerAnswers.length > 0 &&
@@ -144,11 +164,6 @@ const TriviaGamePage = () => {
     );
   }
 
-  // Create a wrapper function for startNextRound that adapts it to what RoundBridgePage expects
-  const handleStartNextRound = () => {
-    startNextRound();          // ← no args needed now
-  };
-
   /* ---- Main game view ---- */
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
@@ -176,7 +191,7 @@ const TriviaGamePage = () => {
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
             nextNarrator={nextNarrator}
-            onCountdownComplete={handleStartNextRound}
+            onCountdownComplete={startNextRound}
           />
         ) : isNarrator ? (
           <NarratorView

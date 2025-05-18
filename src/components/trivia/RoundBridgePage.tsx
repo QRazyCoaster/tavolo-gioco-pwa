@@ -21,7 +21,9 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
   
   // Debug the nextNarrator object to ensure we have the proper data
   useEffect(() => {
-    console.log('[RoundBridgePage] Next narrator:', nextNarrator);
+    console.log('[RoundBridgePage] Next narrator object:', nextNarrator);
+    console.log('[RoundBridgePage] Next narrator type:', typeof nextNarrator);
+    console.log('[RoundBridgePage] Next narrator name:', nextNarrator?.name);
   }, [nextNarrator]);
   
   // Countdown effect
@@ -39,6 +41,9 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
     
     return () => clearInterval(timer);
   }, [onCountdownComplete]);
+
+  // Get narrator name safely
+  const narratorName = nextNarrator?.name || (language === 'it' ? 'In attesa...' : 'Waiting...');
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
@@ -66,7 +71,7 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
               {language === 'it' ? 'Il narratore sarà:' : 'The narrator will be:'}
             </h2>
             <p className="text-3xl font-bold text-center text-primary">
-              {nextNarrator?.name || (language === 'it' ? 'In attesa...' : 'Waiting...')}
+              {narratorName}
             </p>
           </motion.div>
         </Card>
