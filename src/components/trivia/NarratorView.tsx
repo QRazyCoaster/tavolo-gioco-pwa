@@ -11,8 +11,6 @@ import QuestionInfo from './QuestionInfo';
 import PlayerRankings from './PlayerRankings';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 
-// NOTE: Pop‑up removed – bottom panel switches between queue & rankings.
-
 interface NarratorViewProps {
   currentQuestion: TriviaQuestion;
   roundNumber: number;
@@ -67,19 +65,6 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     if (playerAnswers.length > 0 && !showPendingAnswers) setShowPendingAnswers(true);
   }, [playerAnswers, showPendingAnswers, setShowPendingAnswers]);
 
-  // Helper functions to handle answers and clear the current player
-  const handleCorrectAnswerClick = (playerId: string) => {
-    onCorrectAnswer(playerId);
-    // Clear pending answers to hide the player panel
-    setShowPendingAnswers(false);
-  };
-
-  const handleWrongAnswerClick = (playerId: string) => {
-    onWrongAnswer(playerId);
-    // Clear pending answers to hide the player panel
-    setShowPendingAnswers(false);
-  };
-
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
       {/* Question & meta info - pass questionId as key to reset card state */}
@@ -105,7 +90,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
           </div>
           <div className="flex justify-center gap-6 mt-4">
             <Button
-              onClick={() => handleCorrectAnswerClick(currentPlayerAnswering.playerId)}
+              onClick={() => onCorrectAnswer(currentPlayerAnswering.playerId)}
               size="lg"
               className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2 px-6 py-4"
             >
@@ -113,7 +98,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
               <span>{language === 'it' ? '+10 punti' : '+10 points'}</span>
             </Button>
             <Button
-              onClick={() => handleWrongAnswerClick(currentPlayerAnswering.playerId)}
+              onClick={() => onWrongAnswer(currentPlayerAnswering.playerId)}
               size="lg"
               className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 px-6 py-4"
             >

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -87,6 +88,8 @@ const TriviaGamePage = () => {
     console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
     console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
     console.log('[TriviaGamePage] Current round:', safeCurrentRound);
+    console.log('[TriviaGamePage] Current player:', state.currentPlayer?.id);
+    console.log('[TriviaGamePage] Narrator ID:', safeCurrentRound.narratorId);
 
     if (
       safePlayerAnswers.length > 0 &&
@@ -100,7 +103,8 @@ const TriviaGamePage = () => {
     showPendingAnswers,
     setShowPendingAnswers,
     isNarrator,
-    safeCurrentRound
+    safeCurrentRound,
+    state.currentPlayer?.id
   ]);
 
   const handleBackToLobby = () => navigate('/waiting-room');
