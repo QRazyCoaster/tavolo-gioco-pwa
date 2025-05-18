@@ -12,6 +12,7 @@ import GameEndScreen   from '@/components/trivia/GameEndScreen';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Player } from '@/context/GameContext';
+import { supabase } from '@/supabaseClient';
 
 const TriviaGamePage = () => {
   const { t, language } = useLanguage();
@@ -19,7 +20,7 @@ const TriviaGamePage = () => {
   const { state, dispatch } = useGame();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-
+  
   /* ─────────── Game-round hook ─────────── */
   const {
     currentRound,
@@ -91,6 +92,7 @@ const TriviaGamePage = () => {
     console.log('[TriviaGamePage] Current round:', safeCurrentRound);
     console.log('[TriviaGamePage] Current player:', state.currentPlayer?.id);
     console.log('[TriviaGamePage] Narrator ID:', safeCurrentRound.narratorId);
+    console.log('[TriviaGamePage] Next narrator ID:', nextNarrator);
 
     if (
       safePlayerAnswers.length > 0 &&
@@ -105,7 +107,8 @@ const TriviaGamePage = () => {
     setShowPendingAnswers,
     isNarrator,
     safeCurrentRound,
-    state.currentPlayer?.id
+    state.currentPlayer?.id,
+    nextNarrator
   ]);
 
   const handleBackToLobby = () => navigate('/waiting-room');
@@ -142,8 +145,8 @@ const TriviaGamePage = () => {
   }
 
   // Find the actual player object that corresponds to the nextNarrator ID
-  // Allow for the case where nextNarratorPlayer might be null
   const nextNarratorPlayer = state.players.find(player => player.id === nextNarrator) || null;
+  console.log('[TriviaGamePage] Next narrator player:', nextNarratorPlayer?.name || 'Not found');
 
   /* ---- Main game view ---- */
   return (

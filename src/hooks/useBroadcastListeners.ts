@@ -93,7 +93,10 @@ export const useBroadcastListeners = (
 
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
-      setNextNarrator(nextNarratorId);
+      
+      // Store the next narrator ID for the round bridge
+      console.log('[useBroadcastListeners] Setting next narrator ID:', nextNarratorId);
+      setNextNarrator(nextNarratorId || '');
       
       // Handle game over state
       if (isGameOver) {

@@ -19,7 +19,8 @@ export async function createGame({ gameType, hostName }) {
       .insert({
         pin_code: pinCode,
         status: 'waiting',
-        game_type: gameType
+        game_type: gameType,
+        host_name: hostName  // Add host_name to the game record
       })
       .select()
       .single();

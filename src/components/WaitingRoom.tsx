@@ -23,6 +23,9 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   
   // Ref to track if subscriptions are already set up
   const subscriptionsSetup = useRef(false);
+  // Refs to store channels for cleanup
+  const playerChannelRef = useRef<any>(null);
+  const gameChannelRef = useRef<any>(null);
 
   useEffect(() => {
     // Guard against multiple subscription setups
@@ -122,6 +125,9 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         }
       )
       .subscribe();
+    
+    // Store channel reference
+    playerChannelRef.current = playersChannel;
 
     // Subscribe to game updates - enhanced reliability for status detection
     const gameChannel = supabase
@@ -173,11 +179,20 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         }
       )
       .subscribe();
+    
+    // Store channel reference
+    gameChannelRef.current = gameChannel;
 
     return () => {
       console.log('[WaitingRoom] Cleaning up subscriptions');
-      supabase.removeChannel(playersChannel);
-      supabase.removeChannel(gameChannel);
+      if (playerChannelRef.current) {
+        supabase.removeChannel(playerChannelRef.current);
+        playerChannelRef.current = null;
+      }
+      if (gameChannelRef.current) {
+        supabase.removeChannel(gameChannelRef.current);
+        gameChannelRef.current = null;
+      }
       subscriptionsSetup.current = false;
     };
   }, [state.gameId, dispatch, navigate, toast, language, state.currentPlayer]);

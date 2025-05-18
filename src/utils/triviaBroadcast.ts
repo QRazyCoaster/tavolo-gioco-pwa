@@ -2,6 +2,7 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Player } from '@/context/GameContext';
 import { MIN_SCORE_LIMIT } from './triviaConstants';
+import { supabase } from '@/supabaseClient';
 
 // ─────────────────────────────────────────────────────────────
 //  Shared broadcast channel (singleton)
@@ -112,6 +113,28 @@ export const broadcastRoundEnd = (
     }
   }).then(() => {
     console.log('[triviaBroadcast] Round end broadcast sent successfully');
+    
+    // Update the database with the next narrator info
+    if (!isGameOver && nextNarratorId) {
+      // Find the next narrator player
+      const nextNarrator = players.find(p => p.id === nextNarratorId);
+      if (nextNarrator && nextNarrator.name) {
+        supabase
+          .from('games')
+          .update({ 
+            narrator_order: nextNarrator.name,
+            current_round: currentRoundNumber + 1
+          })
+          .eq('id', sessionStorage.getItem('gameId'))
+          .then(({ error }) => {
+            if (error) {
+              console.error('[triviaBroadcast] Error updating narrator_order:', error);
+            } else {
+              console.log('[triviaBroadcast] Successfully updated narrator_order in database');
+            }
+          });
+      }
+    }
   }).catch(error => {
     console.error('[triviaBroadcast] Error broadcasting round end:', error);
   });
