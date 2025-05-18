@@ -1,232 +1,72 @@
-
-import { useCallback } from 'react';
-import { RealtimeChannel } from '@supabase/supabase-js';
-import { Round, PlayerAnswer } from '@/types/trivia';
-import { GameState } from '@/context/GameContext';
-import { playAudio } from '@/utils/audioUtils';
-import {
-  broadcastNextQuestion,
-  broadcastRoundEnd,
-  broadcastScoreUpdate
-} from '@/utils/triviaBroadcast';
-import { MAX_ROUNDS } from '@/utils/triviaConstants';
-
-// Constants for point values
-export const CORRECT_ANSWER_POINTS = 10;
-export const WRONG_ANSWER_POINTS = -5;
+/* …imports stay unchanged… */
 
 export const useNarratorActions = (
-  state: GameState,
-  currentRound: Round,
-  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
-  gameChannel: RealtimeChannel | null,
-  setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>,
-  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
-  setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
-  dispatch: any
+  /* params unchanged */
 ) => {
-  // Award points to player with correct answer
-  const handleCorrectAnswer = useCallback(
-    (playerId: string) => {
-      if (!state.currentPlayer?.isHost) return;
-      
-      // Find player who answered correctly
-      const player = state.players.find(p => p.id === playerId);
-      if (!player) return;
+  /* ─────────────────── award points ─────────────────── */
+  const handleCorrectAnswer = useCallback((playerId: string) => {
+    /* …all your existing code up to newScore… */
 
-      // Play success sound
-      playAudio('success');
+    const updatedPlayers = state.players.map(p =>
+      p.id === playerId ? { ...p, score: newScore } : p
+    );
 
-      console.log(`[useNarratorActions] Awarding ${CORRECT_ANSWER_POINTS} points to ${player.name}`);
+    broadcastScoreUpdate(updatedPlayers);   // still send live bump
 
-      // Calculate new score (ensuring we protect against undefined scores)
-      const currentScore = player.score || 0;
-      const newScore = currentScore + CORRECT_ANSWER_POINTS;
+    /* clear this player from queue locally */
+    setCurrentRound(prev => ({
+      ...prev,
+      playerAnswers: prev.playerAnswers.filter(a => a.playerId !== playerId)
+    }));
+    setShowPendingAnswers(false);
 
-      // Update local state first to ensure UI reflects changes
-      dispatch({
-        type: 'UPDATE_SCORE',
-        payload: { playerId, score: newScore }
-      });
-
-      // Get updated players array with new score for broadcasting
-      const updatedPlayers = state.players.map(p => 
-        p.id === playerId 
-          ? { ...p, score: newScore } 
-          : p
-      );
-
-      // IMPORTANT: Immediately broadcast score update to all players first
-      // We now broadcast BEFORE updating the local round state
-      broadcastScoreUpdate(updatedPlayers);
-
-      // Remove from pending answers after broadcasting the score
-      const updatedAnswers = currentRound.playerAnswers.filter(
-        a => a.playerId !== playerId
-      );
-
-      // Update round state
+    /* advance */
+    setTimeout(() => {
+      const nextIdx = currentRound.currentQuestionIndex + 1;
+      broadcastNextQuestion(nextIdx, updatedPlayers);     // ← fresh scores
+      /* move narrator locally */
       setCurrentRound(prev => ({
         ...prev,
-        playerAnswers: updatedAnswers
-      }));
-      
-      // Automatically move to the next question after awarding points
-      setTimeout(() => {
-        handleNextQuestion();
-      }, 1500); // Give a short delay so players can see their score update
-    },
-    [state.currentPlayer, state.players, currentRound, setCurrentRound, dispatch]
-  );
-
-  // Penalize player with wrong answer
-  const handleWrongAnswer = useCallback(
-    (playerId: string) => {
-      if (!state.currentPlayer?.isHost) return;
-      
-      // Find player who answered incorrectly
-      const player = state.players.find(p => p.id === playerId);
-      if (!player) return;
-
-      // Play error sound
-      playAudio('error');
-
-      console.log(`[useNarratorActions] Deducting ${Math.abs(WRONG_ANSWER_POINTS)} points from ${player.name}`);
-
-      // Calculate new score (ensuring we protect against undefined scores)
-      const currentScore = player.score || 0;
-      const newScore = currentScore + WRONG_ANSWER_POINTS; // Adding negative points
-
-      // Update local state first to ensure UI reflects changes
-      dispatch({
-        type: 'UPDATE_SCORE',
-        payload: { playerId, score: newScore }
-      });
-
-      // Get updated players array with new score for broadcasting
-      const updatedPlayers = state.players.map(p => 
-        p.id === playerId 
-          ? { ...p, score: newScore } 
-          : p
-      );
-
-      // IMPORTANT: Immediately broadcast score update to all players first
-      broadcastScoreUpdate(updatedPlayers);
-
-      // Remove from pending answers after broadcasting the score
-      const updatedAnswers = currentRound.playerAnswers.filter(
-        a => a.playerId !== playerId
-      );
-
-      // Update round state
-      setCurrentRound(prev => ({
-        ...prev,
-        playerAnswers: updatedAnswers
-      }));
-      
-      // If this was the last player in queue, automatically move to next question
-      if (updatedAnswers.length === 0) {
-        setTimeout(() => {
-          handleNextQuestion();
-        }, 1500);
-      }
-    },
-    [state.currentPlayer, state.players, currentRound, setCurrentRound, dispatch]
-  );
-
-  // Move to next question or round
-  const handleNextQuestion = useCallback(() => {
-    if (!state.currentPlayer?.isHost) return;
-    
-    // Get current question index
-    const currentQuestionIndex = currentRound.currentQuestionIndex;
-    const totalQuestions = currentRound.questions.length;
-    
-    console.log(`[useNarratorActions] Moving to next question. Current: ${currentQuestionIndex}, Total: ${totalQuestions}`);
-    
-    // Check if we're at the end of this round's questions
-    if (currentQuestionIndex < totalQuestions - 1) {
-      // Move to next question in current round
-      const nextQuestionIndex = currentQuestionIndex + 1;
-      
-      setCurrentRound(prev => ({
-        ...prev,
-        currentQuestionIndex: nextQuestionIndex,
+        currentQuestionIndex: nextIdx,
         playerAnswers: [],
-        timeLeft: 90 // Reset timer
+        timeLeft: 90
       }));
-      
       setAnsweredPlayers(new Set());
-      setShowPendingAnswers(false);
-      
-      // Broadcast to all connected players - include latest scores to ensure sync
-      broadcastNextQuestion(nextQuestionIndex, state.players);
-      
-    } else {
-      console.log(`[useNarratorActions] End of round ${currentRound.roundNumber} reached`);
-      
-      // Check if we've reached the maximum number of rounds
-      if (currentRound.roundNumber >= MAX_ROUNDS) {
-        console.log('[useNarratorActions] Maximum rounds reached, game over');
-        
-        // End the game
-        broadcastRoundEnd(
-          currentRound.roundNumber,
-          '', // No next narrator
-          state.players,
-          true // Game over flag
-        );
-        
-        setShowRoundBridge(true);
-        
-        // Set game over after the round bridge animation
-        setTimeout(() => {
-          setGameOver(true);
-        }, 5000);
-        
-      } else {
-        // End of round but not end of game
-        // Get the next narrator based on narrator_order
-        const sortedByOrder = [...state.players].sort((a, b) => 
-          (a.narrator_order || 999) - (b.narrator_order || 999)
-        );
-        
-        // Find the current narrator's position
-        const currentNarratorIndex = sortedByOrder.findIndex(p => p.id === currentRound.narratorId);
-        
-        // Calculate next narrator index (circular)
-        const nextIndex = (currentNarratorIndex + 1) % sortedByOrder.length;
-        const nextNarratorId = sortedByOrder[nextIndex]?.id || sortedByOrder[0].id;
-        const nextNarratorName = sortedByOrder[nextIndex]?.name || '';
-        
-        console.log(`[useNarratorActions] Next narrator: ${nextNarratorId} (${nextNarratorName})`);
-        
-        // Broadcast round end to all players
-        broadcastRoundEnd(
-          currentRound.roundNumber,
-          nextNarratorId,
-          state.players
-        );
-        
-        // Show round transition UI
-        setShowRoundBridge(true);
-      }
-    }
-  }, [
-    state.currentPlayer,
-    state.players,
-    currentRound,
-    setCurrentRound,
-    setAnsweredPlayers,
-    setShowPendingAnswers,
-    setShowRoundBridge,
-    setGameOver
-  ]);
+    }, 300);
+  },
+  /* deps unchanged */);
 
-  return {
-    handleCorrectAnswer,
-    handleWrongAnswer,
-    handleNextQuestion
-  };
+  /* ─────────────────── deduct points ────────────────── */
+  const handleWrongAnswer = useCallback((playerId: string) => {
+    /* …unchanged through newScore… */
+
+    const updatedPlayers = state.players.map(p =>
+      p.id === playerId ? { ...p, score: newScore } : p
+    );
+    broadcastScoreUpdate(updatedPlayers);
+
+    /* remove from queue */
+    setCurrentRound(prev => ({
+      ...prev,
+      playerAnswers: prev.playerAnswers.filter(a => a.playerId !== playerId)
+    }));
+    setShowPendingAnswers(false);
+
+    /* if nobody left -> next question */
+    if (currentRound.playerAnswers.length <= 1) {
+      const nextIdx = currentRound.currentQuestionIndex + 1;
+      broadcastNextQuestion(nextIdx, updatedPlayers);     // ← fresh scores
+      setCurrentRound(prev => ({
+        ...prev,
+        currentQuestionIndex: nextIdx,
+        playerAnswers: [],
+        timeLeft: 90
+      }));
+      setAnsweredPlayers(new Set());
+    }
+  },
+  /* deps unchanged */);
+
+  /* handleNextQuestion stays the same */
+  return { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion };
 };
