@@ -6,39 +6,49 @@ import {
   QUESTION_TIMER
 } from '@/utils/triviaConstants';
 
-/** Round-to-round hand-off (local-only; broadcasting happens elsewhere) */
-export const useRoundTransition = (mockQuestionsData = mockQuestions) => {
-  const [nextNarrator,      setNextNarrator]      = useState<string>('');
-  const [nextRoundNumber,   setNextRoundNumber]   = useState<number>(1);
-  const [showRoundBridge,   setShowRoundBridge]   = useState<boolean>(false);
-  const [gameOver,          setGameOver]          = useState<boolean>(false);
+/** Handles everything that happens **between** rounds */
+export const useRoundTransition = (
+  currentRound: Round,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>
+) => {
+  /* ───────────────────────────────── state ─────────────────────────────── */
+  const [nextNarrator,     setNextNarrator]     = useState<string>('');
+  const [nextRoundNumber,  setNextRoundNumber]  = useState<number>(1);
+  const [showRoundBridge,  setShowRoundBridge]  = useState<boolean>(false);
+  const [gameOver,         setGameOver]         = useState<boolean>(false);
 
-  /* slice a fresh batch of questions */
+  /* ───────────────────────── helpers ───────────────────────────────────── */
   const getNewRoundQuestions = (round: number): TriviaQuestion[] =>
-    mockQuestionsData
+    mockQuestions
       .slice(0, QUESTIONS_PER_ROUND)
       .map(q => ({ ...q, id: `r${round}-${q.id}` }));
 
-  /** spawn the next Round object and hide the bridge */
-  const startNextRound = (narratorId: string, round: number): Round => {
-    setShowRoundBridge(false);
-    /*  ── keep `nextNarrator` untouched here ──
-        we clear it AFTER the caller installs the new round */
-    return {
-      roundNumber: round,
-      narratorId,
-      questions: getNewRoundQuestions(round),
+  /** Called from the bridge-page countdown in *every* tab */
+  const startNextRound = (): void => {
+    if (!nextNarrator) return;                         // safety guard
+
+    console.log('[useRoundTransition] Spawning round', nextRoundNumber,
+                'with narrator', nextNarrator);
+
+    setCurrentRound({
+      roundNumber:          nextRoundNumber,
+      narratorId:           nextNarrator,
+      questions:            getNewRoundQuestions(nextRoundNumber),
       currentQuestionIndex: 0,
-      playerAnswers: [],
-      timeLeft: QUESTION_TIMER
-    };
+      playerAnswers:        [],
+      timeLeft:             QUESTION_TIMER
+    });
+
+    /* hide the bridge & reset helper state */
+    setShowRoundBridge(false);
+    setNextNarrator('');
   };
 
+  /* ───────────────────────── exposed API ───────────────────────────────── */
   return {
-    /* externally consumed props */
-    showRoundBridge,   setShowRoundBridge,
     nextNarrator,      setNextNarrator,
     nextRoundNumber,   setNextRoundNumber,
+    showRoundBridge,   setShowRoundBridge,
     gameOver,          setGameOver,
     startNextRound
   };
