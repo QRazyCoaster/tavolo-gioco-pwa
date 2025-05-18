@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Round } from '@/types/trivia';
@@ -39,16 +40,24 @@ export const useBroadcastListeners = (
       
       // Update scores if provided
       if (scores && Array.isArray(scores)) {
-        scores.forEach((s: any) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        );
+        console.log('[useBroadcastListeners] Updating scores from NEXT_QUESTION broadcast:', scores);
+        scores.forEach((s: any) => {
+          if (s && s.id && typeof s.score === 'number') {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+          }
+        });
       }
     });
 
     ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
-      payload.scores.forEach((s: any) =>
-        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-      );
+      console.log('[useBroadcastListeners] Received SCORE_UPDATE broadcast:', payload);
+      if (payload && payload.scores && Array.isArray(payload.scores)) {
+        payload.scores.forEach((s: any) => {
+          if (s && s.id && typeof s.score === 'number') {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+          }
+        });
+      }
     });
 
     ch.on('broadcast', { event: 'BUZZ' }, ({ payload }) => {
@@ -71,9 +80,16 @@ export const useBroadcastListeners = (
 
     ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
       const { nextRound, nextNarratorId, scores, isGameOver } = payload as any;
-      scores?.forEach((s: any) =>
-        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-      );
+      
+      console.log('[useBroadcastListeners] Received ROUND_END broadcast:', payload);
+      
+      if (scores && Array.isArray(scores)) {
+        scores.forEach((s: any) => {
+          if (s && s.id && typeof s.score === 'number') {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+          }
+        });
+      }
 
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);

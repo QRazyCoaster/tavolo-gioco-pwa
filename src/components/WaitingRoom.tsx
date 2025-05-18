@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from '@/context/LanguageContext';
@@ -20,14 +20,18 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const isHost = state.currentPlayer?.isHost === true;
+  
+  // Ref to track if subscriptions are already set up
+  const subscriptionsSetup = useRef(false);
 
   useEffect(() => {
-    if (!state.gameId) {
-      console.log('[WaitingRoom] No gameId found, cannot subscribe to updates');
+    // Guard against multiple subscription setups
+    if (subscriptionsSetup.current || !state.gameId) {
       return;
     }
 
     console.log(`[WaitingRoom] Setting up subscriptions for game ${state.gameId}`);
+    subscriptionsSetup.current = true;
 
     // First, check if the game is already active when component mounts
     supabase
@@ -174,6 +178,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
       console.log('[WaitingRoom] Cleaning up subscriptions');
       supabase.removeChannel(playersChannel);
       supabase.removeChannel(gameChannel);
+      subscriptionsSetup.current = false;
     };
   }, [state.gameId, dispatch, navigate, toast, language, state.currentPlayer]);
 

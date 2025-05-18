@@ -44,7 +44,7 @@ export const useNarratorActions = (
       const currentScore = player.score || 0;
       const newScore = currentScore + CORRECT_ANSWER_POINTS;
 
-      // Update local state
+      // Update local state first to ensure UI reflects changes
       dispatch({
         type: 'UPDATE_SCORE',
         payload: { playerId, score: newScore }
@@ -61,12 +61,15 @@ export const useNarratorActions = (
         playerAnswers: updatedAnswers
       }));
 
-      // Broadcast score update to all players
-      broadcastScoreUpdate(state.players.map(p => 
+      // Get updated players array with new score
+      const updatedPlayers = state.players.map(p => 
         p.id === playerId 
           ? { ...p, score: newScore } 
           : p
-      ));
+      );
+
+      // Broadcast score update to all players
+      broadcastScoreUpdate(updatedPlayers);
       
       // Automatically move to the next question after awarding points
       setTimeout(() => {
@@ -94,7 +97,7 @@ export const useNarratorActions = (
       const currentScore = player.score || 0;
       const newScore = currentScore + WRONG_ANSWER_POINTS; // Adding negative points
 
-      // Update local state
+      // Update local state first to ensure UI reflects changes
       dispatch({
         type: 'UPDATE_SCORE',
         payload: { playerId, score: newScore }
@@ -111,14 +114,16 @@ export const useNarratorActions = (
         playerAnswers: updatedAnswers
       }));
 
-      // Broadcast score update to all players
-      broadcastScoreUpdate(state.players.map(p => 
+      // Get updated players array with new score
+      const updatedPlayers = state.players.map(p => 
         p.id === playerId 
           ? { ...p, score: newScore } 
           : p
-      ));
+      );
+
+      // Broadcast score update to all players
+      broadcastScoreUpdate(updatedPlayers);
       
-      // No automatic next question after wrong answer - let other players try
       // If this was the last player in queue, automatically move to next question
       if (updatedAnswers.length === 0) {
         setTimeout(() => {
@@ -154,7 +159,7 @@ export const useNarratorActions = (
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
       
-      // Broadcast to all connected players
+      // Broadcast to all connected players - include latest scores to ensure sync
       broadcastNextQuestion(nextQuestionIndex, state.players);
       
     } else {
