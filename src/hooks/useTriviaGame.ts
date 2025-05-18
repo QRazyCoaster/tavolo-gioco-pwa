@@ -140,17 +140,19 @@ export const useTriviaGame = () => {
     setShowPending
   );
 
-  const { handleCorrectAnswer, handleWrongAnswer } = useNarratorActions(
-    state,
-    currentRound,
-    setCurrentRound,
-    gameChannelRef.current,
-    setAnsweredPlayers,
-    setShowPending,
-    setShowRoundBridge,
-    setGameOver,
-    dispatch
-  );
+  const { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion: narratorNext }
+  = useNarratorActions(
+      state,
+      currentRound,
+      setCurrentRound,
+      gameChannelRef.current,
+      setAnsweredPlayers,
+      setShowPendingAnswers,
+      setShowRoundBridge,
+      setGameOver,
+      dispatch,
+      isNarrator          // ← new final argument
+    );
 
   /* ───────── exported API ───────── */
   return {
