@@ -6,31 +6,24 @@ import {
   QUESTION_TIMER
 } from '@/utils/triviaConstants';
 
-/**
- * Handles the hand-off between rounds and decides when the game is over.
- * It is purely local to the current tab – broadcast happens elsewhere.
- */
-export const useRoundTransition = (
-  mockQuestionsData: typeof mockQuestions
-) => {
+/** Round-to-round hand-off (local-only; broadcasting happens elsewhere) */
+export const useRoundTransition = (mockQuestionsData = mockQuestions) => {
   const [nextNarrator,      setNextNarrator]      = useState<string>('');
   const [nextRoundNumber,   setNextRoundNumber]   = useState<number>(1);
   const [showRoundBridge,   setShowRoundBridge]   = useState<boolean>(false);
   const [gameOver,          setGameOver]          = useState<boolean>(false);
 
-  /* helper – slice a fresh set of questions every round */
+  /* slice a fresh batch of questions */
   const getNewRoundQuestions = (round: number): TriviaQuestion[] =>
     mockQuestionsData
       .slice(0, QUESTIONS_PER_ROUND)
       .map(q => ({ ...q, id: `r${round}-${q.id}` }));
 
-  /**
-   * Spawns the next Round object and hides the bridge for all tabs.
-   * The caller is responsible for `setCurrentRound(newRound)`.
-   */
+  /** spawn the next Round object and hide the bridge */
   const startNextRound = (narratorId: string, round: number): Round => {
     setShowRoundBridge(false);
-    setNextNarrator('');
+    /*  ── keep `nextNarrator` untouched here ──
+        we clear it AFTER the caller installs the new round */
     return {
       roundNumber: round,
       narratorId,
@@ -42,11 +35,11 @@ export const useRoundTransition = (
   };
 
   return {
-    /* external API */
-    showRoundBridge, setShowRoundBridge,
-    nextNarrator,    setNextNarrator,
-    nextRoundNumber, setNextRoundNumber,
-    gameOver,        setGameOver,
+    /* externally consumed props */
+    showRoundBridge,   setShowRoundBridge,
+    nextNarrator,      setNextNarrator,
+    nextRoundNumber,   setNextRoundNumber,
+    gameOver,          setGameOver,
     startNextRound
   };
 };
