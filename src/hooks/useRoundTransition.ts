@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
-import { mockQuestions, QUESTIONS_PER_ROUND, QUESTION_TIMER } from '@/utils/triviaConstants';
+import { mockQuestions, QUESTIONS_PER_ROUND, QUESTION_TIMER, MAX_ROUNDS } from '@/utils/triviaConstants';
 
 export const useRoundTransition = (
   currentRound: Round,
@@ -10,9 +10,9 @@ export const useRoundTransition = (
   mockQuestionsData: any[], 
   questionsPerRound: number
 ) => {
-  const [nextNarrator, setNextNarrator] = useState('');
-  const [nextRoundNumber, setNextRoundNumber] = useState(1);
-  const [gameOver, setGameOver] = useState(false);
+  const [nextNarrator, setNextNarrator] = useState<string>('');
+  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
+  const [gameOver, setGameOver] = useState<boolean>(false);
 
   // Get new questions for the next round
   const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] => {
