@@ -41,11 +41,19 @@ const TriviaGamePage = () => {
     gameOver
   } = useTriviaGame();
 
-  /* SAFETY: playerAnswers is undefined for one render on mount */
+  /* SAFETY: guard against first-render undefined values */
+  const safeCurrentRound = currentRound ?? {
+    roundNumber: 1,
+    narratorId: '',
+    questions: [],
+    currentQuestionIndex: 0,
+    playerAnswers: [],
+    timeLeft: 90
+  };
   const safePlayerAnswers = playerAnswers ?? [];
 
   /* ──────────────────────────────────────────────
-     Stop waiting-room music once game page mounts
+     Stop waiting-room music when game page mounts
   ────────────────────────────────────────────── */
   useEffect(() => {
     if (state.backgroundMusicPlaying && (window as any).waitMusic) {
@@ -59,7 +67,7 @@ const TriviaGamePage = () => {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 300);
 
-    /* … your original validation logic … */
+    /* … your original validation logic remains here … */
 
     return () => clearTimeout(timer);
   }, [
@@ -73,21 +81,12 @@ const TriviaGamePage = () => {
     dispatch
   ]);
 
-  /* ---- debug effect (uses safePlayerAnswers) ---- */
+  /* ---- debug effect ---- */
   useEffect(() => {
-    console.log(
-      '[TriviaGamePage] Player answers updated:',
-      safePlayerAnswers
-    );
-    console.log(
-      '[TriviaGamePage] showPendingAnswers value:',
-      showPendingAnswers
-    );
-    console.log(
-      '[TriviaGamePage] Current player is narrator:',
-      isNarrator
-    );
-    console.log('[TriviaGamePage] Current round:', currentRound);
+    console.log('[TriviaGamePage] Player answers updated:', safePlayerAnswers);
+    console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
+    console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
+    console.log('[TriviaGamePage] Current round:', safeCurrentRound);
 
     if (
       safePlayerAnswers.length > 0 &&
@@ -101,7 +100,7 @@ const TriviaGamePage = () => {
     showPendingAnswers,
     setShowPendingAnswers,
     isNarrator,
-    currentRound
+    safeCurrentRound
   ]);
 
   const handleBackToLobby = () => navigate('/waiting-room');
@@ -169,7 +168,7 @@ const TriviaGamePage = () => {
         ) : isNarrator ? (
           <NarratorView
             currentQuestion={currentQuestion}
-            roundNumber={currentRound.roundNumber}
+            roundNumber={safeCurrentRound.roundNumber}
             questionNumber={questionNumber}
             totalQuestions={totalQuestions}
             players={state.players}
@@ -183,7 +182,7 @@ const TriviaGamePage = () => {
           />
         ) : (
           <PlayerView
-            roundNumber={currentRound.roundNumber}
+            roundNumber={safeCurrentRound.roundNumber}
             questionNumber={questionNumber}
             totalQuestions={totalQuestions}
             players={state.players}
