@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
-import { Round } from '@/types/trivia';
 import {
   CORRECT_ANSWER_POINTS,
   WRONG_ANSWER_POINTS,
@@ -12,73 +11,118 @@ import {
   broadcastRoundEnd,
   broadcastScoreUpdate
 } from '@/utils/triviaBroadcast';
+import { Round } from '@/types/trivia';
 
-/* …props unchanged… */
-
-export const useNarratorActions = (/* same params */) => {
+export const useNarratorActions = (
+  roundNumber: number,
+  currentQuestionIndex: number,
+  getNextNarrator: () => { nextNarratorId: string; isGameOver: boolean },
+  advanceQuestionLocally: (idx: number) => void,
+  setNextNarrator: (id: string) => void,
+  setShowRoundBridge: (show: boolean) => void,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  setGameOver?: (over: boolean) => void
+) => {
   const { state, dispatch } = useGame();
 
-  /* helper to update score & return fresh players array */
-  const updateScore = (playerId: string, delta: number) => {
+  /* helper: update score and return fresh players array */
+  const applyDelta = (playerId: string, delta: number) => {
     const updated = state.players.map(p =>
       p.id === playerId
         ? { ...p, score: Math.max(MIN_SCORE_LIMIT, (p.score || 0) + delta) }
-        : { ...p }
+        : p
     );
-    /* commit to context */
-    const pl = updated.find(p => p.id === playerId)!;
-    dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: pl.score } });
+    const p = updated.find(p => p.id === playerId)!;
+    dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: p.score } });
     return updated;
   };
 
-  /* ───────── correct ───────── */
+  /* ───────────── correct answer ───────────── */
   const handleCorrectAnswer = useCallback(
     (playerId: string) => {
       playAudio('success');
-      const playersFresh = updateScore(playerId, CORRECT_ANSWER_POINTS);
+      const freshPlayers = applyDelta(playerId, CORRECT_ANSWER_POINTS);
 
-      /* keep everyone in sync immediately */
-      broadcastScoreUpdate(playersFresh);
+      /* sync everyone’s score immediately */
+      broadcastScoreUpdate(freshPlayers);
 
-      /* if not last question just advance */
-      const total = 7;
-      if (currentQuestionIndex < total - 1) {
+      const totalQs = 7; // QUESTIONS_PER_ROUND
+      const isLast  = currentQuestionIndex >= totalQs - 1;
+
+      if (!isLast) {
         const nextIdx = currentQuestionIndex + 1;
-        advanceQuestionLocally(nextIdx);
-        broadcastNextQuestion(nextIdx, playersFresh);
+        advanceQuestionLocally(nextIdx);            // ← instant local update
+        broadcastNextQuestion(nextIdx, freshPlayers);
         return;
       }
 
-      /* end-of-round logic */
+      /* end-of-round */
       const { nextNarratorId, isGameOver } = getNextNarrator();
       setNextNarrator(nextNarratorId);
-      broadcastRoundEnd(roundNumber, nextNarratorId, playersFresh, isGameOver);
+      broadcastRoundEnd(roundNumber, nextNarratorId, freshPlayers, isGameOver);
       setShowRoundBridge(true);
-      if (isGameOver && setGameOver) setTimeout(() => setGameOver(true), 6500);
+      if (isGameOver && setGameOver) {
+        setTimeout(() => setGameOver(true), 6500);
+      }
     },
     [
+      state.players,
       currentQuestionIndex,
       roundNumber,
       getNextNarrator,
       advanceQuestionLocally,
       setNextNarrator,
       setShowRoundBridge,
-      setGameOver,
-      state.players
+      setGameOver
     ]
   );
 
-  /* ───────── wrong ───────── */
+  /* ───────────── wrong answer ───────────── */
   const handleWrongAnswer = useCallback(
     (playerId: string) => {
       playAudio('error');
-      const playersFresh = updateScore(playerId, WRONG_ANSWER_POINTS);
-      broadcastScoreUpdate(playersFresh);
+      const freshPlayers = applyDelta(playerId, WRONG_ANSWER_POINTS);
+      broadcastScoreUpdate(freshPlayers);
     },
     [state.players]
   );
 
-  /* next question / time-up untouched except they now call broadcastScoreUpdate */
+  /* ───────────── manual “Next” / timer up ───────────── */
+  const goToNextQuestion = () => {
+    const totalQs = 7;
+    const isLast  = currentQuestionIndex >= totalQs - 1;
 
-  return { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion, handleTimeUp };
+    if (!isLast) {
+      const idx = currentQuestionIndex + 1;
+      advanceQuestionLocally(idx);
+      broadcastNextQuestion(idx, state.players);
+      return;
+    }
+
+    const { nextNarratorId, isGameOver } = getNextNarrator();
+    setNextNarrator(nextNarratorId);
+    broadcastRoundEnd(roundNumber, nextNarratorId, state.players, isGameOver);
+    setShowRoundBridge(true);
+    if (isGameOver && setGameOver) {
+      setTimeout(() => setGameOver(true), 6500);
+    }
+  };
+
+  const handleNextQuestion = useCallback(goToNextQuestion, [
+    currentQuestionIndex,
+    roundNumber,
+    state.players
+  ]);
+
+  const handleTimeUp = useCallback(() => {
+    playAudio('error');
+    goToNextQuestion();
+  }, [goToNextQuestion]);
+
+  return {
+    handleCorrectAnswer,
+    handleWrongAnswer,
+    handleNextQuestion,
+    handleTimeUp
+  };
 };
