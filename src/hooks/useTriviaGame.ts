@@ -6,94 +6,101 @@ import {
   mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND, MAX_ROUNDS
 } from '@/utils/triviaConstants';
 import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast';
-import { useQuestionManager }   from './useQuestionManager';
-import { usePlayerActions }     from './usePlayerActions';
-import { useNarratorActions }   from './useNarratorActions';
-import { useGameChannel }       from './useGameChannel';
-import { useBroadcastListeners } from './useBroadcastListeners';
-import { useNarratorSubscription } from './useNarratorSubscription';
-import { useNarratorTimer }     from './useNarratorTimer';
-import { useRoundTransition }   from './useRoundTransition';
+import { useQuestionManager }       from './useQuestionManager';
+import { usePlayerActions }         from './usePlayerActions';
+import { useNarratorActions }       from './useNarratorActions';
+import { useGameChannel }           from './useGameChannel';
+import { useBroadcastListeners }    from './useBroadcastListeners';
+import { useNarratorSubscription }  from './useNarratorSubscription';
+import { useNarratorTimer }         from './useNarratorTimer';
+import { useRoundTransition }       from './useRoundTransition';
 
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
 
-  /* ── round state ───────────────────────────────────────── */
+  /* ───────── current-round state ───────── */
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
     narratorId: state.players.find(p => p.isHost)?.id || '',
-    questions: mockQuestions.slice(0, QUESTIONS_PER_ROUND)
-      .map(q => ({ ...q, id: `r1-${q.id}` })),
+    questions : mockQuestions.slice(0, QUESTIONS_PER_ROUND)
+                              .map(q => ({ ...q, id: `r1-${q.id}` })),
     currentQuestionIndex: 0,
     playerAnswers: [],
     timeLeft: QUESTION_TIMER
   });
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
-  const [showPending, setShowPending] = useState(false);
+  const [showPending,     setShowPending]     = useState(false);
 
-  /* ── channels & helpers ────────────────────────────────── */
   const gameChannelRef = useGameChannel(state.gameId);
   const isNarrator     = state.currentPlayer?.id === currentRound.narratorId;
   const hasAnswered    = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
-  /* ── round-transition logic (new hook API) ─────────────── */
+  /* ───────── round-transition helpers ───────── */
   const {
-    showRoundBridge,   setShowRoundBridge,
-    nextNarrator,      setNextNarrator,
-    nextRoundNumber,   setNextRoundNumber,
-    gameOver,          setGameOver,
+    showRoundBridge, setShowRoundBridge,
+    nextNarrator,    setNextNarrator,
+    nextRoundNumber, setNextRoundNumber,
+    gameOver,        setGameOver,
     startNextRound
-  } = useRoundTransition(mockQuestions);
+  } = useRoundTransition();
 
-  /* ── next-question / end-of-round handler ──────────────── */
+  /* actually switch to the round that startNextRound() produces */
+  const beginNextRound = () => {
+    if (!nextNarrator) return;                // safety
+    const newRound = startNextRound(nextNarrator, nextRoundNumber);
+    setCurrentRound(newRound);
+    setAnsweredPlayers(new Set());
+    setShowPending(false);
+    setNextNarrator('');                     // clear AFTER install
+  };
+
+  /* ───────── next-question / round-end ───────── */
   const handleNextQuestion = useCallback(() => {
-    const idx = currentRound.currentQuestionIndex;
+    const idx  = currentRound.currentQuestionIndex;
     const last = idx >= QUESTIONS_PER_ROUND - 1;
 
     if (last) {
-      /* ---- round finished ---- */
+      /* ── round finished ── */
       if (currentRound.roundNumber >= MAX_ROUNDS) {
-        // final round → game over
         broadcastRoundEnd(currentRound.roundNumber, '', state.players, true);
         setShowRoundBridge(true);
         setTimeout(() => setGameOver(true), 6500);
       } else {
-        // pick next narrator in join-order
         const order = [...state.players]
           .sort((a,b) => (a.narrator_order ?? 999) - (b.narrator_order ?? 999));
         const curIx = order.findIndex(p => p.id === currentRound.narratorId);
         const nextId = order[(curIx + 1) % order.length].id;
-
         setNextNarrator(nextId);
         setNextRoundNumber(currentRound.roundNumber + 1);
         broadcastRoundEnd(currentRound.roundNumber, nextId, state.players);
         setShowRoundBridge(true);
       }
-    } else {
-      /* ---- same round, just advance ---- */
-      const next = idx + 1;
-      setCurrentRound(prev => ({
-        ...prev,
-        currentQuestionIndex: next,
-        playerAnswers: [],
-        timeLeft: QUESTION_TIMER
-      }));
-      setAnsweredPlayers(new Set());
-      setShowPending(false);
-      broadcastNextQuestion(next, state.players);
+      return;
     }
+
+    /* ── same round, advance one question ── */
+    const next = idx + 1;
+    setCurrentRound(prev => ({
+      ...prev,
+      currentQuestionIndex: next,
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    }));
+    setAnsweredPlayers(new Set());
+    setShowPending(false);
+    broadcastNextQuestion(next, state.players);
   }, [currentRound, state.players]);
 
-  /* ── timer (uses the bridge/game-over guards) ──────────── */
+  /* ───────── narrator timer ───────── */
   useNarratorTimer(
     isNarrator,
     showRoundBridge,
     gameOver,
     setCurrentRound,
-    handleNextQuestion          // time-up ⇒ act like “next”
+    handleNextQuestion
   );
 
-  /* ── the remaining helper hooks stay unchanged ────────── */
+  /* ───────── side-channel hooks (unchanged) ───────── */
   useBroadcastListeners(
     gameChannelRef.current,
     setCurrentRound,
@@ -106,7 +113,6 @@ export const useTriviaGame = () => {
     mockQuestions,
     QUESTIONS_PER_ROUND
   );
-
   useNarratorSubscription(
     isNarrator,
     state.gameId,
@@ -146,7 +152,7 @@ export const useTriviaGame = () => {
     dispatch
   );
 
-  /* ── exported API for components ───────────────────────── */
+  /* ───────── exported API ───────── */
   return {
     currentRound,
     isNarrator,
@@ -168,7 +174,7 @@ export const useTriviaGame = () => {
     showRoundBridge,
     nextNarrator: state.players.find(p => p.id === nextNarrator),
     nextRoundNumber,
-    startNextRound,
+    startNextRound: beginNextRound,          // ← wrapped version
     gameOver
   };
 };
