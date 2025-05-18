@@ -1,28 +1,34 @@
 import { useEffect } from 'react';
 import { Round } from '@/types/trivia';
 
+/**
+ * Narrator-only countdown timer hook.
+ * Triggers handleNextQuestion() when timeLeft hits 0.
+ */
 export const useNarratorTimer = (
   isNarrator: boolean,
-  currentRound: Round,
+  showRoundBridge: boolean,
+  gameOver: boolean,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   handleNextQuestion: () => void
 ) => {
   useEffect(() => {
-    if (!isNarrator) return;                     // run ONLY for narrator
+    // Run ONLY for narrator, during active round
+    if (!isNarrator || showRoundBridge || gameOver) return;
 
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       setCurrentRound(prev => {
-        if (prev.timeLeft <= 0) {
-          clearInterval(t);
-          handleNextQuestion();
-          return prev;
+        if (prev.timeLeft <= 1) {
+          clearInterval(timer);
+          handleNextQuestion();  // trigger transition
+          return { ...prev, timeLeft: 0 };
         }
         return { ...prev, timeLeft: prev.timeLeft - 1 };
       });
     }, 1000);
 
-    return () => clearInterval(t);
-  }, [isNarrator, setCurrentRound, handleNextQuestion]);
+    return () => clearInterval(timer);
+  }, [isNarrator, showRoundBridge, gameOver, setCurrentRound, handleNextQuestion]);
 
-  return { timeLeft: currentRound.timeLeft };
+  // NOTE: we no longer return { timeLeft } here — currentRound handles it
 };
