@@ -15,10 +15,9 @@ export const mockQuestions = [
     textIt: "Qual è la capitale della Francia?",
     answerEn: 'Paris',
     answerIt: 'Parigi',
-    categoryId: 'geography', // Adding missing required properties
-    difficulty: 'easy'
+    categoryId: 'geography', 
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard' // Type assertion to match the TriviaQuestion type
   },
-  // Add more questions to make sure we have at least QUESTIONS_PER_ROUND questions
   {
     id: '2',
     textEn: 'Which planet is known as the Red Planet?',
@@ -26,7 +25,7 @@ export const mockQuestions = [
     answerEn: 'Mars',
     answerIt: 'Marte',
     categoryId: 'astronomy',
-    difficulty: 'easy'
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '3',
@@ -35,7 +34,7 @@ export const mockQuestions = [
     answerEn: 'Leonardo da Vinci',
     answerIt: 'Leonardo da Vinci',
     categoryId: 'art',
-    difficulty: 'easy'
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '4',
@@ -44,7 +43,7 @@ export const mockQuestions = [
     answerEn: 'Pacific Ocean',
     answerIt: 'Oceano Pacifico',
     categoryId: 'geography',
-    difficulty: 'medium'
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '5',
@@ -53,7 +52,7 @@ export const mockQuestions = [
     answerEn: 'Au',
     answerIt: 'Au',
     categoryId: 'science',
-    difficulty: 'medium'
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '6',
@@ -62,7 +61,7 @@ export const mockQuestions = [
     answerEn: 'Japan',
     answerIt: 'Giappone',
     categoryId: 'geography',
-    difficulty: 'medium'
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '7',
@@ -71,7 +70,7 @@ export const mockQuestions = [
     answerEn: 'Blue whale',
     answerIt: 'Balenottera azzurra',
     categoryId: 'biology',
-    difficulty: 'medium'
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '8',
@@ -80,7 +79,7 @@ export const mockQuestions = [
     answerEn: 'Six',
     answerIt: 'Sei',
     categoryId: 'mathematics',
-    difficulty: 'easy'
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '9',
@@ -89,7 +88,7 @@ export const mockQuestions = [
     answerEn: 'Tokyo',
     answerIt: 'Tokyo',
     categoryId: 'geography',
-    difficulty: 'easy'
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
   },
   {
     id: '10',
@@ -98,6 +97,6 @@ export const mockQuestions = [
     answerEn: 'William Shakespeare',
     answerIt: 'William Shakespeare',
     categoryId: 'literature',
-    difficulty: 'easy'
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
   }
 ];
