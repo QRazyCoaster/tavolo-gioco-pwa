@@ -45,14 +45,14 @@ export const useTriviaGame = () => {
   } = useRoundTransition();
 
   /* actually switch to the round that startNextRound() produces */
-  const beginNextRound = () => {
-    if (!nextNarrator) return;                // safety
-    const newRound = startNextRound(nextNarrator, nextRoundNumber);
-    setCurrentRound(newRound);
-    setAnsweredPlayers(new Set());
-    setShowPending(false);
-    setNextNarrator('');                     // clear AFTER install
-  };
++  const beginNextRound = () => {
++    if (!nextNarrator) return;
++    const newRound = startNextRound(nextNarrator, nextRoundNumber);
++    setCurrentRound(newRound);
++    setAnsweredPlayers(new Set());
++    setShowPending(false);
++    /* keep nextNarrator until the bridge disappears */
++  };
 
   /* ───────── next-question / round-end ───────── */
   const handleNextQuestion = useCallback(() => {
