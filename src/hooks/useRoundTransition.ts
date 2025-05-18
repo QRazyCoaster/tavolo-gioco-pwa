@@ -16,8 +16,9 @@ export const useRoundTransition = (
 
   // Get new questions for the next round
   const getNewRoundQuestions = (nextRound: number): TriviaQuestion[] => {
+    // Make sure we're using the proper count of questions (QUESTIONS_PER_ROUND)
     return mockQuestionsData
-      .slice(0, questionsPerRound)
+      .slice(0, QUESTIONS_PER_ROUND)
       .map(q => ({ 
         ...q, 
         id: `r${nextRound}-${q.id}` 

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -141,6 +142,7 @@ const TriviaGamePage = () => {
   }
 
   // Find the actual player object that corresponds to the nextNarrator ID
+  // Allow for the case where nextNarratorPlayer might be null
   const nextNarratorPlayer = state.players.find(player => player.id === nextNarrator) || null;
 
   /* ---- Main game view ---- */
