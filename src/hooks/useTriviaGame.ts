@@ -38,10 +38,13 @@ export const useTriviaGame = () => {
   
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
   const [showPendingAnswers, setShowPendingAnswers] = useState(false);
-  // Move these declarations up to avoid the "used before declaration" error
   const [showRoundBridge, setShowRoundBridge] = useState<boolean>(false);
 
   const gameChannelRef = useGameChannel(state.gameId);
+
+  // Calculate these values before using them
+  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
+  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
   // ─── Round Transition Setup ───
   const {
@@ -51,19 +54,12 @@ export const useTriviaGame = () => {
     setNextRoundNumber,
     gameOver,
     setGameOver,
-    getNewRoundQuestions,
     startNextRound
   } = useRoundTransition(
     currentRound,
     setCurrentRound,
-    setShowRoundBridge,
-    mockQuestions,
-    QUESTIONS_PER_ROUND
+    setShowRoundBridge
   );
-
-  // Calculate these values after other declarations
-  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
-  const hasPlayerAnswered = !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id);
 
   // ───── Next Question Logic ─────
   const handleNextQuestion = useCallback(() => {
@@ -128,16 +124,7 @@ export const useTriviaGame = () => {
 
   // ───── Listen for broadcasts ─────
   useBroadcastListeners(
-    gameChannelRef.current,
-    setCurrentRound,
-    setAnsweredPlayers,
-    setShowPendingAnswers,
-    setNextNarrator,
-    setShowRoundBridge,
-    setGameOver,
-    dispatch,
-    mockQuestions,
-    QUESTIONS_PER_ROUND
+    gameChannelRef.current
   );
 
   // ───── Supabase INSERT listener ─────
