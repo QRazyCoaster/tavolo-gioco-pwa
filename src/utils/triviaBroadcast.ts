@@ -82,8 +82,7 @@ export const broadcastNextQuestion = (
 export const broadcastRoundEnd = (
   currentRoundNumber: number,
   nextNarratorId: string,
-  players: Player[],
-  isGameOver = false
+  players: Player[]
 ) => {
   if (!gameChannel) {
     console.error('[triviaBroadcast] Cannot broadcast round end - game channel not set');
@@ -95,10 +94,7 @@ export const broadcastRoundEnd = (
     id: p.id, 
     score: Math.max(MIN_SCORE_LIMIT, p.score || 0) 
   }));
-  
-  console.log(
-    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId}, game over: ${isGameOver}`
-  );
+  console.log('[triviaBroadcast] Broadcasting round end with new narrator:', nextNarratorId);
   
   // Send round end event to all players
   gameChannel.send({
@@ -107,8 +103,7 @@ export const broadcastRoundEnd = (
     payload: { 
       nextRound: currentRoundNumber + 1,
       nextNarratorId,
-      scores,
-      isGameOver
+      scores
     }
   }).then(() => {
     console.log('[triviaBroadcast] Round end broadcast sent successfully');
