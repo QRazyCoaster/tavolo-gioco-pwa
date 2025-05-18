@@ -58,6 +58,7 @@ export const useNarratorActions = (
       );
 
       // IMPORTANT: Immediately broadcast score update to all players first
+      // We now broadcast BEFORE updating the local round state
       broadcastScoreUpdate(updatedPlayers);
 
       // Remove from pending answers after broadcasting the score
@@ -197,8 +198,9 @@ export const useNarratorActions = (
         // Calculate next narrator index (circular)
         const nextIndex = (currentNarratorIndex + 1) % sortedByOrder.length;
         const nextNarratorId = sortedByOrder[nextIndex]?.id || sortedByOrder[0].id;
+        const nextNarratorName = sortedByOrder[nextIndex]?.name || '';
         
-        console.log(`[useNarratorActions] Next narrator: ${nextNarratorId} (${sortedByOrder[nextIndex]?.name})`);
+        console.log(`[useNarratorActions] Next narrator: ${nextNarratorId} (${nextNarratorName})`);
         
         // Broadcast round end to all players
         broadcastRoundEnd(

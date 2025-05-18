@@ -55,12 +55,17 @@ export const usePlayerActions = (
       return { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] };
     });
     
-    setAnsweredPlayers(prev => new Set(prev).add(state.currentPlayer!.id));
+    setAnsweredPlayers(prev => {
+      const newSet = new Set(prev);
+      newSet.add(state.currentPlayer!.id);
+      return newSet;
+    });
+    
     setShowPendingAnswers(true);
 
     // write + broadcast ------------------------------------------------------
     try {
-      console.log('[handlePlayerBuzzer] Sending database update...');
+      console.log('[handlePlayerBuzzer] Sending database update and broadcast...');
       
       // First broadcast to ensure real-time updates (even if DB operation fails)
       const ch = getGameChannel();

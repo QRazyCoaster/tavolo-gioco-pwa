@@ -93,13 +93,13 @@ export const useBroadcastListeners = (
     });
 
     ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
-      const { nextRound, nextNarratorId, scores, isGameOver } = payload as any;
+      const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName } = payload as any;
       
       console.log('[useBroadcastListeners] Received ROUND_END broadcast:', payload);
       
       // Make sure to set the next narrator ID immediately so the round bridge shows it
       if (nextNarratorId) {
-        console.log('[useBroadcastListeners] Setting next narrator ID:', nextNarratorId);
+        console.log('[useBroadcastListeners] Setting next narrator ID:', nextNarratorId, 'Name:', nextNarratorName || 'Unknown');
         setNextNarrator(nextNarratorId);
       }
       

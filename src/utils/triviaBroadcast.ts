@@ -99,9 +99,10 @@ export const broadcastRoundEnd = (
   
   // Find the next narrator player object
   const nextNarratorPlayer = nextNarratorId ? players.find(p => p.id === nextNarratorId) : null;
+  const nextNarratorName = nextNarratorPlayer?.name || '';
   
   console.log(
-    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId} (${nextNarratorPlayer?.name || 'Unknown'}), game over: ${isGameOver}`
+    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId} (${nextNarratorName}), game over: ${isGameOver}`
   );
   
   // Send round end event to all players
@@ -113,7 +114,7 @@ export const broadcastRoundEnd = (
       nextNarratorId,
       scores,
       isGameOver,
-      nextNarratorName: nextNarratorPlayer?.name // Add narrator name to payload
+      nextNarratorName // Add narrator name to payload
     }
   }).then(() => {
     console.log('[triviaBroadcast] Round end broadcast sent successfully');
