@@ -107,7 +107,25 @@ export const useTriviaGame = () => {
 
   /* ───────── side-channel hooks (unchanged) ───────── */
   useBroadcastListeners(
-    gameChannelRef.current
+    gameChannelRef.current,
+    setCurrentRound,
+    setAnsweredPlayers,
+    setShowPending,
+    setNextNarrator,
+    setShowRoundBridge,
+    setGameOver,
+    dispatch,
+    mockQuestions,
+    QUESTIONS_PER_ROUND
+  );
+
+  useNarratorSubscription(
+    isNarrator,
+    state.gameId,
+    currentRound,
+    setCurrentRound,
+    setShowPending,
+    state.players
   );
 
   const { currentQuestion, questionNumber, totalQuestions } =

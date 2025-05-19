@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
 import {
@@ -24,24 +25,24 @@ export const useRoundTransition = (
       .map(q => ({ ...q, id: `r${round}-${q.id}` }));
 
   /** Called from the bridge-page countdown in *every* tab */
-  const startNextRound = (): void => {
-    if (!nextNarrator) return;                         // safety guard
+  const startNextRound = (narratorId: string, roundNum: number): Round => {
+    console.log('[useRoundTransition] Spawning round', roundNum,
+                'with narrator', narratorId);
 
-    console.log('[useRoundTransition] Spawning round', nextRoundNumber,
-                'with narrator', nextNarrator);
-
-    setCurrentRound({
-      roundNumber:          nextRoundNumber,
-      narratorId:           nextNarrator,
-      questions:            getNewRoundQuestions(nextRoundNumber),
+    const newRound: Round = {
+      roundNumber: roundNum,
+      narratorId: narratorId,
+      questions: getNewRoundQuestions(roundNum),
       currentQuestionIndex: 0,
-      playerAnswers:        [],
-      timeLeft:             QUESTION_TIMER
-    });
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    };
 
     /* hide the bridge & reset helper state */
     setShowRoundBridge(false);
     setNextNarrator('');
+    
+    return newRound;
   };
 
   /* ───────────────────────── exposed API ───────────────────────────────── */
