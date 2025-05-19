@@ -9,35 +9,40 @@ import { Player } from '@/context/GameContext';
  * Hook to manage advancing through questions and rounds
  */
 export const useRoundProgress = (
-  currentRound: Round, 
+  currentRound: Round,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   players: Player[],
   setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setShowPending: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false);
   const [nextNarrator, setNextNarrator] = useState<string>('');
-  const [nextRoundNumber, setNextRoundNumber] = useState(1);
+  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
   const [gameOver, setGameOver] = useState(false);
 
   /**
-   * Handle advancing to the next question or round
+   * Advance to either the next question or, if the round is over,
+   * trigger the round bridge (or end the game).
    */
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex;
     const last = idx >= QUESTIONS_PER_ROUND - 1;
 
     if (last) {
-      /* ── round finished ── */
+      // Round completed
       if (currentRound.roundNumber >= MAX_ROUNDS) {
+        // Game over
         broadcastRoundEnd(currentRound.roundNumber, '', players, true);
         setShowRoundBridge(true);
         setTimeout(() => setGameOver(true), 6500);
       } else {
-        const order = [...players]
-          .sort((a,b) => (a.narrator_order ?? 999) - (b.narrator_order ?? 999));
+        // Next round
+        const order = [...players].sort(
+          (a, b) => (a.narrator_order ?? 999) - (b.narrator_order ?? 999)
+        );
         const curIx = order.findIndex(p => p.id === currentRound.narratorId);
         const nextId = order[(curIx + 1) % order.length].id;
+
         setNextNarrator(nextId);
         setNextRoundNumber(currentRound.roundNumber + 1);
         broadcastRoundEnd(currentRound.roundNumber, nextId, players);
@@ -46,18 +51,24 @@ export const useRoundProgress = (
       return;
     }
 
-    /* ── same round, advance one question ── */
+    // Same round, advance one question
     const next = idx + 1;
     setCurrentRound(prev => ({
       ...prev,
       currentQuestionIndex: next,
       playerAnswers: [],
-      timeLeft: 90 // QUESTION_TIMER
+      timeLeft: QUESTION_TIMER
     }));
     setAnsweredPlayers(new Set());
-    setShowPending(false);
+    setShowPendingAnswers(false);
     broadcastNextQuestion(next, players);
-  }, [currentRound, players, setCurrentRound, setAnsweredPlayers, setShowPending]);
+  }, [
+    currentRound,
+    players,
+    setCurrentRound,
+    setAnsweredPlayers,
+    setShowPendingAnswers
+  ]);
 
   return {
     showRoundBridge,
