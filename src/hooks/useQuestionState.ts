@@ -2,28 +2,25 @@
 import { useMemo } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
 
-export const useQuestionManager = (
-  currentRound: Round,
-  setCurrentRound?: React.Dispatch<React.SetStateAction<Round>>,
-  setAnsweredPlayers?: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setShowPending?: React.Dispatch<React.SetStateAction<boolean>>,
-  broadcastNextQuestion?: (idx: number) => void
-) => {
-  // Safely get the current question
+/**
+ * Hook to manage and extract the current question state
+ */
+export const useQuestionState = (currentRound: Round) => {
+  // Get the current question
   const currentQuestion = useMemo((): TriviaQuestion => {
     const questions = currentRound?.questions || [];
     const index = currentRound?.currentQuestionIndex || 0;
     
     if (!questions.length) {
-      // Return a fallback question if the array is empty - now with all required properties
+      // Return a fallback question if the array is empty
       return {
         id: 'fallback',
         textEn: 'No questions available',
         textIt: 'Nessuna domanda disponibile',
         answerEn: '',
         answerIt: '',
-        categoryId: 'general', // Added missing property
-        difficulty: 'easy'     // Added missing property
+        categoryId: 'general', 
+        difficulty: 'easy'
       };
     }
     
@@ -32,7 +29,7 @@ export const useQuestionManager = (
     return questions[safeIndex];
   }, [currentRound]);
 
-  // Calculate the 1-based question number (for display)
+  // Calculate the question number (1-based) for display
   const questionNumber = useMemo(() => {
     return (currentRound?.currentQuestionIndex || 0) + 1;
   }, [currentRound]);
@@ -41,9 +38,6 @@ export const useQuestionManager = (
   const totalQuestions = useMemo(() => {
     return currentRound?.questions?.length || 0;
   }, [currentRound]);
-  
-  console.log('[useQuestionManager] Current question number:', questionNumber);
-  console.log('[useQuestionManager] Total questions:', totalQuestions);
 
   return {
     currentQuestion,

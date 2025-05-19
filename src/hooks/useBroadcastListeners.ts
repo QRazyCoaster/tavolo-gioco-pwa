@@ -12,8 +12,8 @@ export const useBroadcastListeners = (
   setShowRoundBridge: (show: boolean) => void,
   setGameOver: (over: boolean) => void,
   dispatch: any,
-  mockQuestions: any[],
-  QUESTIONS_PER_ROUND: number
+  gameId: string | null,
+  currentRound: Round
 ) => {
   useEffect(() => {
     const ch = gameChannel;
@@ -110,7 +110,7 @@ export const useBroadcastListeners = (
     setShowRoundBridge,
     setGameOver,
     dispatch,
-    mockQuestions,
-    QUESTIONS_PER_ROUND
+    gameId,
+    currentRound
   ]);
 };
