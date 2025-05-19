@@ -33,9 +33,7 @@ export const useTriviaGame = () => {
     answeredPlayers,
     setAnsweredPlayers,
     showPendingAnswers,
-    setShowPendingAnswers,
-    resetForNextQuestion,
-    advanceQuestionLocal
+    setShowPendingAnswers
   } = useRoundManager(hostId)
 
   // ───────── Round progression ─────────
@@ -45,6 +43,8 @@ export const useTriviaGame = () => {
     nextNarrator,
     nextRoundNumber,
     gameOver,
+    setGameOver,
+    setNextNarrator,
     handleNextQuestion,
     startNextRound
   } = useRoundProgress(
@@ -128,8 +128,7 @@ export const useTriviaGame = () => {
     handleWrongAnswer,
     handleNextQuestion,
     showRoundBridge,
-    nextNarrator:
-      state.players.find(p => p.id === nextNarrator) ?? null,
+    nextNarrator: state.players.find(p => p.id === nextNarrator) ?? null,
     nextRoundNumber,
     startNextRound,
     gameOver,
