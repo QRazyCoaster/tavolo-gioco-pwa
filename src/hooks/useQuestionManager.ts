@@ -2,7 +2,13 @@
 import { useMemo } from 'react';
 import { Round, TriviaQuestion } from '@/types/trivia';
 
-export const useQuestionManager = (currentRound: Round) => {
+export const useQuestionManager = (
+  currentRound: Round,
+  setCurrentRound?: React.Dispatch<React.SetStateAction<Round>>,
+  setAnsweredPlayers?: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setShowPending?: React.Dispatch<React.SetStateAction<boolean>>,
+  broadcastNextQuestion?: (idx: number) => void
+) => {
   // Safely get the current question
   const currentQuestion = useMemo((): TriviaQuestion => {
     const questions = currentRound?.questions || [];

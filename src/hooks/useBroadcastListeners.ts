@@ -95,7 +95,7 @@ export const useBroadcastListeners = (
       }
 
       // ← **no** automatic call to setCurrentRound here;
-      //    the page’s RoundBridgePage → onCountdownComplete triggers startNextRound()
+      //    the page's RoundBridgePage → onCountdownComplete triggers startNextRound()
     });
 
     // subscribe & keep alive

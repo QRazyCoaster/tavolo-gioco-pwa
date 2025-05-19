@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
@@ -37,26 +38,26 @@ export const useTriviaGame = () => {
 
   /* ───────── round-transition helpers ───────── */
   const {
-  showRoundBridge,
-  setShowRoundBridge,
-  nextNarrator,
-  setNextNarrator,
-  nextRoundNumber,
-  setNextRoundNumber,
-  gameOver,
-  setGameOver,
-  startNextRound
-} = useRoundTransition(currentRound, setCurrentRound);
+    showRoundBridge,
+    setShowRoundBridge,
+    nextNarrator,
+    setNextNarrator,
+    nextRoundNumber,
+    setNextRoundNumber,
+    gameOver,
+    setGameOver,
+    startNextRound
+  } = useRoundTransition(currentRound, setCurrentRound);
 
   /* actually switch to the round that startNextRound() produces */
-+  const beginNextRound = () => {
-+    if (!nextNarrator) return;
-+    const newRound = startNextRound(nextNarrator, nextRoundNumber);
-+    setCurrentRound(newRound);
-+    setAnsweredPlayers(new Set());
-+    setShowPending(false);
-+    /* keep nextNarrator until the bridge disappears */
-+  };
+  const beginNextRound = () => {
+    if (!nextNarrator) return;
+    const newRound = startNextRound(nextNarrator, nextRoundNumber);
+    setCurrentRound(newRound);
+    setAnsweredPlayers(new Set());
+    setShowPending(false);
+    /* keep nextNarrator until the bridge disappears */
+  };
 
   /* ───────── next-question / round-end ───────── */
   const handleNextQuestion = useCallback(() => {
@@ -106,34 +107,11 @@ export const useTriviaGame = () => {
 
   /* ───────── side-channel hooks (unchanged) ───────── */
   useBroadcastListeners(
-    gameChannelRef.current,
-    setCurrentRound,
-    setAnsweredPlayers,
-    setShowPending,
-    setNextNarrator,
-    setShowRoundBridge,
-    setGameOver,
-    dispatch,
-    mockQuestions,
-    QUESTIONS_PER_ROUND
-  );
-  useNarratorSubscription(
-    isNarrator,
-    state.gameId,
-    currentRound,
-    setCurrentRound,
-    setShowPending,
-    state.players
+    gameChannelRef.current
   );
 
   const { currentQuestion, questionNumber, totalQuestions } =
-    useQuestionManager(
-      currentRound,
-      setCurrentRound,
-      setAnsweredPlayers,
-      setShowPending,
-      idx => broadcastNextQuestion(idx, state.players)
-    );
+    useQuestionManager(currentRound);
 
   const { handlePlayerBuzzer } = usePlayerActions(
     state.gameId,
@@ -151,7 +129,7 @@ export const useTriviaGame = () => {
       setCurrentRound,
       gameChannelRef.current,
       setAnsweredPlayers,
-      setShowPendingAnswers,
+      setShowPending,
       setShowRoundBridge,
       setGameOver,
       dispatch,
