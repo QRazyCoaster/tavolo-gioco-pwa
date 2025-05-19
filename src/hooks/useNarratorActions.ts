@@ -55,7 +55,7 @@ export const useNarratorActions = (
       setShowPendingAnswers(false);
 
       /* small delay so everyone sees the score flash, then next Q */
-      setTimeout(() => handleNextQuestion(), 1200); // Increased delay to ensure score update is processed
+      setTimeout(() => handleNextQuestion(), 1500); // Increased delay to ensure score update is processed
     },
     [isNarrator, state.players, setCurrentRound, setShowPendingAnswers, dispatch]
   );
@@ -101,7 +101,7 @@ export const useNarratorActions = (
         ) {
           handleNextQuestion();
         }
-      }, 800); // Slightly increased delay
+      }, 1000); // Slightly increased delay
     },
     [isNarrator, state.players, currentRound.playerAnswers, setCurrentRound, dispatch]
   );

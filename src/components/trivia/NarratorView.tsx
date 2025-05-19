@@ -10,6 +10,7 @@ import QuestionCard from './QuestionCard';
 import QuestionInfo from './QuestionInfo';
 import PlayerRankings from './PlayerRankings';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { CORRECT_ANSWER_POINTS, WRONG_ANSWER_POINTS } from '@/utils/triviaConstants';
 
 interface NarratorViewProps {
   currentQuestion: TriviaQuestion;
@@ -78,7 +79,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const handleCorrectAnswerWithFeedback = (playerId: string) => {
     toast({
       title: language === 'it' ? 'Risposta esatta!' : 'Correct answer!',
-      description: language === 'it' ? '+10 punti' : '+10 points',
+      description: language === 'it' ? `+${CORRECT_ANSWER_POINTS} punti` : `+${CORRECT_ANSWER_POINTS} points`,
       variant: 'default', 
     });
     onCorrectAnswer(playerId);
@@ -87,7 +88,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const handleWrongAnswerWithFeedback = (playerId: string) => {
     toast({
       title: language === 'it' ? 'Risposta sbagliata' : 'Wrong answer',
-      description: language === 'it' ? '-5 punti' : '-5 points',
+      description: language === 'it' ? `${WRONG_ANSWER_POINTS} punti` : `${WRONG_ANSWER_POINTS} points`,
       variant: 'destructive',
     });
     onWrongAnswer(playerId);
@@ -123,7 +124,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
               className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2 px-6 py-4"
             >
               <ThumbsUp className="h-6 w-6" />
-              <span>{language === 'it' ? '+10 punti' : '+10 points'}</span>
+              <span>{language === 'it' ? `+${CORRECT_ANSWER_POINTS} punti` : `+${CORRECT_ANSWER_POINTS} points`}</span>
             </Button>
             <Button
               onClick={() => handleWrongAnswerWithFeedback(currentPlayerAnswering.playerId)}
@@ -131,7 +132,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
               className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 px-6 py-4"
             >
               <ThumbsDown className="h-6 w-6" />
-              <span>{language === 'it' ? '-5 punti' : '-5 points'}</span>
+              <span>{language === 'it' ? `${WRONG_ANSWER_POINTS} punti` : `${WRONG_ANSWER_POINTS} points`}</span>
             </Button>
           </div>
           {playerAnswers.length > 1 && (

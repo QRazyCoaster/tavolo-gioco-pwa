@@ -18,6 +18,8 @@ export const useBroadcastListeners = (
 ) => {
   // Track if listeners are already set up
   const listenersSetupRef = useRef(false);
+  // Track latest received score update timestamp
+  const lastScoreUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     const ch = gameChannel;
@@ -59,12 +61,36 @@ export const useBroadcastListeners = (
     // ───── SCORE_UPDATE ─────
     ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
       console.log('[useBroadcastListeners] SCORE_UPDATE', payload);
+      
+      // Check if this update is newer than the last one we processed
+      const timestamp = payload?.timestamp || Date.now();
+      if (timestamp <= lastScoreUpdateRef.current) {
+        console.log('[useBroadcastListeners] Ignoring older score update');
+        return;
+      }
+      
+      lastScoreUpdateRef.current = timestamp;
+      
       if (payload?.scores && Array.isArray(payload.scores)) {
         // Process score updates immediately with high priority
         console.log('[useBroadcastListeners] Processing score updates:', payload.scores);
-        payload.scores.forEach((s: any) => {
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+        
+        // Create a batch update for smoother UI updates
+        const scoreUpdates = payload.scores.map(s => ({ 
+          playerId: s.id, 
+          score: s.score 
+        }));
+        
+        // Apply all updates in order
+        scoreUpdates.forEach(update => {
+          dispatch({ type: 'UPDATE_SCORE', payload: update });
         });
+        
+        // Trigger a UI refresh if needed
+        // This is a React hack to ensure components re-render
+        setTimeout(() => {
+          dispatch({ type: 'REFRESH_UI', payload: Date.now() });
+        }, 50);
       }
     });
 

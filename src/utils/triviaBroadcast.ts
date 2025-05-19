@@ -1,4 +1,3 @@
-
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Player } from '@/context/GameContext';
 import { MIN_SCORE_LIMIT } from './triviaConstants';
@@ -57,9 +56,25 @@ export const broadcastScoreUpdate = (players: Player[]) => {
     gameChannel.send({
       type: 'broadcast',
       event: 'SCORE_UPDATE',
-      payload: { scores }
+      payload: { scores, timestamp: Date.now() } // Add timestamp to ensure clients recognize it as a new update
     }).then(() => {
       console.log('[triviaBroadcast] Score update broadcast sent successfully');
+      
+      // Send a second delayed update to ensure clients receive it
+      setTimeout(() => {
+        if (gameChannel) {
+          gameChannel.send({
+            type: 'broadcast',
+            event: 'SCORE_UPDATE',
+            payload: { scores, timestamp: Date.now() + 1 }
+          }).then(() => {
+            console.log('[triviaBroadcast] Score update confirmation sent');
+          }).catch(e => {
+            console.error('[triviaBroadcast] Error sending confirmation update:', e);
+          });
+        }
+      }, 800);
+      
       resolve(true);
     }).catch(error => {
       console.error('[triviaBroadcast] Error broadcasting score update:', error);

@@ -28,6 +28,7 @@ export interface GameState {
   gameStarted: boolean;
   currentPlayer: Player | null;
   backgroundMusicPlaying: boolean;
+  lastUpdate?: number; // Timestamp for tracking UI refreshes
 }
 
 /* ──────────────── Initial state ──────────────── */
@@ -55,7 +56,8 @@ type GameAction =
   | { type: 'SET_CURRENT_PLAYER'; payload: Player | null }
   | { type: 'START_BACKGROUND_MUSIC' }
   | { type: 'STOP_BACKGROUND_MUSIC' }
-  | { type: 'RESTORE_SESSION' };
+  | { type: 'RESTORE_SESSION' }
+  | { type: 'REFRESH_UI'; payload: number }; // New action to force UI updates
 
 /* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -107,6 +109,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         players: state.players.map(p =>
           p.id === action.payload.playerId ? { ...p, score: action.payload.score } : p
         ),
+        lastUpdate: Date.now(), // Update timestamp on score changes
       };
     case 'SET_CURRENT_PLAYER':
       return { ...state, currentPlayer: action.payload };
@@ -133,6 +136,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
       return state;
+    case 'REFRESH_UI':
+      // This action just updates lastUpdate to trigger re-renders
+      return { ...state, lastUpdate: action.payload };
     default:
       return state;
   }
