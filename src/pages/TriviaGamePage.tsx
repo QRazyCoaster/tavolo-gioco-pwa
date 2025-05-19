@@ -24,7 +24,7 @@ const TriviaGamePage = () => {
   /* ─────────── Game-round hook ─────────── */
   const {
     currentRound,
-    isNarrator,
+    isCurrentNarrator, // Renamed from isNarrator to match what useTriviaGame returns
     hasPlayerAnswered,
     currentQuestion,
     questionNumber,
@@ -116,7 +116,7 @@ const TriviaGamePage = () => {
   useEffect(() => {
     console.log('[TriviaGamePage] Player answers updated:', safePlayerAnswers);
     console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
-    console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
+    console.log('[TriviaGamePage] Current player is narrator:', isCurrentNarrator);
     console.log('[TriviaGamePage] Current round:', safeCurrentRound);
     console.log('[TriviaGamePage] Current player:', state.currentPlayer?.id);
     console.log('[TriviaGamePage] Narrator ID:', safeCurrentRound.narratorId);
@@ -125,7 +125,7 @@ const TriviaGamePage = () => {
     if (
       safePlayerAnswers.length > 0 &&
       !showPendingAnswers &&
-      isNarrator
+      isCurrentNarrator
     ) {
       setShowPendingAnswers(true);
     }
@@ -133,7 +133,7 @@ const TriviaGamePage = () => {
     safePlayerAnswers,
     showPendingAnswers,
     setShowPendingAnswers,
-    isNarrator,
+    isCurrentNarrator,
     safeCurrentRound,
     state.currentPlayer?.id,
     nextNarrator
@@ -206,7 +206,7 @@ const TriviaGamePage = () => {
             nextNarrator={nextNarrator}
             onCountdownComplete={handleStartNextRound}
           />
-        ) : isNarrator ? (
+        ) : isCurrentNarrator ? ( // Updated from isNarrator to isCurrentNarrator
           <NarratorView
             currentQuestion={currentQuestion}
             roundNumber={safeCurrentRound.roundNumber}
@@ -229,7 +229,7 @@ const TriviaGamePage = () => {
             players={state.players}
             hasAnswered={hasPlayerAnswered}
             onBuzzerPressed={handlePlayerBuzzer}
-            isCurrentPlayerNarrator={isNarrator}
+            isCurrentPlayerNarrator={isCurrentNarrator} // Updated from isNarrator to isCurrentNarrator
           />
         )}
       </div>
