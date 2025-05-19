@@ -1,3 +1,5 @@
+// src/hooks/usePlayerJoin.ts
+import { supabase } from '@/supabaseClient';
 import { joinGame } from '@/actions/joinGame';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
@@ -6,6 +8,10 @@ import { useGameJoinCore } from './useGameJoinCore';
 
 type Core = ReturnType<typeof useGameJoinCore>;
 
+/**
+ * Player-specific logic.
+ * Receives the shared core instance from useGameJoinCore().
+ */
 export const usePlayerJoin = (core: Core) => {
   const {
     pin,
@@ -21,8 +27,9 @@ export const usePlayerJoin = (core: Core) => {
   const handlePlayerFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation
+    // Validate PIN & name
     if (!pin || pin.length !== 4 || !name.trim()) {
+      setShowPinError(true);
       return;
     }
 
@@ -30,8 +37,8 @@ export const usePlayerJoin = (core: Core) => {
     playAudio('buttonClick');
 
     try {
-      // 1. Lookup game ID from PIN
-      const { data: gameRow, error: gErr } = await core.supabase
+      // 1. Look up game ID from the PIN
+      const { data: gameRow, error: gErr } = await supabase
         .from('games')
         .select('id')
         .eq('pin_code', pin)
@@ -47,29 +54,25 @@ export const usePlayerJoin = (core: Core) => {
         return;
       }
 
-      // 2. Create player
+      // 2. Create the player in the game
       const player = await joinGame({
         gameId: gameRow.id,
         playerName: name
       });
       logPlayerData(player, 'PLAYER_JOIN');
 
-      // 3. Update global state
+      // 3. Update global state and sessionStorage
       dispatch({
         type: 'JOIN_GAME',
-        payload: {
-          gameId: gameRow.id,
-          pin,
-          player
-        }
+        payload: { gameId: gameRow.id, pin, player }
       });
       sessionStorage.setItem('gameId', gameRow.id);
       sessionStorage.setItem('pin', pin);
 
       playAudio('success');
       navigate('/waiting-room');
-    } catch (err) {
-      console.error('[PLAYER_JOIN] Error joining game:', err);
+    } catch (error) {
+      console.error('[PLAYER_JOIN] Error joining game:', error);
       toast({
         title: language === 'it' ? 'Errore' : 'Error',
         description: language === 'it'
