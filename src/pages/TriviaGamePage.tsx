@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -13,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { Player } from '@/context/GameContext';
 import { supabase } from '@/supabaseClient';
+import { stopBackgroundMusic, pauseAudio, stopAudio } from '@/utils/audioUtils';
 
 const TriviaGamePage = () => {
   const { t, language } = useLanguage();
@@ -56,13 +56,41 @@ const TriviaGamePage = () => {
   const safePlayerAnswers = playerAnswers ?? [];
 
   /* ──────────────────────────────────────────────
-     Stop waiting-room music when game page mounts
+     Stop waiting-room music when game page mounts - Enhanced with multiple methods for iOS
   ────────────────────────────────────────────── */
   useEffect(() => {
-    if (state.backgroundMusicPlaying && (window as any).waitMusic) {
-      (window as any).waitMusic.pause();
-      (window as any).waitMusic.currentTime = 0;
-      dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+    console.log('[TriviaGamePage] Component mounted - stopping all background music');
+    
+    // Use multiple methods to ensure music stops, especially on iOS
+    pauseAudio('backgroundMusic');
+    stopAudio('backgroundMusic');
+    stopBackgroundMusic();
+    
+    // Also stop any music on window.waitMusic which might be used on some devices
+    if ((window as any).waitMusic) {
+      try {
+        console.log('[TriviaGamePage] Stopping window.waitMusic');
+        (window as any).waitMusic.pause();
+        (window as any).waitMusic.currentTime = 0;
+      } catch (e) {
+        console.error('[TriviaGamePage] Error stopping wait music:', e);
+      }
+    }
+    
+    // Update state to reflect that music is stopped
+    dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+    
+    // Explicitly set the localStorage flag
+    localStorage.setItem('backgroundMusicEnabled', 'false');
+    
+    // Additional iOS workaround - create and immediately stop an audio context
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContext.suspend().then(() => {
+        console.log('[TriviaGamePage] AudioContext suspended');
+      });
+    } catch (error) {
+      console.error('[TriviaGamePage] Error with AudioContext:', error);
     }
   }, []); // runs once
 

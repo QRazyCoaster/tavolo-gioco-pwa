@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { playAudio, stopBackgroundMusic } from '@/utils/audioUtils';
+import { playAudio, stopBackgroundMusic, pauseAudio, stopAudio } from '@/utils/audioUtils';
 import { useGame } from '@/context/GameContext';
 import { supabase } from '@/supabaseClient';
 
@@ -28,10 +28,31 @@ export const useGameStarter = () => {
       dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
     }
     
-    // Stop background music as game is starting
+    // Stop background music as game is starting - more aggressive cleanup for iOS
     console.log('GameStarter: Stopping background music as game is starting');
+    
+    // First try pausing all audio
+    pauseAudio('backgroundMusic');
+    stopAudio('backgroundMusic');
+    
+    // Then use the more comprehensive stopBackgroundMusic function
     stopBackgroundMusic();
+    
+    // Also stop any music on window.waitMusic which might be used on some devices
+    if ((window as any).waitMusic) {
+      try {
+        (window as any).waitMusic.pause();
+        (window as any).waitMusic.currentTime = 0;
+      } catch (e) {
+        console.error('Error stopping wait music:', e);
+      }
+    }
+    
+    // Update state to reflect that music is stopped
     dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+    
+    // Explicitly set the localStorage flag
+    localStorage.setItem('backgroundMusicEnabled', 'false');
     
     // Determine which game to start
     const game = selectedGame || sessionStorage.getItem('selectedGame') || 'trivia';

@@ -224,31 +224,77 @@ export const playBackgroundMusic = (type: AudioType = 'backgroundMusic', volume:
 };
 
 /**
- * Stop background music
+ * Stop background music - Enhanced for better iOS compatibility
  */
 export const stopBackgroundMusic = (): void => {
   try {
-    console.log('Stopping background music');
+    console.log('Stopping background music with enhanced cleanup');
+    
+    // Try to stop the specific backgroundMusic audio
     const audio = audioCache['backgroundMusic'];
     if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
+      // Proper sequence for stopping audio
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.src = ''; // Force unload the audio source
+        audio.load(); // Reload to clear buffer
+      } catch (e) {
+        console.error('Error with standard audio stop:', e);
+      }
     }
+    
+    // Also try with background type
+    const bgAudio = audioCache['background'];
+    if (bgAudio) {
+      try {
+        bgAudio.pause();
+        bgAudio.currentTime = 0;
+        bgAudio.src = '';
+        bgAudio.load();
+      } catch (e) {
+        console.error('Error stopping background audio:', e);
+      }
+    }
+    
+    // Update localStorage setting
     localStorage.setItem('backgroundMusicEnabled', 'false');
+    
+    // Remove from cache to force reload next time
+    delete audioCache['backgroundMusic'];
+    delete audioCache['background'];
+    
+    // iOS specific workaround - create and immediately suspend an audio context
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContext.suspend();
+    } catch (e) {
+      console.error('Error with audio context workaround:', e);
+    }
   } catch (error) {
     console.error('Error stopping background music:', error);
   }
 };
 
 /**
- * Stop a playing audio
+ * Stop a playing audio - with enhanced cleanup for mobile browsers
  */
 export const stopAudio = (type: AudioType): void => {
   try {
+    console.log(`Stopping audio ${type}`);
     const audio = audioCache[type];
     if (audio) {
+      // Complete stop sequence
       audio.pause();
       audio.currentTime = 0;
+      
+      // For more aggressive cleanup on mobile
+      try {
+        audio.src = '';
+        audio.load();
+      } catch (e) {
+        console.error(`Error with advanced cleanup for ${type}:`, e);
+      }
     }
   } catch (error) {
     console.error(`Error stopping audio ${type}:`, error);
@@ -260,6 +306,7 @@ export const stopAudio = (type: AudioType): void => {
  */
 export const pauseAudio = (type: AudioType): void => {
   try {
+    console.log(`Pausing audio ${type}`);
     const audio = audioCache[type];
     if (audio) {
       audio.pause();
@@ -274,6 +321,7 @@ export const pauseAudio = (type: AudioType): void => {
  */
 export const resumeAudio = (type: AudioType): void => {
   try {
+    console.log(`Resuming audio ${type}`);
     const audio = audioCache[type];
     if (audio) {
       const playPromise = audio.play();
@@ -300,7 +348,7 @@ export const isAudioPlaying = (type: AudioType): boolean => {
   }
 };
 
-// Basic event listeners for page visibility and closing
+// Enhanced event listeners for mobile browsers
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     pauseAudio('backgroundMusic');
@@ -313,7 +361,17 @@ document.addEventListener('visibilitychange', () => {
 });
 
 window.addEventListener('beforeunload', () => {
+  console.log('Page unloading - stopping all audio');
+  Object.keys(audioCache).forEach(key => {
+    stopAudio(key as AudioType);
+  });
+});
+
+// Additional mobile-specific cleanup
+document.addEventListener('pagehide', () => {
+  console.log('Page hidden - pausing all audio (mobile)');
   Object.keys(audioCache).forEach(key => {
     pauseAudio(key as AudioType);
   });
 });
+
