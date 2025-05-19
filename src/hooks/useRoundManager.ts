@@ -6,11 +6,10 @@ import { mockQuestions, QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triv
 /**
  * Hook to manage the current round state and transitions between questions
  */
-export const useRoundManager = (currentNarratorId: string) => {
-  /* ───────── current-round state ───────── */
+export const useRoundManager = (initialNarratorId: string) => {
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
-    narratorId: currentNarratorId,
+    narratorId: initialNarratorId,
     questions: mockQuestions.slice(0, QUESTIONS_PER_ROUND)
       .map(q => ({ ...q, id: `r1-${q.id}` })),
     currentQuestionIndex: 0,
@@ -19,19 +18,15 @@ export const useRoundManager = (currentNarratorId: string) => {
   });
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set());
-  const [showPending, setShowPending] = useState(false);
+  const [showPendingAnswers, setShowPendingAnswers] = useState(false);
 
-  /**
-   * Creates a new set of questions for a round
-   */
+  /** Generate question array for a given round */
   const getNewRoundQuestions = (round: number): TriviaQuestion[] =>
     mockQuestions
       .slice(0, QUESTIONS_PER_ROUND)
       .map(q => ({ ...q, id: `r${round}-${q.id}` }));
 
-  /**
-   * Resets the current round's state for a new question
-   */
+  /** Reset just for the next question (same round) */
   const resetForNextQuestion = () => {
     setCurrentRound(prev => ({
       ...prev,
@@ -39,15 +34,14 @@ export const useRoundManager = (currentNarratorId: string) => {
       timeLeft: QUESTION_TIMER
     }));
     setAnsweredPlayers(new Set());
-    setShowPending(false);
+    setShowPendingAnswers(false);
   };
 
   /**
-   * Sets up a new round with the given parameters
+   * Build a fresh Round object for the provided narrator & roundNumber
    */
   const setupNewRound = (narratorId: string, roundNumber: number): Round => {
-    console.log('[useRoundManager] Setting up round', roundNumber, 'with narrator', narratorId);
-    
+    console.log('[useRoundManager] Starting round', roundNumber, 'with narrator', narratorId);
     return {
       roundNumber,
       narratorId,
@@ -63,8 +57,8 @@ export const useRoundManager = (currentNarratorId: string) => {
     setCurrentRound,
     answeredPlayers,
     setAnsweredPlayers,
-    showPending,
-    setShowPending,
+    showPendingAnswers,
+    setShowPendingAnswers,
     resetForNextQuestion,
     setupNewRound
   };
