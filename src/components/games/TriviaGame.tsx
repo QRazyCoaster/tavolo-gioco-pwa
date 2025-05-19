@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import TriviaQuestion from './TriviaQuestion';
-import { useTriviaGameState } from './triviaGameHook';
+import { useTriviaGameState } from './hooks';
 import WaitingForNarrator from './WaitingForNarrator';
 import NarratorControls from './NarratorControls';
 import PlayerQueue from './PlayerQueue';
@@ -27,7 +26,7 @@ const TriviaGame = () => {
     currentQuestionIndex,
     questions,
     showAnswer,
-    isCurrentNarrator, // Renamed from isHost to isCurrentNarrator for clarity
+    isCurrentNarrator,
     currentQuestion,
     queuedPlayers,
     sortedPlayers,
