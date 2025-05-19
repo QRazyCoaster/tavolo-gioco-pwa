@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { Round } from '@/types/trivia';
-import { MAX_ROUNDS, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
+import { MAX_ROUNDS, QUESTIONS_PER_ROUND, QUESTION_TIMER } from '@/utils/triviaConstants';
 import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast';
 import { Player } from '@/context/GameContext';
 
