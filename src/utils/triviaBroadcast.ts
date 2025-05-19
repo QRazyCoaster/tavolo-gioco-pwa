@@ -52,15 +52,19 @@ export const broadcastScoreUpdate = (players: Player[]) => {
   }));
   console.log('[triviaBroadcast] Broadcasting score update to all clients:', scores);
   
-  // Send score updates to all players
-  gameChannel.send({
-    type: 'broadcast',
-    event: 'SCORE_UPDATE',
-    payload: { scores }
-  }).then(() => {
-    console.log('[triviaBroadcast] Score update broadcast sent successfully');
-  }).catch(error => {
-    console.error('[triviaBroadcast] Error broadcasting score update:', error);
+  // Send score updates to all players with high priority
+  return new Promise((resolve, reject) => {
+    gameChannel.send({
+      type: 'broadcast',
+      event: 'SCORE_UPDATE',
+      payload: { scores }
+    }).then(() => {
+      console.log('[triviaBroadcast] Score update broadcast sent successfully');
+      resolve(true);
+    }).catch(error => {
+      console.error('[triviaBroadcast] Error broadcasting score update:', error);
+      reject(error);
+    });
   });
 };
 
@@ -82,14 +86,16 @@ export const broadcastNextQuestion = (
   console.log('[triviaBroadcast] Broadcasting next question with scores:', payloadScores);
   
   // Send next question event to all players
-  gameChannel.send({
+  return gameChannel.send({
     type: 'broadcast',
     event: 'NEXT_QUESTION',
     payload: { questionIndex: nextIndex, scores: payloadScores }
   }).then(() => {
     console.log('[triviaBroadcast] Next question broadcast sent successfully');
+    return true;
   }).catch(error => {
     console.error('[triviaBroadcast] Error broadcasting next question:', error);
+    throw error;
   });
 };
 
@@ -119,7 +125,7 @@ export const broadcastRoundEnd = (
   );
   
   // Send round end event to all players
-  gameChannel.send({
+  return gameChannel.send({
     type: 'broadcast',
     event: 'ROUND_END',
     payload: { 
@@ -138,7 +144,7 @@ export const broadcastRoundEnd = (
       if (nextNarratorPlayer && nextNarratorPlayer.name) {
         console.log(`[triviaBroadcast] Updating database with new narrator: ${nextNarratorPlayer.name} for round ${currentRoundNumber + 1}`);
         
-        supabase
+        return supabase
           .from('games')
           .update({ 
             current_round: currentRoundNumber + 1,
@@ -149,13 +155,17 @@ export const broadcastRoundEnd = (
           .then(({ error }) => {
             if (error) {
               console.error('[triviaBroadcast] Error updating game with new narrator:', error);
+              return false;
             } else {
               console.log('[triviaBroadcast] Successfully updated current_round and host_name in database');
+              return true;
             }
           });
       }
     }
+    return true;
   }).catch(error => {
     console.error('[triviaBroadcast] Error broadcasting round end:', error);
+    throw error;
   });
 };

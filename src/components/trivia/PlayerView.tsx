@@ -40,6 +40,11 @@ const PlayerView: React.FC<PlayerViewProps> = ({
     setIsPressed(hasAnswered);
   }, [questionNumber, roundNumber, hasAnswered, isCurrentPlayerNarrator]);
 
+  // Add a debugging effect to monitor score changes
+  useEffect(() => {
+    console.log('[PlayerView] Updated player scores:', currentPlayers.map(p => ({ id: p.id, name: p.name, score: p.score })));
+  }, [currentPlayers]);
+
   const handlePress = () => {
     // Don't allow buzzer press if player already answered or is the narrator
     if (hasAnswered || isCurrentPlayerNarrator) return;
@@ -108,7 +113,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
         </div>
       )}
 
-      {/* Player rankings */}
+      {/* Player rankings with live score updates */}
       <PlayerRankings players={currentPlayers} />
     </div>
   );

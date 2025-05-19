@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Round } from '@/types/trivia';
@@ -20,7 +21,7 @@ export const useNarratorActions = (
   setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
   setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
   dispatch: any,
-  isNarrator: boolean               // ← NEW flag (true only for the active narrator)
+  isNarrator: boolean
 ) => {
   /* ─────────────────────────────────────────────────────────── */
   /* award points                                               */
@@ -34,15 +35,17 @@ export const useNarratorActions = (
 
       playAudio('success');
 
+      // Update local state first
       const newScore = (player.score || 0) + CORRECT_ANSWER_POINTS;
       dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
 
-      /* broadcast fresh score-table to every tab */
-      broadcastScoreUpdate(
-        state.players.map(p =>
-          p.id === playerId ? { ...p, score: newScore } : p
-        )
+      // Create an updated player list with the new score
+      const updatedPlayers = state.players.map(p =>
+        p.id === playerId ? { ...p, score: newScore } : p
       );
+
+      /* broadcast fresh score-table to every tab - this is now done BEFORE any other actions */
+      broadcastScoreUpdate(updatedPlayers);
 
       /* remove the player from the queue */
       setCurrentRound(prev => ({
@@ -52,7 +55,7 @@ export const useNarratorActions = (
       setShowPendingAnswers(false);
 
       /* small delay so everyone sees the score flash, then next Q */
-      setTimeout(() => handleNextQuestion(), 800);
+      setTimeout(() => handleNextQuestion(), 1200); // Increased delay to ensure score update is processed
     },
     [isNarrator, state.players, setCurrentRound, setShowPendingAnswers, dispatch]
   );
@@ -69,17 +72,20 @@ export const useNarratorActions = (
 
       playAudio('error');
 
+      // Update local state first
       const newScore = Math.max(
         MIN_SCORE_LIMIT,
         (player.score || 0) + WRONG_ANSWER_POINTS
       );
       dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
 
-      broadcastScoreUpdate(
-        state.players.map(p =>
-          p.id === playerId ? { ...p, score: newScore } : p
-        )
+      // Create an updated player list with the new score
+      const updatedPlayers = state.players.map(p =>
+        p.id === playerId ? { ...p, score: newScore } : p
       );
+
+      // Broadcast score update immediately
+      broadcastScoreUpdate(updatedPlayers);
 
       /* remove player from queue */
       setCurrentRound(prev => {
@@ -95,7 +101,7 @@ export const useNarratorActions = (
         ) {
           handleNextQuestion();
         }
-      }, 500);
+      }, 800); // Slightly increased delay
     },
     [isNarrator, state.players, currentRound.playerAnswers, setCurrentRound, dispatch]
   );
@@ -113,6 +119,12 @@ export const useNarratorActions = (
     if (!isLastQuestion) {
       const nextIdx = currentQuestionIndex + 1;
 
+      // Ensure scores are up to date before broadcasting next question
+      const currentScores = state.players.map(p => ({
+        id: p.id,
+        score: Math.max(MIN_SCORE_LIMIT, p.score || 0)
+      }));
+
       setCurrentRound(prev => ({
         ...prev,
         currentQuestionIndex: nextIdx,
@@ -122,7 +134,8 @@ export const useNarratorActions = (
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
 
-      broadcastNextQuestion(nextIdx, state.players);
+      // Send next question with current scores to ensure they're in sync
+      broadcastNextQuestion(nextIdx, state.players, currentScores);
       return;
     }
 
@@ -136,6 +149,7 @@ export const useNarratorActions = (
 
     const gameIsOver = roundNumber >= MAX_ROUNDS;
 
+    // Ensure latest scores are sent in the round end broadcast
     broadcastRoundEnd(roundNumber, nextNarratorId, state.players, gameIsOver);
     setShowRoundBridge(true);
 

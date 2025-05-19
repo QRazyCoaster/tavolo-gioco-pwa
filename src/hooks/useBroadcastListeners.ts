@@ -37,6 +37,15 @@ export const useBroadcastListeners = (
       console.log('[useBroadcastListeners] NEXT_QUESTION', payload);
       const { questionIndex, scores } = payload as any;
 
+      // Update scores first
+      if (scores && Array.isArray(scores)) {
+        console.log('[useBroadcastListeners] Updating scores from NEXT_QUESTION event:', scores);
+        scores.forEach((s: any) => {
+          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+        });
+      }
+
+      // Then update the question state
       setCurrentRound(prev => ({
         ...prev,
         currentQuestionIndex: questionIndex,
@@ -45,18 +54,14 @@ export const useBroadcastListeners = (
       }));
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
-
-      if (scores && Array.isArray(scores)) {
-        scores.forEach((s: any) => {
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
-        });
-      }
     });
 
     // ───── SCORE_UPDATE ─────
     ch.on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => {
       console.log('[useBroadcastListeners] SCORE_UPDATE', payload);
       if (payload?.scores && Array.isArray(payload.scores)) {
+        // Process score updates immediately with high priority
+        console.log('[useBroadcastListeners] Processing score updates:', payload.scores);
         payload.scores.forEach((s: any) => {
           dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
@@ -87,15 +92,17 @@ export const useBroadcastListeners = (
       console.log('[useBroadcastListeners] ROUND_END', payload);
       const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName } = payload as any;
 
-      if (nextNarratorId) {
-        console.log('[useBroadcastListeners] setNextNarrator:', nextNarratorId, nextNarratorName);
-        setNextNarrator(nextNarratorId);
-      }
-
+      // Process scores first to ensure they're updated before UI changes
       if (scores && Array.isArray(scores)) {
+        console.log('[useBroadcastListeners] Processing scores from ROUND_END:', scores);
         scores.forEach((s: any) => {
           dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
         });
+      }
+
+      if (nextNarratorId) {
+        console.log('[useBroadcastListeners] setNextNarrator:', nextNarratorId, nextNarratorName);
+        setNextNarrator(nextNarratorId);
       }
 
       setAnsweredPlayers(new Set());
@@ -107,9 +114,6 @@ export const useBroadcastListeners = (
         setTimeout(() => setGameOver(true), 6500);
       }
     });
-
-    // Don't need to call subscribe() here as the channel should already be subscribed
-    // in useGameChannel.ts
     
     return () => {
       console.log('[useBroadcastListeners] Cleaning up listeners');

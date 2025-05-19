@@ -43,6 +43,11 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const { language } = useLanguage();
   const { toast } = useToast();
 
+  // Debug log for player scores
+  useEffect(() => {
+    console.log('[NarratorView] Current player scores:', players.map(p => ({ id: p.id, name: p.name, score: p.score })));
+  }, [players]);
+
   // Timer: narrator only
   useEffect(() => {
     if (timeLeft === 0) {
@@ -64,6 +69,25 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   useEffect(() => {
     if (playerAnswers.length > 0 && !showPendingAnswers) setShowPendingAnswers(true);
   }, [playerAnswers, showPendingAnswers, setShowPendingAnswers]);
+
+  // Create handlers that provide feedback and ensure score updates are visible
+  const handleCorrectAnswerWithFeedback = (playerId: string) => {
+    toast({
+      title: language === 'it' ? 'Risposta esatta!' : 'Correct answer!',
+      description: language === 'it' ? '+10 punti' : '+10 points',
+      variant: 'default', 
+    });
+    onCorrectAnswer(playerId);
+  };
+  
+  const handleWrongAnswerWithFeedback = (playerId: string) => {
+    toast({
+      title: language === 'it' ? 'Risposta sbagliata' : 'Wrong answer',
+      description: language === 'it' ? '-5 punti' : '-5 points',
+      variant: 'destructive',
+    });
+    onWrongAnswer(playerId);
+  };
 
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
@@ -90,7 +114,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
           </div>
           <div className="flex justify-center gap-6 mt-4">
             <Button
-              onClick={() => onCorrectAnswer(currentPlayerAnswering.playerId)}
+              onClick={() => handleCorrectAnswerWithFeedback(currentPlayerAnswering.playerId)}
               size="lg"
               className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2 px-6 py-4"
             >
@@ -98,7 +122,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
               <span>{language === 'it' ? '+10 punti' : '+10 points'}</span>
             </Button>
             <Button
-              onClick={() => onWrongAnswer(currentPlayerAnswering.playerId)}
+              onClick={() => handleWrongAnswerWithFeedback(currentPlayerAnswering.playerId)}
               size="lg"
               className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 px-6 py-4"
             >
