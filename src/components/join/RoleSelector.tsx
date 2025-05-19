@@ -13,7 +13,7 @@ const RoleSelector = ({ onSelectRole }: RoleSelectorProps) => {
   const { t, language } = useLanguage();
   
   const handleRoleSelect = (isHost: boolean) => {
-    console.log(`RoleSelector: Selected role - ${isHost ? 'Host' : 'Player'}`);
+    console.log(`RoleSelector: Selected role - ${isHost ? 'Game Host' : 'Player'}`);
     try {
       playAudio('buttonClick');
     } catch (error) {
@@ -33,7 +33,9 @@ const RoleSelector = ({ onSelectRole }: RoleSelectorProps) => {
           className="h-16 text-xl flex items-center justify-center gap-3"
         >
           <UserRoundIcon size={24} />
-          {language === 'it' ? '1° narratore' : 'First Host'}
+          {language === 'it' 
+            ? 'Creatore Gioco (1° Narratore)' 
+            : 'Game Host (First Narrator)'}
         </Button>
         
         <Button 
@@ -42,7 +44,9 @@ const RoleSelector = ({ onSelectRole }: RoleSelectorProps) => {
           className="h-16 text-xl flex items-center justify-center gap-3 bg-white/80"
         >
           <Users size={24} />
-          {language === 'it' ? 'Gli altri giocatori' : 'Other Players'}
+          {language === 'it' 
+            ? 'Giocatore (Sarà Narratore in turni futuri)' 
+            : 'Player (Will be Narrator in future rounds)'}
         </Button>
       </div>
     </div>

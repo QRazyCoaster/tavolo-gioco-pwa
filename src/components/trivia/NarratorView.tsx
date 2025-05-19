@@ -26,6 +26,10 @@ interface NarratorViewProps {
   setShowPendingAnswers: (show: boolean) => void;
 }
 
+/**
+ * NarratorView - Shown to the current round's narrator
+ * The narrator role rotates each round, starting with the game host
+ */
 const NarratorView: React.FC<NarratorViewProps> = ({
   currentQuestion,
   roundNumber,

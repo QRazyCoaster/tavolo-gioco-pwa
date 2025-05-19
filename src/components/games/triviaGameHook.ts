@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useGame } from '@/context/GameContext';
 import { useToast } from '@/hooks/use-toast';
@@ -112,17 +111,19 @@ export const useTriviaGameState = () => {
   const [waitingForNarrator, setWaitingForNarrator] = useState<boolean>(false);
   const [queuedPlayers, setQueuedPlayers] = useState<Player[]>([]);
   
-  const isHost = state.currentPlayer?.isHost || false;
+  // Check if current user is the narrator for this round
+  // This is different from being the game host (creator)
+  const isCurrentNarrator = state.currentPlayer?.isHost || false;
   const currentQuestion = questions[currentQuestionIndex];
 
   // Effect for showing the first question
   useEffect(() => {
-    setWaitingForNarrator(!isHost);
-  }, [isHost]);
+    setWaitingForNarrator(!isCurrentNarrator);
+  }, [isCurrentNarrator]);
   
   // Handle player buzzer
   const handlePlayerBuzz = () => {
-    if (isHost || waitingForNarrator) {
+    if (isCurrentNarrator || waitingForNarrator) {
       return;
     }
     
@@ -149,7 +150,7 @@ export const useTriviaGameState = () => {
   
   // Assign point to a player
   const handleAssignPoint = (player: Player) => {
-    if (!isHost) return;
+    if (!isCurrentNarrator) return;
     
     playAudio('success');
     
@@ -174,7 +175,7 @@ export const useTriviaGameState = () => {
   
   // Remove player from queue without points
   const handleRemovePlayerFromQueue = (playerId: string) => {
-    if (!isHost) return;
+    if (!isCurrentNarrator) return;
     
     const player = state.players.find(p => p.id === playerId);
     if (player) {
@@ -193,14 +194,14 @@ export const useTriviaGameState = () => {
   
   // Reveal answer to narrator
   const handleRevealAnswer = () => {
-    if (!isHost) return;
+    if (!isCurrentNarrator) return;
     setShowAnswer(true);
     playAudio('notification');
   };
   
   // Show question to all players
   const handleShowQuestion = () => {
-    if (!isHost) return;
+    if (!isCurrentNarrator) return;
     setWaitingForNarrator(false);
     playAudio('notification');
     
@@ -216,7 +217,7 @@ export const useTriviaGameState = () => {
   
   // Move to next question
   const handleNextQuestion = () => {
-    if (!isHost) return;
+    if (!isCurrentNarrator) return;
     
     setShowAnswer(false);
     setQueuedPlayers([]);
@@ -254,7 +255,7 @@ export const useTriviaGameState = () => {
     roundNumber,
     waitingForNarrator,
     queuedPlayers,
-    isHost,
+    isCurrentNarrator, // Renamed from isHost to isCurrentNarrator for clarity
     currentQuestion,
     sortedPlayers,
     handlePlayerBuzz,

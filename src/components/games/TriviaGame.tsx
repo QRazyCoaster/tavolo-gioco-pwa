@@ -11,6 +11,12 @@ import PlayerBuzzer from './PlayerBuzzer';
 import QueueStatus from './QueueStatus';
 import PlayerRankingList from './PlayerRankingList';
 
+/**
+ * Main Trivia Game component
+ * Shows different views based on player role:
+ * - Current round's narrator: sees questions with answers and controls
+ * - Other players: see questions without answers and can buzz in
+ */
 const TriviaGame = () => {
   const { language } = useLanguage();
   const { state } = useGame();
@@ -21,7 +27,7 @@ const TriviaGame = () => {
     currentQuestionIndex,
     questions,
     showAnswer,
-    isHost,
+    isCurrentNarrator, // Renamed from isHost to isCurrentNarrator for clarity
     currentQuestion,
     queuedPlayers,
     sortedPlayers,
@@ -51,8 +57,8 @@ const TriviaGame = () => {
         <WaitingForNarrator sortedPlayers={sortedPlayers} />
       ) : (
         <div className="w-full max-w-lg">
-          {/* Narrator controls */}
-          {isHost && (
+          {/* Narrator controls - only visible to current narrator */}
+          {isCurrentNarrator && (
             <NarratorControls 
               showAnswer={showAnswer}
               onShowQuestion={handleShowQuestion}
@@ -64,12 +70,12 @@ const TriviaGame = () => {
           {/* Question display */}
           <TriviaQuestion
             question={currentQuestion}
-            showAnswer={showAnswer && isHost}
+            showAnswer={showAnswer && isCurrentNarrator}
             language={language}
           />
 
           {/* Player queue for narrator */}
-          {isHost && (
+          {isCurrentNarrator && (
             <PlayerQueue
               queuedPlayers={queuedPlayers}
               onAssignPoint={handleAssignPoint}
@@ -77,8 +83,8 @@ const TriviaGame = () => {
             />
           )}
           
-          {/* Player buzzer */}
-          {!isHost && !waitingForNarrator && (
+          {/* Player buzzer - only visible to non-narrators */}
+          {!isCurrentNarrator && !waitingForNarrator && (
             <PlayerBuzzer
               onPlayerBuzz={handlePlayerBuzz}
               queuedPlayers={queuedPlayers}
@@ -87,7 +93,7 @@ const TriviaGame = () => {
           )}
 
           {/* Queue status for players */}
-          {!isHost && (
+          {!isCurrentNarrator && (
             <QueueStatus 
               queuedPlayers={queuedPlayers}
               currentPlayerId={state.currentPlayer?.id}

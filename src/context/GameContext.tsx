@@ -1,13 +1,22 @@
+
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 /* ──────────────── Player type ──────────────── */
 export interface Player {
   id: string;
   name: string;
+  /**
+   * isHost: Indicates if this player is the game creator (permanent role)
+   * This is different from the narrator role which rotates each round
+   */
   isHost: boolean;
   score?: number;
   buzzer_sound_url?: string;
-  narrator_order?: number; // Add the narrator_order property to fix TypeScript errors
+  /**
+   * narrator_order: Determines when this player will be the narrator
+   * Lower numbers go first (host is typically 1)
+   */
+  narrator_order?: number;
 }
 
 /* ──────────────── Game state ──────────────── */

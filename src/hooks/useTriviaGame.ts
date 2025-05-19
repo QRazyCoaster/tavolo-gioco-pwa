@@ -15,6 +15,8 @@ import { useTimerControl } from './useTimerControl';
 
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
+  
+  // Find the game creator (permanent role)
   const hostId = state.players.find(p => p.isHost)?.id ?? '';
   const componentMounted = useRef(true);
 
@@ -74,9 +76,10 @@ export const useTriviaGame = () => {
     currentRound
   );
 
-  const isNarrator = state.currentPlayer?.id === currentRound.narratorId;
+  // Check if the current player is the narrator for this round
+  const isCurrentNarrator = state.currentPlayer?.id === currentRound.narratorId;
   useNarratorSubscription(
-    isNarrator,
+    isCurrentNarrator,
     state.gameId,
     currentRound,
     setCurrentRound,
@@ -111,12 +114,12 @@ export const useTriviaGame = () => {
     setShowRoundBridge,
     setGameOver,
     dispatch,
-    isNarrator
+    isCurrentNarrator
   );
 
   // ───────── Timer (narrator only) ─────────
   useTimerControl(
-    isNarrator,
+    isCurrentNarrator,
     showRoundBridge,
     gameOver,
     setCurrentRound,
@@ -150,7 +153,7 @@ export const useTriviaGame = () => {
 
   return {
     currentRound,
-    isNarrator,
+    isCurrentNarrator,
     hasPlayerAnswered:
       !!state.currentPlayer && answeredPlayers.has(state.currentPlayer.id),
     currentQuestion,

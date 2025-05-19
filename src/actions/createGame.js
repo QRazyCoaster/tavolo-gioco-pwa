@@ -4,6 +4,13 @@ import { generateGamePin } from '@/utils/gameUtils';
 import { listBuzzers } from './listBuzzers';
 import { getBuzzerUrl } from '@/utils/buzzerUtils';
 
+/**
+ * Creates a new game with a host player who will be the first narrator
+ * @param {Object} params - Creation parameters
+ * @param {string} params.gameType - Type of game (e.g., 'trivia')
+ * @param {string} params.hostName - Name of the game creator/host
+ * @returns {Object} Game and host player data
+ */
 export async function createGame({ gameType, hostName }) {
   console.log('[CREATE_GAME] Starting game creation');
   console.log('[CREATE_GAME] Host name:', hostName);
@@ -33,13 +40,14 @@ export async function createGame({ gameType, hostName }) {
     console.log('[CREATE_GAME] Game created:', game);
     
     // 3. Create a host player - now with narrator_order=1 (first to join)
+    // This player will be both the permanent game host AND the first narrator
     const { data: host, error: hostError } = await supabase
       .from('players')
       .insert({
         game_id: game.id,
         name: hostName,
-        is_host: true,
-        narrator_order: 1  // Set explicit narrator_order for host
+        is_host: true,       // Permanent role as game creator
+        narrator_order: 1    // First narrator in rotation
       })
       .select()
       .single();
@@ -49,7 +57,7 @@ export async function createGame({ gameType, hostName }) {
       throw hostError;
     }
     
-    console.log('[CREATE_GAME] Host player created:', host);
+    console.log('[CREATE_GAME] Game host created:', host);
     
     // 4. Assign a buzzer sound to the host
     let hostBuzzerSound = null;
@@ -85,10 +93,10 @@ export async function createGame({ gameType, hostName }) {
       hostPlayer: {
         id: host.id,
         name: host.name,
-        isHost: host.is_host === true,
+        isHost: host.is_host === true,  // This player is the permanent game host
         score: host.score || 0,
         buzzer_sound_url: hostBuzzerSound,
-        narrator_order: 1  // Include narrator_order in returned data
+        narrator_order: 1  // This player will be the first narrator
       }
     };
     

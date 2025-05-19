@@ -33,7 +33,7 @@ const PlayerRankings: React.FC<PlayerRankingsProps> = ({ players }) => {
                 <span>{player.name}</span>
                 {player.isHost && (
                   <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-                    Host
+                    {language === 'it' ? 'Creatore' : 'Game Host'}
                   </span>
                 )}
               </div>
