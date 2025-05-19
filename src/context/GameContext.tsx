@@ -40,6 +40,7 @@ const initialState: GameState = {
   gameStarted: false,
   currentPlayer: null,
   backgroundMusicPlaying: false,
+  lastUpdate: Date.now(),
 };
 
 /* ──────────────── Action types ──────────────── */
@@ -57,7 +58,7 @@ type GameAction =
   | { type: 'START_BACKGROUND_MUSIC' }
   | { type: 'STOP_BACKGROUND_MUSIC' }
   | { type: 'RESTORE_SESSION' }
-  | { type: 'REFRESH_UI'; payload: number }; // New action to force UI updates
+  | { type: 'REFRESH_UI'; payload: number }; // Action to force UI updates
 
 /* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -77,6 +78,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         pin: action.payload.pin,
         players: [action.payload.host],
         currentPlayer: action.payload.host,
+        lastUpdate: Date.now(),
       };
     case 'JOIN_GAME':
       return {
@@ -85,38 +87,90 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         pin: action.payload.pin,
         currentPlayer: action.payload.player,
         players: [...state.players, action.payload.player],
+        lastUpdate: Date.now(),
       };
     case 'ADD_PLAYER':
-      return { ...state, players: [...state.players, action.payload] };
+      return { 
+        ...state, 
+        players: [...state.players, action.payload],
+        lastUpdate: Date.now(),
+      };
     case 'ADD_PLAYER_LIST':
-      return { ...state, players: action.payload };
+      return { 
+        ...state, 
+        players: action.payload,
+        lastUpdate: Date.now(), 
+      };
     case 'REMOVE_PLAYER':
-      return { ...state, players: state.players.filter(p => p.id !== action.payload) };
+      return { 
+        ...state, 
+        players: state.players.filter(p => p.id !== action.payload),
+        lastUpdate: Date.now(),
+      };
     case 'SELECT_GAME':
-      return { ...state, selectedGame: action.payload };
+      return { 
+        ...state, 
+        selectedGame: action.payload,
+        lastUpdate: Date.now(),
+      };
     case 'START_GAME':
-      return { ...state, gameStarted: true };
+      return { 
+        ...state, 
+        gameStarted: true,
+        lastUpdate: Date.now(),
+      };
     case 'END_GAME':
       // Clear sessionStorage when the game ends
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
       sessionStorage.removeItem('selectedGame');
-      return { ...state, gameStarted: false, selectedGame: null, gameId: null, pin: null };
-    case 'UPDATE_SCORE':
-      return {
-        ...state,
-        players: state.players.map(p =>
-          p.id === action.payload.playerId ? { ...p, score: action.payload.score } : p
-        ),
-        lastUpdate: Date.now(), // Update timestamp on score changes
+      return { 
+        ...state, 
+        gameStarted: false, 
+        selectedGame: null, 
+        gameId: null, 
+        pin: null,
+        lastUpdate: Date.now(),
       };
+    case 'UPDATE_SCORE': {
+      console.log(`[gameReducer] Updating score for player ${action.payload.playerId} to ${action.payload.score}`);
+      
+      // Find the player in the current state
+      const playerToUpdate = state.players.find(p => p.id === action.payload.playerId);
+      
+      // If player exists and score is different, update it
+      if (playerToUpdate && playerToUpdate.score !== action.payload.score) {
+        return {
+          ...state,
+          players: state.players.map(p =>
+            p.id === action.payload.playerId ? { ...p, score: action.payload.score } : p
+          ),
+          lastUpdate: Date.now(),
+        };
+      }
+      
+      // If player doesn't exist or score isn't changing, return current state
+      return state;
+    }
     case 'SET_CURRENT_PLAYER':
-      return { ...state, currentPlayer: action.payload };
+      return { 
+        ...state, 
+        currentPlayer: action.payload,
+        lastUpdate: Date.now(), 
+      };
     case 'START_BACKGROUND_MUSIC':
-      return { ...state, backgroundMusicPlaying: true };
+      return { 
+        ...state, 
+        backgroundMusicPlaying: true,
+        lastUpdate: Date.now(), 
+      };
     case 'STOP_BACKGROUND_MUSIC':
-      return { ...state, backgroundMusicPlaying: false };
+      return { 
+        ...state, 
+        backgroundMusicPlaying: false,
+        lastUpdate: Date.now(), 
+      };
     case 'RESTORE_SESSION':
       // Check for session data to restore
       const gameId = sessionStorage.getItem('gameId');
@@ -132,12 +186,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           gameId,
           pin,
           gameStarted: gameStarted || false,
-          selectedGame: selectedGame || state.selectedGame
+          selectedGame: selectedGame || state.selectedGame,
+          lastUpdate: Date.now(),
         };
       }
       return state;
     case 'REFRESH_UI':
       // This action just updates lastUpdate to trigger re-renders
+      console.log(`[gameReducer] Forcing UI refresh with timestamp ${action.payload}`);
       return { ...state, lastUpdate: action.payload };
     default:
       return state;

@@ -28,11 +28,14 @@ export const useRoundProgress = (
     const idx = currentRound.currentQuestionIndex;
     const last = idx >= QUESTIONS_PER_ROUND - 1;
 
+    // Generate a timestamp for this update
+    const timestamp = Date.now();
+
     if (last) {
       // Round completed
       if (currentRound.roundNumber >= MAX_ROUNDS) {
         // Game over
-        broadcastRoundEnd(currentRound.roundNumber, '', players, true);
+        broadcastRoundEnd(currentRound.roundNumber, '', players, true, timestamp);
         setShowRoundBridge(true);
         setTimeout(() => setGameOver(true), 6500);
       } else {
@@ -45,7 +48,7 @@ export const useRoundProgress = (
 
         setNextNarrator(nextId);
         setNextRoundNumber(currentRound.roundNumber + 1);
-        broadcastRoundEnd(currentRound.roundNumber, nextId, players);
+        broadcastRoundEnd(currentRound.roundNumber, nextId, players, false, timestamp);
         setShowRoundBridge(true);
       }
       return;
@@ -53,6 +56,8 @@ export const useRoundProgress = (
 
     // Same round, advance one question
     const next = idx + 1;
+    console.log(`[useRoundProgress] Advancing to question ${next+1} of ${QUESTIONS_PER_ROUND}`);
+    
     setCurrentRound(prev => ({
       ...prev,
       currentQuestionIndex: next,
@@ -61,7 +66,7 @@ export const useRoundProgress = (
     }));
     setAnsweredPlayers(new Set());
     setShowPendingAnswers(false);
-    broadcastNextQuestion(next, players);
+    broadcastNextQuestion(next, players, undefined, timestamp);
   }, [
     currentRound,
     players,

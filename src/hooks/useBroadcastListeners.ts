@@ -20,6 +20,10 @@ export const useBroadcastListeners = (
   const listenersSetupRef = useRef(false);
   // Track latest received score update timestamp
   const lastScoreUpdateRef = useRef<number>(0);
+  // Track latest received question update timestamp
+  const lastQuestionUpdateRef = useRef<number>(0);
+  // Track latest received round end timestamp 
+  const lastRoundEndUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     const ch = gameChannel;
@@ -37,8 +41,16 @@ export const useBroadcastListeners = (
     // ───── NEXT_QUESTION ─────
     ch.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
       console.log('[useBroadcastListeners] NEXT_QUESTION', payload);
-      const { questionIndex, scores } = payload as any;
+      const { questionIndex, scores, timestamp = Date.now() } = payload as any;
 
+      // Check if this is a newer update than what we've already processed
+      if (timestamp <= lastQuestionUpdateRef.current) {
+        console.log('[useBroadcastListeners] Ignoring older NEXT_QUESTION update');
+        return;
+      }
+      
+      lastQuestionUpdateRef.current = timestamp;
+      
       // Update scores first
       if (scores && Array.isArray(scores)) {
         console.log('[useBroadcastListeners] Updating scores from NEXT_QUESTION event:', scores);
@@ -56,6 +68,9 @@ export const useBroadcastListeners = (
       }));
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
+      
+      // Force UI refresh after updates
+      dispatch({ type: 'REFRESH_UI', payload: timestamp });
     });
 
     // ───── SCORE_UPDATE ─────
@@ -86,11 +101,8 @@ export const useBroadcastListeners = (
           dispatch({ type: 'UPDATE_SCORE', payload: update });
         });
         
-        // Trigger a UI refresh if needed
-        // This is a React hack to ensure components re-render
-        setTimeout(() => {
-          dispatch({ type: 'REFRESH_UI', payload: Date.now() });
-        }, 50);
+        // Trigger a UI refresh with the current timestamp
+        dispatch({ type: 'REFRESH_UI', payload: timestamp });
       }
     });
 
@@ -116,7 +128,15 @@ export const useBroadcastListeners = (
     // ───── ROUND_END ─────
     ch.on('broadcast', { event: 'ROUND_END' }, ({ payload }) => {
       console.log('[useBroadcastListeners] ROUND_END', payload);
-      const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName } = payload as any;
+      const { nextRound, nextNarratorId, scores, isGameOver, nextNarratorName, timestamp = Date.now() } = payload as any;
+      
+      // Check if this is a newer update than what we've already processed
+      if (timestamp <= lastRoundEndUpdateRef.current) {
+        console.log('[useBroadcastListeners] Ignoring older ROUND_END update');
+        return;
+      }
+      
+      lastRoundEndUpdateRef.current = timestamp;
 
       // Process scores first to ensure they're updated before UI changes
       if (scores && Array.isArray(scores)) {
@@ -134,6 +154,9 @@ export const useBroadcastListeners = (
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
       setShowRoundBridge(true);
+      
+      // Force UI refresh after updates
+      dispatch({ type: 'REFRESH_UI', payload: timestamp });
 
       if (isGameOver) {
         console.log('[useBroadcastListeners] Game over');

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Player } from '@/context/GameContext';
@@ -47,11 +47,19 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 }) => {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const [localQuestionNumber, setLocalQuestionNumber] = useState(questionNumber);
 
-  // Debug log for player scores
+  // Update local question number when props change
+  useEffect(() => {
+    console.log('[NarratorView] Question number updated:', questionNumber);
+    setLocalQuestionNumber(questionNumber);
+  }, [questionNumber]);
+
+  // Debug log for player scores and question number
   useEffect(() => {
     console.log('[NarratorView] Current player scores:', players.map(p => ({ id: p.id, name: p.name, score: p.score })));
-  }, [players]);
+    console.log('[NarratorView] Current question number:', questionNumber, 'of', totalQuestions);
+  }, [players, questionNumber, totalQuestions]);
 
   // Timer: narrator only
   useEffect(() => {
@@ -103,7 +111,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
       />
       <QuestionInfo
         roundNumber={roundNumber}
-        questionNumber={questionNumber}
+        questionNumber={localQuestionNumber}
         totalQuestions={totalQuestions}
         timeLeft={timeLeft}
       />

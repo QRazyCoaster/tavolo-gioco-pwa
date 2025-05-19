@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Clock } from "lucide-react";
 
@@ -21,6 +21,11 @@ const QuestionInfo: React.FC<QuestionInfoProps> = ({
   // Ensure we have valid numbers for display
   const safeQuestionNumber = questionNumber || 1;
   const safeTotalQuestions = totalQuestions || 7; // Default to 7 if undefined
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log(`[QuestionInfo] Rendering with question ${safeQuestionNumber}/${safeTotalQuestions}`);
+  }, [safeQuestionNumber, safeTotalQuestions]);
 
   return (
     <div className="flex justify-between items-center mb-4">

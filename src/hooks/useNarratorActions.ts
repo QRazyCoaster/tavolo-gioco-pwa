@@ -39,13 +39,17 @@ export const useNarratorActions = (
       const newScore = (player.score || 0) + CORRECT_ANSWER_POINTS;
       dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
 
+      // Force UI update with our own timestamp
+      const timestamp = Date.now();
+      dispatch({ type: 'REFRESH_UI', payload: timestamp });
+
       // Create an updated player list with the new score
       const updatedPlayers = state.players.map(p =>
         p.id === playerId ? { ...p, score: newScore } : p
       );
 
       /* broadcast fresh score-table to every tab - this is now done BEFORE any other actions */
-      broadcastScoreUpdate(updatedPlayers);
+      broadcastScoreUpdate(updatedPlayers, timestamp);
 
       /* remove the player from the queue */
       setCurrentRound(prev => ({
@@ -78,6 +82,10 @@ export const useNarratorActions = (
         (player.score || 0) + WRONG_ANSWER_POINTS
       );
       dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
+      
+      // Force UI update with our own timestamp
+      const timestamp = Date.now();
+      dispatch({ type: 'REFRESH_UI', payload: timestamp });
 
       // Create an updated player list with the new score
       const updatedPlayers = state.players.map(p =>
@@ -85,7 +93,7 @@ export const useNarratorActions = (
       );
 
       // Broadcast score update immediately
-      broadcastScoreUpdate(updatedPlayers);
+      broadcastScoreUpdate(updatedPlayers, timestamp);
 
       /* remove player from queue */
       setCurrentRound(prev => {
@@ -119,6 +127,10 @@ export const useNarratorActions = (
     if (!isLastQuestion) {
       const nextIdx = currentQuestionIndex + 1;
 
+      // Force UI update with our own timestamp
+      const timestamp = Date.now();
+      dispatch({ type: 'REFRESH_UI', payload: timestamp });
+
       // Ensure scores are up to date before broadcasting next question
       const currentScores = state.players.map(p => ({
         id: p.id,
@@ -135,7 +147,8 @@ export const useNarratorActions = (
       setShowPendingAnswers(false);
 
       // Send next question with current scores to ensure they're in sync
-      broadcastNextQuestion(nextIdx, state.players, currentScores);
+      // Pass the timestamp to ensure consistency
+      broadcastNextQuestion(nextIdx, state.players, currentScores, timestamp);
       return;
     }
 
@@ -149,8 +162,12 @@ export const useNarratorActions = (
 
     const gameIsOver = roundNumber >= MAX_ROUNDS;
 
+    // Force UI update with our own timestamp before broadcasting
+    const timestamp = Date.now();
+    dispatch({ type: 'REFRESH_UI', payload: timestamp });
+
     // Ensure latest scores are sent in the round end broadcast
-    broadcastRoundEnd(roundNumber, nextNarratorId, state.players, gameIsOver);
+    broadcastRoundEnd(roundNumber, nextNarratorId, state.players, gameIsOver, timestamp);
     setShowRoundBridge(true);
 
     if (gameIsOver) {
@@ -164,7 +181,8 @@ export const useNarratorActions = (
     setShowPendingAnswers,
     setShowRoundBridge,
     setGameOver,
-    state.players
+    state.players,
+    dispatch
   ]);
 
   return { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion };

@@ -1,3 +1,4 @@
+
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Player } from '@/context/GameContext';
 import { MIN_SCORE_LIMIT } from './triviaConstants';
@@ -38,7 +39,7 @@ export const cleanupChannel = () => {
   activeSubscriptions = [];
 };
 
-export const broadcastScoreUpdate = (players: Player[]) => {
+export const broadcastScoreUpdate = (players: Player[], timestamp = Date.now()) => {
   if (!gameChannel) {
     console.error('[triviaBroadcast] Cannot broadcast score update - game channel not set');
     return;
@@ -49,31 +50,33 @@ export const broadcastScoreUpdate = (players: Player[]) => {
     id: p.id, 
     score: Math.max(MIN_SCORE_LIMIT, p.score || 0)
   }));
-  console.log('[triviaBroadcast] Broadcasting score update to all clients:', scores);
+  console.log('[triviaBroadcast] Broadcasting score update to all clients:', scores, 'with timestamp:', timestamp);
   
   // Send score updates to all players with high priority
   return new Promise((resolve, reject) => {
     gameChannel.send({
       type: 'broadcast',
       event: 'SCORE_UPDATE',
-      payload: { scores, timestamp: Date.now() } // Add timestamp to ensure clients recognize it as a new update
+      payload: { scores, timestamp } // Use the provided timestamp for consistency
     }).then(() => {
       console.log('[triviaBroadcast] Score update broadcast sent successfully');
       
-      // Send a second delayed update to ensure clients receive it
-      setTimeout(() => {
-        if (gameChannel) {
-          gameChannel.send({
-            type: 'broadcast',
-            event: 'SCORE_UPDATE',
-            payload: { scores, timestamp: Date.now() + 1 }
-          }).then(() => {
-            console.log('[triviaBroadcast] Score update confirmation sent');
-          }).catch(e => {
-            console.error('[triviaBroadcast] Error sending confirmation update:', e);
-          });
-        }
-      }, 800);
+      // Send multiple confirmation updates to ensure clients receive it
+      for (let i = 0; i < 2; i++) {
+        setTimeout(() => {
+          if (gameChannel) {
+            gameChannel.send({
+              type: 'broadcast',
+              event: 'SCORE_UPDATE',
+              payload: { scores, timestamp: timestamp + i + 1 }
+            }).then(() => {
+              console.log('[triviaBroadcast] Score update confirmation sent #' + (i+1));
+            }).catch(e => {
+              console.error('[triviaBroadcast] Error sending confirmation update:', e);
+            });
+          }
+        }, 800 * (i + 1));
+      }
       
       resolve(true);
     }).catch(error => {
@@ -86,7 +89,8 @@ export const broadcastScoreUpdate = (players: Player[]) => {
 export const broadcastNextQuestion = (
   nextIndex: number,
   players: Player[],
-  scores?: { id: string; score: number }[]
+  scores?: { id: string; score: number }[],
+  timestamp = Date.now()
 ) => {
   if (!gameChannel) {
     console.error('[triviaBroadcast] Cannot broadcast next question - game channel not set');
@@ -98,15 +102,29 @@ export const broadcastNextQuestion = (
     ? scores.map(s => ({ id: s.id, score: Math.max(MIN_SCORE_LIMIT, s.score) }))
     : players.map(p => ({ id: p.id, score: Math.max(MIN_SCORE_LIMIT, p.score || 0) }));
     
-  console.log('[triviaBroadcast] Broadcasting next question with scores:', payloadScores);
+  console.log('[triviaBroadcast] Broadcasting next question with scores:', payloadScores, 'with timestamp:', timestamp);
   
-  // Send next question event to all players
+  // Send next question event to all players with the timestamp
   return gameChannel.send({
     type: 'broadcast',
     event: 'NEXT_QUESTION',
-    payload: { questionIndex: nextIndex, scores: payloadScores }
+    payload: { questionIndex: nextIndex, scores: payloadScores, timestamp }
   }).then(() => {
     console.log('[triviaBroadcast] Next question broadcast sent successfully');
+    
+    // Send a confirmation broadcast after a delay to ensure everyone gets it
+    setTimeout(() => {
+      if (gameChannel) {
+        gameChannel.send({
+          type: 'broadcast',
+          event: 'NEXT_QUESTION',
+          payload: { questionIndex: nextIndex, scores: payloadScores, timestamp: timestamp + 1 }
+        }).catch(e => {
+          console.error('[triviaBroadcast] Error sending next question confirmation:', e);
+        });
+      }
+    }, 1000);
+    
     return true;
   }).catch(error => {
     console.error('[triviaBroadcast] Error broadcasting next question:', error);
@@ -118,7 +136,8 @@ export const broadcastRoundEnd = (
   currentRoundNumber: number,
   nextNarratorId: string,
   players: Player[],
-  isGameOver = false
+  isGameOver = false,
+  timestamp = Date.now()
 ) => {
   if (!gameChannel) {
     console.error('[triviaBroadcast] Cannot broadcast round end - game channel not set');
@@ -136,7 +155,7 @@ export const broadcastRoundEnd = (
   const nextNarratorName = nextNarratorPlayer?.name || '';
   
   console.log(
-    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId} (${nextNarratorName}), game over: ${isGameOver}`
+    `[triviaBroadcast] Broadcasting round end with new narrator: ${nextNarratorId} (${nextNarratorName}), game over: ${isGameOver}, timestamp: ${timestamp}`
   );
   
   // Send round end event to all players
@@ -148,7 +167,8 @@ export const broadcastRoundEnd = (
       nextNarratorId,
       scores,
       isGameOver,
-      nextNarratorName // Add narrator name to payload
+      nextNarratorName, // Add narrator name to payload
+      timestamp
     }
   }).then(() => {
     console.log('[triviaBroadcast] Round end broadcast sent successfully');

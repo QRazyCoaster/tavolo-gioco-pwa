@@ -31,7 +31,8 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const { state } = useGame();
   const { toast } = useToast();
   const [isPressed, setIsPressed] = useState(false);
-
+  const [localQuestionNumber, setLocalQuestionNumber] = useState(questionNumber);
+  
   // Use the players directly from GameContext to ensure we always have the latest scores
   const currentPlayers = state.players;
 
@@ -40,10 +41,17 @@ const PlayerView: React.FC<PlayerViewProps> = ({
     setIsPressed(hasAnswered);
   }, [questionNumber, roundNumber, hasAnswered, isCurrentPlayerNarrator]);
 
+  // Update local question number when props change
+  useEffect(() => {
+    console.log('[PlayerView] Question number updated:', questionNumber);
+    setLocalQuestionNumber(questionNumber);
+  }, [questionNumber]);
+
   // Add a debugging effect to monitor score changes
   useEffect(() => {
     console.log('[PlayerView] Updated player scores:', currentPlayers.map(p => ({ id: p.id, name: p.name, score: p.score })));
-  }, [currentPlayers]);
+    console.log('[PlayerView] Current question number:', questionNumber, 'of', totalQuestions);
+  }, [currentPlayers, questionNumber, totalQuestions]);
 
   const handlePress = () => {
     // Don't allow buzzer press if player already answered or is the narrator
@@ -101,8 +109,8 @@ const PlayerView: React.FC<PlayerViewProps> = ({
       <div className="mb-4">
         <div className="bg-primary/10 px-4 py-2 rounded-md font-semibold text-center">
           {language === 'it'
-            ? `Round ${roundNumber} • Domanda ${questionNumber}/${totalQuestions}`
-            : `Round ${roundNumber} • Question ${questionNumber}/${totalQuestions}`}
+            ? `Round ${roundNumber} • Domanda ${localQuestionNumber}/${totalQuestions}`
+            : `Round ${roundNumber} • Question ${localQuestionNumber}/${totalQuestions}`}
         </div>
       </div>
 
