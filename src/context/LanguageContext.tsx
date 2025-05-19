@@ -14,8 +14,8 @@ interface Translations {
 // Translations dictionary
 const translations: Translations = {
   'common.welcome': {
-    en: 'Welcome to Tavolo Gioco',
-    it: 'Benvenuto in Tavolo Gioco',
+    en: 'Welcome to QRazy Coaster',
+    it: 'Benvenuto a QRazy Coaster',
   },
   'common.createGame': {
     en: 'Create Game',
