@@ -1,6 +1,7 @@
+
 // src/hooks/useTriviaGame.ts
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useGame } from '@/context/GameContext';
 import { useRoundManager } from './useRoundManager';
 import { useRoundProgress } from './useRoundProgress';
@@ -15,6 +16,18 @@ import { useTimerControl } from './useTimerControl';
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
   const hostId = state.players.find(p => p.isHost)?.id ?? '';
+  const componentMounted = useRef(true);
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    console.log('[useTriviaGame] Component mounted');
+    componentMounted.current = true;
+    
+    return () => {
+      console.log('[useTriviaGame] Component unmounting');
+      componentMounted.current = false;
+    };
+  }, []);
 
   // ───────── Round management ─────────
   const {
@@ -47,9 +60,9 @@ export const useTriviaGame = () => {
   );
 
   // ───────── Subscriptions & broadcasts ─────────
-  const gameChannel = useGameChannel(state.gameId).current;
+  const gameChannel = useGameChannel(state.gameId);
   useBroadcastListeners(
-    gameChannel,
+    gameChannel.current,
     setCurrentRound,
     setAnsweredPlayers,
     setShowPendingAnswers,
@@ -92,7 +105,7 @@ export const useTriviaGame = () => {
     state,
     currentRound,
     setCurrentRound,
-    gameChannel,
+    gameChannel.current,
     setAnsweredPlayers,
     setShowPendingAnswers,
     setShowRoundBridge,
@@ -112,7 +125,12 @@ export const useTriviaGame = () => {
 
   // ───────── Start next round (called by RoundBridgePage) ─────────
   const startNextRound = useCallback(() => {
-    if (!nextNarrator) return;
+    if (!nextNarrator) {
+      console.log('[useTriviaGame] Cannot start next round: No next narrator defined');
+      return;
+    }
+    
+    console.log(`[useTriviaGame] Starting round ${nextRoundNumber} with narrator ${nextNarrator}`);
     const newRound = setupNewRound(nextNarrator, nextRoundNumber);
     setCurrentRound(newRound);
     setAnsweredPlayers(new Set());

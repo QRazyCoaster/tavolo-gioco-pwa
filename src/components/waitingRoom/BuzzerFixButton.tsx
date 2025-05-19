@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { checkAndFixBuzzer } from '@/utils/playerUtils';
@@ -14,8 +14,12 @@ interface BuzzerFixButtonProps {
 const BuzzerFixButton = ({ fixAttempted, setFixAttempted }: BuzzerFixButtonProps) => {
   const { state, dispatch } = useGame();
   const { toast } = useToast();
+  const [isFixing, setIsFixing] = useState(false);
 
   const handleFixBuzzer = async () => {
+    if (isFixing) return;
+    
+    setIsFixing(true);
     setFixAttempted(true);
     
     if (!state.currentPlayer) {
@@ -24,26 +28,38 @@ const BuzzerFixButton = ({ fixAttempted, setFixAttempted }: BuzzerFixButtonProps
         description: "No player data available. Please try rejoining the game.",
         variant: "destructive",
       });
+      setIsFixing(false);
       return;
     }
     
-    const result = await checkAndFixBuzzer(
-      supabase, 
-      state.currentPlayer,
-      (updatedPlayer: any) => dispatch({ type: 'SET_CURRENT_PLAYER', payload: updatedPlayer })
-    );
-    
-    if (result && result.success) {
-      toast({
-        title: "Buzzer Update",
-        description: "Successfully fixed buzzer sound!",
-      });
-    } else {
+    try {
+      const result = await checkAndFixBuzzer(
+        supabase, 
+        state.currentPlayer,
+        (updatedPlayer: any) => dispatch({ type: 'SET_CURRENT_PLAYER', payload: updatedPlayer })
+      );
+      
+      if (result && result.success) {
+        toast({
+          title: "Buzzer Update",
+          description: "Successfully fixed buzzer sound!",
+        });
+      } else {
+        toast({
+          title: "Buzzer Update Failed",
+          description: "Could not assign buzzer sound. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('[BuzzerFixButton] Error fixing buzzer:', error);
       toast({
         title: "Buzzer Update Failed",
-        description: "Could not assign buzzer sound. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsFixing(false);
     }
   };
 
@@ -58,8 +74,9 @@ const BuzzerFixButton = ({ fixAttempted, setFixAttempted }: BuzzerFixButtonProps
         size="sm" 
         onClick={handleFixBuzzer}
         className="w-full"
+        disabled={isFixing}
       >
-        Fix My Buzzer
+        {isFixing ? 'Fixing...' : 'Fix My Buzzer'}
       </Button>
       <p className="text-xs mt-2">
         Status: {fixAttempted ? 'Fix attempted' : 'No fix attempted yet'}

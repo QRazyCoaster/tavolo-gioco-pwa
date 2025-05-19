@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+
+import { useEffect, useRef } from 'react';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Round } from '@/types/trivia';
 import { QUESTION_TIMER } from '@/utils/triviaConstants';
@@ -15,9 +16,21 @@ export const useBroadcastListeners = (
   gameId: string | null,
   currentRound: Round
 ) => {
+  // Track if listeners are already set up
+  const listenersSetupRef = useRef(false);
+
   useEffect(() => {
     const ch = gameChannel;
     if (!ch) return;
+
+    // If we've already set up listeners on this component instance, don't do it again
+    if (listenersSetupRef.current) {
+      console.log('[useBroadcastListeners] Listeners already set up, skipping');
+      return;
+    }
+
+    console.log('[useBroadcastListeners] Setting up broadcast listeners');
+    listenersSetupRef.current = true;
 
     // ───── NEXT_QUESTION ─────
     ch.on('broadcast', { event: 'NEXT_QUESTION' }, ({ payload }) => {
@@ -93,14 +106,16 @@ export const useBroadcastListeners = (
         console.log('[useBroadcastListeners] Game over');
         setTimeout(() => setGameOver(true), 6500);
       }
-
-      // ← **no** automatic call to setCurrentRound here;
-      //    the page's RoundBridgePage → onCountdownComplete triggers startNextRound()
     });
 
-    // subscribe & keep alive
-    ch.subscribe();
-    // cleanup not needed—listeners live as long as channel
+    // Don't need to call subscribe() here as the channel should already be subscribed
+    // in useGameChannel.ts
+    
+    return () => {
+      console.log('[useBroadcastListeners] Cleaning up listeners');
+      listenersSetupRef.current = false;
+      // We don't remove the channel here since that's handled in useGameChannel
+    };
   }, [
     gameChannel,
     setCurrentRound,
@@ -110,7 +125,6 @@ export const useBroadcastListeners = (
     setShowRoundBridge,
     setGameOver,
     dispatch,
-    gameId,
-    currentRound
+    gameId
   ]);
 };

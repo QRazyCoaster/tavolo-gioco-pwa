@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,18 +33,22 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
 
   useEffect(() => {
     // Set mounted ref
+    console.log('[WaitingRoom] Component mounted');
     isMounted.current = true;
     
     return () => {
       // Set unmounted on cleanup
+      console.log('[WaitingRoom] Component unmounting, cleaning up subscriptions');
       isMounted.current = false;
       
       // Clean up channels explicitly
       if (playerChannelRef.current) {
+        console.log('[WaitingRoom] Removing player channel on unmount');
         supabase.removeChannel(playerChannelRef.current);
         playerChannelRef.current = null;
       }
       if (gameChannelRef.current) {
+        console.log('[WaitingRoom] Removing game channel on unmount');
         supabase.removeChannel(gameChannelRef.current);
         gameChannelRef.current = null;
       }
@@ -79,6 +84,16 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
         // If game is already active, redirect immediately
         if (data && data.status === 'active' && isMounted.current) {
           console.log('[WaitingRoom] Game already active, redirecting player');
+          
+          // Clean up any existing channels first
+          if (playerChannelRef.current) {
+            supabase.removeChannel(playerChannelRef.current);
+            playerChannelRef.current = null;
+          }
+          if (gameChannelRef.current) {
+            supabase.removeChannel(gameChannelRef.current);
+            gameChannelRef.current = null;
+          }
           
           // Update state
           dispatch({ type: 'START_GAME' });
@@ -131,7 +146,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           isHost: p.is_host === true,
           score: p.score || 0,
           buzzer_sound_url: p.buzzer_sound_url,
-          narrator_order: p.narrator_order // This is now valid with our updated Player interface
+          narrator_order: p.narrator_order
         }));
         
         // Update current player if needed
@@ -149,7 +164,18 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
     
     fetchPlayers();
 
+    // Clean up any existing channels first
+    if (playerChannelRef.current) {
+      supabase.removeChannel(playerChannelRef.current);
+      playerChannelRef.current = null;
+    }
+    if (gameChannelRef.current) {
+      supabase.removeChannel(gameChannelRef.current);
+      gameChannelRef.current = null;
+    }
+
     // Subscribe to new players
+    console.log(`[WaitingRoom] Creating players channel for game ${state.gameId}`);
     const playersChannel = supabase
       .channel(`players:${state.gameId}`)
       .on(
@@ -164,7 +190,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
             isHost: payload.new.is_host === true,
             score: payload.new.score || 0,
             buzzer_sound_url: payload.new.buzzer_sound_url,
-            narrator_order: payload.new.narrator_order // Include narrator_order
+            narrator_order: payload.new.narrator_order
           };
           dispatch({ type: 'ADD_PLAYER', payload: p });
         }
@@ -175,6 +201,7 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
     playerChannelRef.current = playersChannel;
 
     // Subscribe to game updates - enhanced reliability for status detection
+    console.log(`[WaitingRoom] Creating game status channel for game ${state.gameId}`);
     const gameChannel = supabase
       .channel(`game:${state.gameId}`)
       .on(
@@ -187,6 +214,16 @@ const WaitingRoom = ({ onStartGame }: WaitingRoomProps) => {
           // Specifically check for active status
           if (payload.new.status === 'active') {
             console.log('[WaitingRoom] Game status changed to active, redirecting player');
+            
+            // Clean up channels to prevent multiple subscriptions
+            if (playerChannelRef.current) {
+              supabase.removeChannel(playerChannelRef.current);
+              playerChannelRef.current = null;
+            }
+            if (gameChannelRef.current) {
+              supabase.removeChannel(gameChannelRef.current);
+              gameChannelRef.current = null;
+            }
             
             // Update local state
             dispatch({ type: 'START_GAME' });

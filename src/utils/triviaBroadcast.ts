@@ -11,8 +11,14 @@ let gameChannel: RealtimeChannel | null = null;
 let activeSubscriptions: string[] = [];
 
 export const setGameChannel = (channel: RealtimeChannel) => {
+  // Clean up existing channel if there is one
   if (gameChannel) {
     console.log('[triviaBroadcast] Replacing existing game channel');
+    try {
+      supabase.removeChannel(gameChannel);
+    } catch (e) {
+      console.error('[triviaBroadcast] Error removing existing channel:', e);
+    }
   }
   gameChannel = channel;
   console.log('[triviaBroadcast] Game channel set');
@@ -22,6 +28,13 @@ export const getGameChannel = () => gameChannel;
 
 export const cleanupChannel = () => {
   console.log('[triviaBroadcast] Cleaning up game channel and subscriptions');
+  if (gameChannel) {
+    try {
+      supabase.removeChannel(gameChannel);
+    } catch (e) {
+      console.error('[triviaBroadcast] Error removing channel during cleanup:', e);
+    }
+  }
   gameChannel = null;
   activeSubscriptions = [];
 };

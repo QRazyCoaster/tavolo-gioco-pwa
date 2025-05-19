@@ -13,24 +13,42 @@ export const useNarratorSubscription = (
   players: Player[]
 ) => {
   const narratorSubRef = useRef<any>(null);
+  const currentQuestionIndexRef = useRef<number>(currentRound.currentQuestionIndex);
+  
+  useEffect(() => {
+    currentQuestionIndexRef.current = currentRound.currentQuestionIndex;
+  }, [currentRound.currentQuestionIndex]);
 
   useEffect(() => {
+    // Only continue if conditions are met to be a narrator
     if (!isNarrator || !gameId) {
-      narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
-      narratorSubRef.current = null;
+      // Clean up existing subscription before returning
+      if (narratorSubRef.current) {
+        console.log('[useNarratorSubscription] Removing existing subscription on role/gameId change');
+        supabase.removeChannel(narratorSubRef.current);
+        narratorSubRef.current = null;
+      }
       return;
     }
 
-    narratorSubRef.current && supabase.removeChannel(narratorSubRef.current);
+    // Clean up existing subscription before creating a new one
+    if (narratorSubRef.current) {
+      console.log('[useNarratorSubscription] Removing existing subscription before creating a new one');
+      supabase.removeChannel(narratorSubRef.current);
+      narratorSubRef.current = null;
+    }
 
+    const channelName = `buzzes_${gameId}_${currentRound.currentQuestionIndex}`;
+    console.log(`[useNarratorSubscription] Creating channel: ${channelName}`);
+    
     const dbCh = supabase
-      .channel(`buzzes_${gameId}_${currentRound.currentQuestionIndex}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'player_answers' },
         ({ new: row }: any) => {
           if (row.game_id !== gameId) return;
-          const currentQ = currentRound.questions[currentRound.currentQuestionIndex]?.id;
+          const currentQ = currentRound.questions[currentQuestionIndexRef.current]?.id;
           if (row.question_id !== currentQ) return;
 
           console.log(`[useNarratorSubscription] Received DB notification for player_answer: ${row.player_id}`);
@@ -53,12 +71,18 @@ export const useNarratorSubscription = (
       .subscribe();
 
     narratorSubRef.current = dbCh;
-    return () => { void supabase.removeChannel(dbCh); };
+    
+    return () => { 
+      console.log(`[useNarratorSubscription] Cleaning up channel: ${channelName}`);
+      if (narratorSubRef.current) {
+        supabase.removeChannel(narratorSubRef.current);
+        narratorSubRef.current = null;
+      }
+    };
   }, [
     isNarrator,
     gameId,
     currentRound.currentQuestionIndex,
-    currentRound.questions,
     players,
     setCurrentRound,
     setShowPendingAnswers
