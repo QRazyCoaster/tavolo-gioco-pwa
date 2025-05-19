@@ -52,7 +52,9 @@ export const useTriviaGame = () => {
   /* actually switch to the round that startNextRound() produces */
   const beginNextRound = () => {
     if (!nextNarrator) return;
+    // Call startNextRound with the narrator ID and round number
     const newRound = startNextRound(nextNarrator, nextRoundNumber);
+    // Use the returned Round to update the state
     setCurrentRound(newRound);
     setAnsweredPlayers(new Set());
     setShowPending(false);
