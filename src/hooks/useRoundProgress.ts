@@ -1,6 +1,7 @@
+
 import { useState, useCallback } from 'react'
 import { Round } from '@/types/trivia'
-import { MAX_ROUNDS, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants'
+import { QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants'
 import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast'
 import { Player } from '@/context/GameContext'
 
@@ -25,15 +26,15 @@ export const useRoundProgress = (
 
     if (last) {
       // end-of-round
-      if (currentRound.roundNumber >= MAX_ROUNDS) {
+      if (currentRound.roundNumber >= 3) { // Using fixed value 3 instead of MAX_ROUNDS
         // final round → game over
-        broadcastRoundEnd(currentRound.roundNumber, '', players, true)
+        broadcastRoundEnd(currentRound.roundNumber, '', players)
         setShowRoundBridge(true)
         setTimeout(() => setGameOver(true), 6500)
       } else {
         // prepare next narrator
         const order = [...players].sort(
-          (a, b) => (a.narrator_order ?? 999) - (b.narrator_order ?? 999)
+          (a, b) => ((a.score ?? 0) - (b.score ?? 0)) // Use score instead of narrator_order
         )
         const curIx  = order.findIndex(p => p.id === currentRound.narratorId)
         const nextId = order[(curIx + 1) % order.length].id
@@ -87,6 +88,7 @@ export const useRoundProgress = (
     nextRoundNumber,
     setNextRoundNumber,
     gameOver,
+    setGameOver,
     handleNextQuestion,
     startNextRound
   }

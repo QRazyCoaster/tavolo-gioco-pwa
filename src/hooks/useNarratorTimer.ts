@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Round } from '@/types/trivia';
 
@@ -5,7 +6,6 @@ export const useNarratorTimer = (
   isNarrator: boolean,
   showRoundBridge: boolean,
   gameOver: boolean,
-  currentQuestionIndex: number,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   handleNextQuestion: () => void
 ) => {
@@ -28,7 +28,6 @@ export const useNarratorTimer = (
     isNarrator,
     showRoundBridge,
     gameOver,
-    currentQuestionIndex,
     setCurrentRound,
     handleNextQuestion
   ]);

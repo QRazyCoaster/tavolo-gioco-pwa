@@ -6,8 +6,7 @@ import { Round } from '@/types/trivia'
 import {
   mockQuestions,
   QUESTION_TIMER,
-  QUESTIONS_PER_ROUND,
-  MAX_ROUNDS
+  QUESTIONS_PER_ROUND
 } from '@/utils/triviaConstants'
 import {
   broadcastNextQuestion,
