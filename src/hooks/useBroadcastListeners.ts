@@ -157,8 +157,8 @@ export const useBroadcastListeners = (
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
 
-    gameChannel.on('error', (err) => {
-      console.error('[useBroadcastListeners] Game channel error:', err);
+    gameChannel.on('error', (error) => {
+      console.error('[useBroadcastListeners] Game channel error:', error);
     });
     
     gameChannel.on('reconnect', () => {
