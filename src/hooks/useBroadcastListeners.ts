@@ -152,8 +152,7 @@ export const useBroadcastListeners = (
       }
     );
 
-    // Add channel reconnection handling with the proper argument signatures
-    // The Supabase channel event API expects 3 arguments for these events
+    // Fix: Add the third 'context' parameter to the channel event handlers
     gameChannel.on('disconnect', (event: string, payload: any, context: any) => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
