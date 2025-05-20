@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Round, PlayerAnswer } from '@/types/trivia';
@@ -152,17 +151,16 @@ export const useBroadcastListeners = (
       }
     );
 
-    // Add channel reconnection handling
-    // Fix: Add all required parameters for these event handlers
-    gameChannel.on('disconnect', (event: string, payload: any) => {
+    // Add channel reconnection handling with the correct number of arguments
+    gameChannel.on('disconnect', (event: string, payload: any, context: any) => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
 
-    gameChannel.on('error', (event: string, error: any) => {
+    gameChannel.on('error', (event: string, error: any, context: any) => {
       console.error('[useBroadcastListeners] Game channel error:', error);
     });
     
-    gameChannel.on('reconnect', (event: string, payload: any) => {
+    gameChannel.on('reconnect', (event: string, payload: any, context: any) => {
       console.log('[useBroadcastListeners] Game channel reconnected');
     });
 
