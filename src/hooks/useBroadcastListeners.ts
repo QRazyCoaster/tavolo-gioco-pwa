@@ -152,7 +152,7 @@ export const useBroadcastListeners = (
       }
     );
 
-    // Fix: Add the third 'context' parameter to the channel event handlers
+    // Fix: Add the required third 'context' parameter to all channel event handlers
     gameChannel.on('disconnect', (event: string, payload: any, context: any) => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });

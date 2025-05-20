@@ -47,22 +47,26 @@ const TriviaGamePage = () => {
      Stop waiting-room music on mount and ensure it's stopped
   ──────────────────────────────────────── */
   useEffect(() => {
+    // Added more debugging to track music stopping
+    console.log('[TriviaGamePage] Component mounted, stopping all background music');
+    
     // Always stop background music when entering the game
     stopBackgroundMusic();
     
     // Also stop the waiting room music if it exists
     if ((window as any).waitMusic) {
+      console.log('[TriviaGamePage] Found waitMusic, stopping it');
       (window as any).waitMusic.pause();
       (window as any).waitMusic.currentTime = 0;
+      (window as any).waitMusic = null;
     }
     
     // Update state if needed
     if (state.backgroundMusicPlaying) {
+      console.log('[TriviaGamePage] Updating backgroundMusicPlaying state to false');
       dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
     }
-    
-    console.log('[TriviaGamePage] Background music stopped');
-  }, []);                                     // ← runs once
+  }, [dispatch]);  // Added dispatch to dependencies
 
   /* ───────── Session-validation effect ───────── */
   useEffect(() => {
@@ -74,18 +78,25 @@ const TriviaGamePage = () => {
   }, [state.gameId, state.pin, state.gameStarted,
       state.selectedGame, language, navigate, toast, dispatch]);
 
-  /* ---- debug effect (unchanged) ---- */
+  /* ---- debug effect for game state ---- */
   useEffect(() => {
+    console.log('[TriviaGamePage] Current round data:', currentRound);
+    console.log('[TriviaGamePage] Round number:', currentRound.roundNumber);
     console.log('[TriviaGamePage] Player answers updated:', playerAnswers);
+    console.log('[TriviaGamePage] showRoundBridge value:', showRoundBridge);
+    console.log('[TriviaGamePage] nextRoundNumber value:', nextRoundNumber);
     console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
     console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
-    console.log('[TriviaGamePage] Current round:', currentRound);
     console.log('[TriviaGamePage] Game over status:', gameOver);
 
     if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
       setShowPendingAnswers(true);
     }
-  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator, currentRound, gameOver]);
+  }, [
+    playerAnswers, showPendingAnswers, setShowPendingAnswers, 
+    isNarrator, currentRound, gameOver, showRoundBridge, 
+    nextRoundNumber
+  ]);
 
   const handleBackToLobby = () => navigate('/waiting-room');
 
@@ -111,6 +122,7 @@ const TriviaGamePage = () => {
 
   // Render the game over screen if the game has ended
   if (gameOver) {
+    console.log('[TriviaGamePage] Game is over, showing GameOverPage');
     return <GameOverPage players={state.players} onBackToLobby={handleBackToLobby} />;
   }
 

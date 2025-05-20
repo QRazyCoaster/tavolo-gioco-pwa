@@ -52,7 +52,7 @@ export const useRoundProgress = (
         ...prev,
         currentQuestionIndex: next,
         playerAnswers: [],
-        timeLeft: QUESTION_TIMER // Fixed: Use QUESTION_TIMER instead of QUESTIONS_PER_ROUND
+        timeLeft: QUESTION_TIMER
       }))
       setAnsweredPlayers(new Set())
       setShowPending(false)

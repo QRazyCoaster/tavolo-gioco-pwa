@@ -19,6 +19,12 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
   const { language } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<number>(6);
   
+  // Debugging round number
+  useEffect(() => {
+    console.log('[RoundBridgePage] Next round number:', nextRoundNumber);
+    console.log('[RoundBridgePage] Next narrator:', nextNarrator);
+  }, [nextRoundNumber, nextNarrator]);
+  
   // Countdown effect
   useEffect(() => {
     const timer = setInterval(() => {
