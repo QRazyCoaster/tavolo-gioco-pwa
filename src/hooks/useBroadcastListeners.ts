@@ -153,15 +153,16 @@ export const useBroadcastListeners = (
     );
 
     // Add channel reconnection handling
-    gameChannel.on('disconnect', () => {
+    // Fix: Add all required parameters for these event handlers
+    gameChannel.on('disconnect', (event: string, payload: any) => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
 
-    gameChannel.on('error', (error) => {
+    gameChannel.on('error', (event: string, error: any) => {
       console.error('[useBroadcastListeners] Game channel error:', error);
     });
     
-    gameChannel.on('reconnect', () => {
+    gameChannel.on('reconnect', (event: string, payload: any) => {
       console.log('[useBroadcastListeners] Game channel reconnected');
     });
 
