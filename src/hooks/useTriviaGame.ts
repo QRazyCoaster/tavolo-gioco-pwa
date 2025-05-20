@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback } from 'react'
 import { useGame } from '@/context/GameContext'
@@ -17,6 +18,7 @@ import { useRoundProgress } from './useRoundProgress'
 import { useQuestionManager } from './useQuestionManager'
 import { usePlayerActions } from './usePlayerActions'
 import { useNarratorActions } from './useNarratorActions'
+import { useGameChannel } from './useGameChannel'
 import { useBroadcastListeners } from './useBroadcastListeners'
 import { useNarratorSubscription } from './useNarratorSubscription'
 import { useNarratorTimer } from './useNarratorTimer'
@@ -55,6 +57,20 @@ export const useTriviaGame = () => {
   )
 
   // ───────── Channel & listeners ─────────
+  const gameChannelRef = useGameChannel(state.gameId)
+
+  useBroadcastListeners(
+    gameChannelRef.current,
+    setCurrentRound,
+    setAnsweredPlayers,
+    setShowPendingAnswers,
+    setNextNarrator,
+    setShowRoundBridge,
+    setGameOver,
+    dispatch,
+    state.gameId,
+    currentRound
+  )
 
   useNarratorSubscription(
     state.currentPlayer?.id === currentRound.narratorId,
