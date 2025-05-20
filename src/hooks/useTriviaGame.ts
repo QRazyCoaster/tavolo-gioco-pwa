@@ -94,17 +94,16 @@ export const useTriviaGame = () => {
     setShowPendingAnswers
   )
   
-  // Fix: Adjust parameters to match useNarratorActions definition
+  // Fix: Using join order instead of score for narrator selection
   const { handleCorrectAnswer, handleWrongAnswer } = useNarratorActions(
     currentRound.roundNumber,
     currentRound.currentQuestionIndex,
-    // This function returns the next narrator ID
+    // This function returns the next narrator ID based on join order
     () => {
-      const order = [...state.players].sort(
-        (a, b) => ((a.score ?? 0) - (b.score ?? 0))
-      )
-      const curIx = order.findIndex(p => p.id === currentRound.narratorId)
-      return order[(curIx + 1) % order.length].id
+      // Get the next player in the array (which is in join order)
+      // If we're at the last round, this won't be called because the game ends
+      const nextRoundIndex = currentRound.roundNumber; // 0-indexed for array access
+      return state.players[nextRoundIndex]?.id || state.players[0].id;
     },
     (nextIndex) => {
       setCurrentRound(prev => ({

@@ -26,18 +26,18 @@ export const useRoundProgress = (
 
     if (last) {
       // end-of-round
-      if (currentRound.roundNumber >= 3) { // Using fixed value 3 instead of MAX_ROUNDS
-        // final round → game over
+      // Check if the game is over based on if all players have been narrators once
+      // Game over when current round number equals total number of players
+      if (currentRound.roundNumber >= players.length) {
+        // final round → game ends when all players have been narrator once
         broadcastRoundEnd(currentRound.roundNumber, '', players)
         setShowRoundBridge(true)
         setTimeout(() => setGameOver(true), 6500)
       } else {
-        // prepare next narrator
-        const order = [...players].sort(
-          (a, b) => ((a.score ?? 0) - (b.score ?? 0)) // Use score instead of narrator_order
-        )
-        const curIx  = order.findIndex(p => p.id === currentRound.narratorId)
-        const nextId = order[(curIx + 1) % order.length].id
+        // prepare next narrator - use join order (array index)
+        // The next narrator is the player at the index matching the current round number
+        // Since rounds are 1-based and arrays are 0-based, use roundNumber as index
+        const nextId = players[currentRound.roundNumber]?.id || players[0].id
 
         setNextNarrator(nextId)
         setNextRoundNumber(currentRound.roundNumber + 1)
@@ -51,7 +51,7 @@ export const useRoundProgress = (
         ...prev,
         currentQuestionIndex: next,
         playerAnswers: [],
-        timeLeft: QUESTIONS_PER_ROUND // reset timer
+        timeLeft: QUESTION_TIMER // Fixed: Use QUESTION_TIMER instead of QUESTIONS_PER_ROUND
       }))
       setAnsweredPlayers(new Set())
       setShowPending(false)
@@ -73,7 +73,7 @@ export const useRoundProgress = (
       questions:   prev.questions.map(q => ({ ...q, id: `r${nextRoundNumber}-${q.id}` })),
       currentQuestionIndex: 0,
       playerAnswers: [],
-      timeLeft: QUESTIONS_PER_ROUND
+      timeLeft: QUESTION_TIMER // Fixed: Use QUESTION_TIMER instead of QUESTIONS_PER_ROUND
     }))
     setAnsweredPlayers(new Set())
     setShowPending(false)
