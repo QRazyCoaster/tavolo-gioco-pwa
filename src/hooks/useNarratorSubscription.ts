@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/supabaseClient';
 import { Round } from '@/types/trivia';
 import { Player } from '@/context/GameContext';
+import { getGameChannel } from '@/utils/triviaBroadcast';
 
 /**
  * Hook for narrator to subscribe to player buzzes and answers
@@ -18,10 +19,16 @@ export const useNarratorSubscription = (
   useEffect(() => {
     if (!isNarrator || !gameId) return;
 
-    // Additional narrator-specific subscriptions could be added here
-    // This is a placeholder to maintain the function signature
+    console.log('[useNarratorSubscription] Narrator subscription active:', {
+      gameId,
+      currentQuestionIndex: currentRound.currentQuestionIndex
+    });
 
-    // No cleanup needed for now
-    return () => {};
+    // Intentionally left empty as the broadcast listeners now handle all the events
+    // This hook is kept for potential future narrator-specific subscriptions
+
+    return () => {
+      console.log('[useNarratorSubscription] Cleaning up narrator subscription');
+    };
   }, [isNarrator, gameId, currentRound.currentQuestionIndex]);
 };

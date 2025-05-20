@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { supabase } from '@/supabaseClient';
@@ -5,7 +6,7 @@ import { playAudio } from '@/utils/audioUtils';
 import { PlayerAnswer } from '@/types/trivia';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/LanguageContext';
-import { getGameChannel } from '@/utils/triviaBroadcast';   // ← NEW
+import { getGameChannel } from '@/utils/triviaBroadcast';
 
 export const usePlayerActions = (
   gameId: string | null,
@@ -38,6 +39,8 @@ export const usePlayerActions = (
       playerName: state.currentPlayer.name,
       timestamp: Date.now()
     };
+    
+    // Update local UI state
     setCurrentRound(prev => {
       if (prev.playerAnswers.some(a => a.playerId === optimistic.playerId)) return prev;
       return { ...prev, playerAnswers: [...prev.playerAnswers, optimistic] };
@@ -47,6 +50,7 @@ export const usePlayerActions = (
 
     // write + broadcast ------------------------------------------------------
     try {
+      // Write to database
       const { error } = await supabase
         .from('player_answers')
         .insert({
@@ -60,10 +64,16 @@ export const usePlayerActions = (
         console.error('[handlePlayerBuzzer] insert error:', error);
       }
 
-      /* ── NEW: broadcast so narrator never misses the buzz ─────────────────*/
-      const ch = getGameChannel();
-      if (ch) {
-        ch.send({
+      // Get the game channel and broadcast the buzz event
+      const gameChannel = getGameChannel();
+      if (gameChannel) {
+        console.log('[handlePlayerBuzzer] Broadcasting buzz event', {
+          playerId: state.currentPlayer.id,
+          playerName: state.currentPlayer.name,
+          questionIndex: currentQuestionIndex
+        });
+        
+        gameChannel.send({
           type: 'broadcast',
           event: 'BUZZ',
           payload: {
@@ -72,6 +82,8 @@ export const usePlayerActions = (
             questionIndex: currentQuestionIndex
           }
         });
+      } else {
+        console.error('[handlePlayerBuzzer] Game channel not available for broadcasting');
       }
     } catch (err) {
       console.error('[handlePlayerBuzzer] network error', err);

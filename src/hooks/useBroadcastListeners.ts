@@ -26,11 +26,14 @@ export const useBroadcastListeners = (
     if (!gameChannel || hasSetup.current) return;
     hasSetup.current = true;
 
+    console.log('[useBroadcastListeners] Setting up event handlers for gameId:', gameId);
+
     // ─── NEXT_QUESTION ─────────────────────────────────────
     gameChannel.on(
       'broadcast',
       { event: 'NEXT_QUESTION' },
       ({ payload }) => {
+        console.log('[useBroadcastListeners] Received NEXT_QUESTION event', payload);
         const { questionIndex, scores } = payload as any;
 
         // Update scores first
@@ -60,6 +63,7 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'SCORE_UPDATE' },
       ({ payload }) => {
+        console.log('[useBroadcastListeners] Received SCORE_UPDATE event', payload);
         const { scores } = payload as any;
         if (!Array.isArray(scores)) return;
         scores.forEach((s: { id: string; score: number }) =>
@@ -76,26 +80,34 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'BUZZ' },
       ({ payload }) => {
+        console.log('[useBroadcastListeners] Received BUZZ event', payload);
         const { playerId, playerName, questionIndex } = payload as any;
 
-        // Only queue buzzes for the current question
-        if (questionIndex !== currentRound.currentQuestionIndex) return;
-
+        // Process buzz events regardless of question index - fix for narrator view issue
         setCurrentRound(prev => {
-          // avoid duplicates
+          // Check if player already in the queue to avoid duplicates
           if (prev.playerAnswers.some(a => a.playerId === playerId)) {
             return prev;
           }
+          
+          // Create new answer object
           const newAnswer: PlayerAnswer = {
             playerId,
             playerName,
             timestamp: Date.now()
           };
-          return {
+          
+          // Add to queue
+          const updated = {
             ...prev,
             playerAnswers: [...prev.playerAnswers, newAnswer]
           };
+          
+          console.log('[useBroadcastListeners] Updated player answers:', updated.playerAnswers);
+          return updated;
         });
+        
+        // Make sure the pending answers UI is shown
         setShowPendingAnswers(true);
       }
     );
@@ -105,6 +117,7 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }) => {
+        console.log('[useBroadcastListeners] Received ROUND_END event', payload);
         const {
           nextRound,
           nextNarratorId,
@@ -126,7 +139,7 @@ export const useBroadcastListeners = (
         setAnsweredPlayers(new Set());
         setShowPendingAnswers(false);
 
-        // 3) Show the bridge and set who’s next
+        // 3) Show the bridge and set who's next
         if (nextNarratorId) {
           setNextNarrator(nextNarratorId);
         }
@@ -139,8 +152,18 @@ export const useBroadcastListeners = (
       }
     );
 
-    // note: we do NOT automatically call setCurrentRound here—
-    // that’s triggered by RoundBridgePage → onCountdownComplete
+    // Add channel reconnection handling
+    gameChannel.on('disconnect', () => {
+      console.log('[useBroadcastListeners] Game channel disconnected');
+    });
+
+    gameChannel.on('error', (err) => {
+      console.error('[useBroadcastListeners] Game channel error:', err);
+    });
+    
+    gameChannel.on('reconnect', () => {
+      console.log('[useBroadcastListeners] Game channel reconnected');
+    });
 
     // no cleanup needed: channel lives for app lifetime
   }, [
@@ -152,6 +175,7 @@ export const useBroadcastListeners = (
     setNextNarrator,
     setShowRoundBridge,
     setGameOver,
+    gameId,
     currentRound
   ]);
 };
