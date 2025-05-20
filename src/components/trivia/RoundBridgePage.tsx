@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 interface RoundBridgePageProps {
   nextRoundNumber: number;
-  nextNarrator: Player;
+  nextNarrator: Player | null;
   onCountdownComplete: () => void;
 }
 
@@ -34,6 +34,9 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
     
     return () => clearInterval(timer);
   }, [onCountdownComplete]);
+
+  // Make sure we have a valid narrator
+  if (!nextNarrator) return null;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">

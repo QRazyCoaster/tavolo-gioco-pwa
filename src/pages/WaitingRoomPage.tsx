@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
-import { playAudio } from '@/utils/audioUtils';
+import { playAudio, playBackgroundMusic } from '@/utils/audioUtils';
 import MusicToggle from '@/components/MusicToggle';
 import WaitingRoom from '@/components/WaitingRoom';
 import { useBuzzerSetup } from '@/hooks/useBuzzerSetup';
@@ -15,19 +15,46 @@ import { useGame } from '@/context/GameContext';
 declare global {
   interface Window {
     myBuzzer?: HTMLAudioElement;
+    waitMusic?: HTMLAudioElement;
   }
 }
 
 const WaitingRoomPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
 
   // Custom hooks
   const { validSession } = useGameSession();
   // Pass dummy state setter that won't cause rerenders
   useBuzzerSetup(false, () => {});
   const { handleStartGame } = useGameStarter();
+  
+  // Set up background music for waiting room
+  useEffect(() => {
+    // Start background music when entering waiting room
+    if (localStorage.getItem('backgroundMusicEnabled') !== 'false') {
+      if (!state.backgroundMusicPlaying) {
+        console.log('[WaitingRoomPage] Starting background music');
+        playBackgroundMusic('backgroundMusic', 0.2);
+        dispatch({ type: 'START_BACKGROUND_MUSIC' });
+      }
+      
+      // Create waiting room specific music if needed
+      if (!window.waitMusic) {
+        console.log('[WaitingRoomPage] Creating waiting room music');
+        window.waitMusic = new Audio();
+        window.waitMusic.src = getAudioUrl('backgroundMusic'); 
+        window.waitMusic.loop = true;
+        window.waitMusic.volume = 0.2;
+      }
+    }
+    
+    return () => {
+      // Don't stop music when leaving - game page will handle this
+      console.log('[WaitingRoomPage] Component unmounting');
+    };
+  }, [dispatch, state.backgroundMusicPlaying]);
   
   // Debug session validation only once
   useEffect(() => {
@@ -73,5 +100,11 @@ const WaitingRoomPage = () => {
     </div>
   );
 };
+
+// Helper function to get audio URL
+function getAudioUrl(type: string): string {
+  // Simple implementation, you can use the actual function from audioUtils if needed
+  return 'https://ybjcwjmzwgobxgopntpy.supabase.co/storage/v1/object/public/audio/background-music.mp3';
+}
 
 export default WaitingRoomPage;

@@ -30,7 +30,7 @@ export const useRoundProgress = (
       // Game over when current round number equals total number of players
       if (currentRound.roundNumber >= players.length) {
         // final round → game ends when all players have been narrator once
-        broadcastRoundEnd(currentRound.roundNumber, '', players)
+        broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setShowRoundBridge(true)
         setTimeout(() => setGameOver(true), 6500)
       } else {
@@ -40,6 +40,7 @@ export const useRoundProgress = (
         const nextId = players[currentRound.roundNumber]?.id || players[0].id
 
         setNextNarrator(nextId)
+        // Fix: Update the next round number to be the current round number + 1
         setNextRoundNumber(currentRound.roundNumber + 1)
         broadcastRoundEnd(currentRound.roundNumber, nextId, players)
         setShowRoundBridge(true)
@@ -73,7 +74,7 @@ export const useRoundProgress = (
       questions:   prev.questions.map(q => ({ ...q, id: `r${nextRoundNumber}-${q.id}` })),
       currentQuestionIndex: 0,
       playerAnswers: [],
-      timeLeft: QUESTION_TIMER // Fixed: Use QUESTION_TIMER instead of QUESTIONS_PER_ROUND
+      timeLeft: QUESTION_TIMER
     }))
     setAnsweredPlayers(new Set())
     setShowPending(false)
