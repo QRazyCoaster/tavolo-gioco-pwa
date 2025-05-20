@@ -93,16 +93,32 @@ export const useTriviaGame = () => {
     setCurrentRound,
     setShowPendingAnswers
   )
+  
+  // Fix: Adjust parameters to match useNarratorActions definition
   const { handleCorrectAnswer, handleWrongAnswer } = useNarratorActions(
-    state,
-    currentRound,
-    setCurrentRound,
-    gameChannelRef.current,
-    setAnsweredPlayers,
-    setShowPendingAnswers,
+    currentRound.roundNumber,
+    currentRound.currentQuestionIndex,
+    // This function returns the next narrator ID
+    () => {
+      const order = [...state.players].sort(
+        (a, b) => ((a.score ?? 0) - (b.score ?? 0))
+      )
+      const curIx = order.findIndex(p => p.id === currentRound.narratorId)
+      return order[(curIx + 1) % order.length].id
+    },
+    (nextIndex) => {
+      setCurrentRound(prev => ({
+        ...prev,
+        currentQuestionIndex: nextIndex,
+        playerAnswers: [],
+        timeLeft: QUESTION_TIMER
+      }))
+      setAnsweredPlayers(new Set())
+      setShowPendingAnswers(false)
+    },
+    setNextNarrator,
     setShowRoundBridge,
-    setGameOver,
-    dispatch
+    setCurrentRound
   )
 
   // ───────── Narrator timer ─────────
