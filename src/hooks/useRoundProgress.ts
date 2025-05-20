@@ -1,8 +1,12 @@
 import { useState, useCallback } from 'react'
-import { Round } from '@/types/trivia'
-import { MAX_ROUNDS, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants'
+import type { Round } from '@/types/trivia'
+import {
+  MAX_ROUNDS,
+  QUESTIONS_PER_ROUND,
+  QUESTION_TIMER
+} from '@/utils/triviaConstants'
 import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast'
-import { Player } from '@/context/GameContext'
+import type { Player } from '@/context/GameContext'
 
 /**
  * Manages advancing through questions and rounds.
@@ -15,9 +19,9 @@ export const useRoundProgress = (
   setShowPending: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false)
-  const [nextNarrator,    setNextNarrator   ] = useState<string>('')
+  const [nextNarrator, setNextNarrator] = useState<string>('')
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
-  const [gameOver,        setGameOver       ] = useState(false)
+  const [gameOver, setGameOver] = useState(false)
 
   const handleNextQuestion = useCallback(() => {
     const idx  = currentRound.currentQuestionIndex
@@ -26,12 +30,10 @@ export const useRoundProgress = (
     if (last) {
       // end-of-round
       if (currentRound.roundNumber >= MAX_ROUNDS) {
-        // final round → game over
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setShowRoundBridge(true)
         setTimeout(() => setGameOver(true), 6500)
       } else {
-        // prepare next narrator
         const order = [...players].sort(
           (a, b) => (a.narrator_order ?? 999) - (b.narrator_order ?? 999)
         )
@@ -50,7 +52,7 @@ export const useRoundProgress = (
         ...prev,
         currentQuestionIndex: next,
         playerAnswers: [],
-        timeLeft: QUESTIONS_PER_ROUND // reset timer
+        timeLeft: QUESTION_TIMER
       }))
       setAnsweredPlayers(new Set())
       setShowPending(false)
@@ -65,14 +67,17 @@ export const useRoundProgress = (
   ])
 
   const startNextRound = () => {
-    // called by RoundBridgePage
+    // called by RoundBridgePage after bridge countdown
     setCurrentRound(prev => ({
       roundNumber: nextRoundNumber,
       narratorId:  nextNarrator,
-      questions:   prev.questions.map(q => ({ ...q, id: `r${nextRoundNumber}-${q.id}` })),
+      questions:   prev.questions.map(q => ({
+        ...q,
+        id: `r${nextRoundNumber}-${q.id}`
+      })),
       currentQuestionIndex: 0,
       playerAnswers: [],
-      timeLeft: QUESTIONS_PER_ROUND
+      timeLeft: QUESTION_TIMER
     }))
     setAnsweredPlayers(new Set())
     setShowPending(false)
@@ -87,6 +92,7 @@ export const useRoundProgress = (
     nextRoundNumber,
     setNextRoundNumber,
     gameOver,
+    setGameOver,
     handleNextQuestion,
     startNextRound
   }
