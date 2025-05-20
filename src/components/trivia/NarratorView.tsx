@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Player } from '@/context/GameContext';
@@ -41,14 +41,17 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 }) => {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const hasTimedOut = useRef(false);
 
-  // Only handle UI feedback here; `onNextQuestion()` is driven by the timer hook
+  // only trigger tick at 10s, and only toast once at 0s
   useEffect(() => {
     if (timeLeft === 10) {
       playAudio('tick');
-    } else if (timeLeft === 0) {
+    }
+    if (timeLeft === 0 && !hasTimedOut.current) {
+      hasTimedOut.current = true;
       toast({
-        title: language === 'it' ? 'Tempo scaduto!' : "Time's up!",
+        title: language === 'it' ? 'Tempo scaduto!' : "Time’s up!",
         description: language === 'it'
           ? 'Passaggio alla prossima domanda'
           : 'Moving to next question',
@@ -57,19 +60,18 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     }
   }, [timeLeft, language, toast]);
 
-  const currentPlayerAnswering = playerAnswers[0];
-  const playerInfo = players.find(p => p.id === currentPlayerAnswering?.playerId);
-
-  // Whenever we have answers ensure the queue is visible
+  // whenever we get a new answer queue, ensure panel opens
   useEffect(() => {
     if (playerAnswers.length > 0 && !showPendingAnswers) {
       setShowPendingAnswers(true);
     }
   }, [playerAnswers, showPendingAnswers, setShowPendingAnswers]);
 
+  const currentPlayerAnswering = playerAnswers[0];
+  const playerInfo = players.find(p => p.id === currentPlayerAnswering?.playerId);
+
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
-      {/* Question & meta info */}
       <QuestionCard 
         currentQuestion={currentQuestion}
         questionKey={currentQuestion.id}
@@ -81,14 +83,11 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         timeLeft={timeLeft}
       />
 
-      {/* Bottom panel: either pending-answer queue or rankings */}
       {showPendingAnswers && currentPlayerAnswering && playerInfo ? (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in">
           <div className="text-center mb-3">
             <h3 className="font-bold text-xl text-blue-800">
-              {language === 'it' 
-                ? 'Primo a rispondere:' 
-                : 'First to answer:'}
+              {language === 'it' ? 'Primo a rispondere:' : 'First to answer:'}
             </h3>
             <p className="text-2xl font-semibold text-blue-900">
               {playerInfo.name}
@@ -115,9 +114,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
           {playerAnswers.length > 1 && (
             <div className="mt-6">
               <h4 className="font-semibold mb-2 text-center">
-                {language === 'it' 
-                  ? 'Prossimi in coda:' 
-                  : 'Next players in queue:'}
+                {language === 'it' ? 'Prossimi in coda:' : 'Next players in queue:'}
               </h4>
               <ol className="list-decimal pl-5 space-y-1 text-center">
                 {playerAnswers.slice(1).map(ans => {
@@ -132,7 +129,6 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         <PlayerRankings players={players} />
       )}
 
-      {/* Manual next question button when queue empty */}
       {playerAnswers.length === 0 && (
         <Button 
           onClick={onNextQuestion} 
