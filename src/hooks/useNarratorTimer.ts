@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Round } from '@/types/trivia';
+import { QUESTION_TIMER } from '@/utils/triviaConstants';
 
 export const useNarratorTimer = (
   isNarrator: boolean,
@@ -12,10 +13,16 @@ export const useNarratorTimer = (
   useEffect(() => {
     if (!isNarrator || showRoundBridge || gameOver) return;
 
-    const timer = setInterval(() => {
+    // Reset timeLeft at the start of each question
+    setCurrentRound(prev => ({
+      ...prev,
+      timeLeft: QUESTION_TIMER
+    }));
+
+    const timerId = setInterval(() => {
       setCurrentRound(prev => {
         if (prev.timeLeft <= 1) {
-          clearInterval(timer);
+          clearInterval(timerId);
           handleNextQuestion();
           return { ...prev, timeLeft: 0 };
         }
@@ -23,7 +30,7 @@ export const useNarratorTimer = (
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(timerId);
   }, [
     isNarrator,
     showRoundBridge,
