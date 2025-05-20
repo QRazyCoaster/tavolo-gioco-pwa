@@ -103,12 +103,12 @@ export const useTriviaGame = () => {
     dispatch
   )
 
-  // ───────── Narrator timer (now includes question index) ─────────
+  // ───────── Narrator timer (resets on question index change) ─────────
   useNarratorTimer(
     state.currentPlayer?.id === currentRound.narratorId,
     showRoundBridge,
     gameOver,
-    currentRound.currentQuestionIndex,  // ← added
+    currentRound.currentQuestionIndex,  // ← added so it restarts on each question
     setCurrentRound,
     handleNextQuestion
   )
