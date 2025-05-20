@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Round } from '@/types/trivia'
 import { QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants'
 import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast'
@@ -16,32 +16,45 @@ export const useRoundProgress = (
   setShowPending: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false)
-  const [nextNarrator,    setNextNarrator   ] = useState<string>('')
-  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
-  const [gameOver,        setGameOver       ] = useState(false)
+  const [nextNarrator, setNextNarrator] = useState<string>('')
+  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1) 
+  const [gameOver, setGameOver] = useState(false)
+
+  // Debug effect for round progression
+  useEffect(() => {
+    console.log('[useRoundProgress] Current round number:', currentRound.roundNumber);
+    console.log('[useRoundProgress] Next round number state:', nextRoundNumber);
+    console.log('[useRoundProgress] Total players:', players.length);
+  }, [currentRound.roundNumber, nextRoundNumber, players.length]);
 
   const handleNextQuestion = useCallback(() => {
-    const idx  = currentRound.currentQuestionIndex
+    const idx = currentRound.currentQuestionIndex
     const last = idx >= QUESTIONS_PER_ROUND - 1
 
     if (last) {
       // end-of-round
-      // Check if the game is over based on if all players have been narrators once
       // Game over when current round number equals total number of players
+      console.log('[useRoundProgress] End of round. Current round:', currentRound.roundNumber, 'Players:', players.length);
+      
       if (currentRound.roundNumber >= players.length) {
         // final round → game ends when all players have been narrator once
+        console.log('[useRoundProgress] Game should end now. Final round completed.');
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setShowRoundBridge(true)
-        setTimeout(() => setGameOver(true), 6500)
+        setTimeout(() => {
+          console.log('[useRoundProgress] Setting gameOver to true');
+          setGameOver(true)
+        }, 6500)
       } else {
         // prepare next narrator - use join order (array index)
-        // The next narrator is the player at the index matching the current round number
         // Since rounds are 1-based and arrays are 0-based, use roundNumber as index
         const nextId = players[currentRound.roundNumber]?.id || players[0].id
+        const nextRoundNum = currentRound.roundNumber + 1
 
+        console.log('[useRoundProgress] Setting up next round:', nextRoundNum, 'Next narrator:', nextId);
+        
         setNextNarrator(nextId)
-        // Fix: Update the next round number to be the current round number + 1
-        setNextRoundNumber(currentRound.roundNumber + 1)
+        setNextRoundNumber(nextRoundNum)
         broadcastRoundEnd(currentRound.roundNumber, nextId, players)
         setShowRoundBridge(true)
       }
@@ -68,10 +81,12 @@ export const useRoundProgress = (
 
   const startNextRound = () => {
     // called by RoundBridgePage
+    console.log('[useRoundProgress] Starting next round:', nextRoundNumber, 'with narrator:', nextNarrator);
+    
     setCurrentRound(prev => ({
       roundNumber: nextRoundNumber,
-      narratorId:  nextNarrator,
-      questions:   prev.questions.map(q => ({ ...q, id: `r${nextRoundNumber}-${q.id}` })),
+      narratorId: nextNarrator,
+      questions: prev.questions.map(q => ({ ...q, id: `r${nextRoundNumber}-${q.id}` })),
       currentQuestionIndex: 0,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER

@@ -32,9 +32,9 @@ export const useBroadcastListeners = (
     gameChannel.on(
       'broadcast',
       { event: 'NEXT_QUESTION' },
-      ({ payload }) => {
+      ({ payload }: { payload: any }) => {
         console.log('[useBroadcastListeners] Received NEXT_QUESTION event', payload);
-        const { questionIndex, scores } = payload as any;
+        const { questionIndex, scores } = payload;
 
         // Update scores first
         if (Array.isArray(scores)) {
@@ -62,9 +62,9 @@ export const useBroadcastListeners = (
     gameChannel.on(
       'broadcast',
       { event: 'SCORE_UPDATE' },
-      ({ payload }) => {
+      ({ payload }: { payload: any }) => {
         console.log('[useBroadcastListeners] Received SCORE_UPDATE event', payload);
-        const { scores } = payload as any;
+        const { scores } = payload;
         if (!Array.isArray(scores)) return;
         scores.forEach((s: { id: string; score: number }) =>
           dispatch({
@@ -79,9 +79,9 @@ export const useBroadcastListeners = (
     gameChannel.on(
       'broadcast',
       { event: 'BUZZ' },
-      ({ payload }) => {
+      ({ payload }: { payload: any }) => {
         console.log('[useBroadcastListeners] Received BUZZ event', payload);
-        const { playerId, playerName, questionIndex } = payload as any;
+        const { playerId, playerName, questionIndex } = payload;
 
         // Process buzz events regardless of question index - fix for narrator view issue
         setCurrentRound(prev => {
@@ -116,14 +116,14 @@ export const useBroadcastListeners = (
     gameChannel.on(
       'broadcast',
       { event: 'ROUND_END' },
-      ({ payload }) => {
+      ({ payload }: { payload: any }) => {
         console.log('[useBroadcastListeners] Received ROUND_END event', payload);
         const {
           nextRound,
           nextNarratorId,
           scores,
           isGameOver = false
-        } = payload as any;
+        } = payload;
 
         // 1) Update final scores for this round
         if (Array.isArray(scores)) {
@@ -152,16 +152,16 @@ export const useBroadcastListeners = (
       }
     );
 
-    // Fix: Add the required third 'context' parameter to all channel event handlers
-    gameChannel.on('disconnect', (event: string, payload: any, context: any) => {
+    // Fix: Add the proper channel event handler signatures
+    gameChannel.on('disconnect', () => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
 
-    gameChannel.on('error', (event: string, error: any, context: any) => {
+    gameChannel.on('error', (error: any) => {
       console.error('[useBroadcastListeners] Game channel error:', error);
     });
     
-    gameChannel.on('reconnect', (event: string, payload: any, context: any) => {
+    gameChannel.on('reconnect', () => {
       console.log('[useBroadcastListeners] Game channel reconnected');
     });
 

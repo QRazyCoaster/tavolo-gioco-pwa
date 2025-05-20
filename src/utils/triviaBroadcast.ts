@@ -95,15 +95,23 @@ export const broadcastRoundEnd = (
     id: p.id, 
     score: Math.max(MIN_SCORE_LIMIT, p.score || 0) 
   }));
-  console.log('[triviaBroadcast] Broadcasting round end with new narrator:', nextNarratorId);
-  console.log('[triviaBroadcast] Game over status:', isGameOver);
+  
+  // Calculate the next round number (current + 1)
+  const nextRoundNumber = currentRoundNumber + 1;
+  
+  console.log('[triviaBroadcast] Broadcasting round end:', {
+    currentRound: currentRoundNumber,
+    nextRound: nextRoundNumber,
+    nextNarrator: nextNarratorId,
+    isGameOver
+  });
   
   // Send round end event to all players
   gameChannel.send({
     type: 'broadcast',
     event: 'ROUND_END',
     payload: { 
-      nextRound: currentRoundNumber + 1,
+      nextRound: nextRoundNumber,
       nextNarratorId,
       scores,
       isGameOver
