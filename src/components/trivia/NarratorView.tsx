@@ -44,7 +44,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // 1) Timer: auto-advance on timeout, tick at 10s
+  // Timer effect (unchanged)
   useEffect(() => {
     if (timeLeft === 0) {
       toast({
@@ -60,7 +60,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     }
   }, [timeLeft, language, toast, onNextQuestion]);
 
-  // 2) Show answer panel when someone buzzes
+  // Ensure queue panel becomes visible once someone buzzes
   useEffect(() => {
     if (playerAnswers.length > 0 && !showPendingAnswers) {
       setShowPendingAnswers(true);
@@ -70,25 +70,25 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const currentPlayerAnswering = playerAnswers[0];
   const playerInfo = players.find(p => p.id === currentPlayerAnswering?.playerId);
 
-  // 3) Handlers with 200ms delay before advancing
+  // Safe-click wrappers
   const handleCorrectClick = () => {
-    if (onCorrectAnswer) onCorrectAnswer(currentPlayerAnswering!.playerId);
-    setTimeout(() => {
-      onNextQuestion();
-    }, 200);
+    if (typeof onCorrectAnswer === 'function') {
+      onCorrectAnswer(currentPlayerAnswering!.playerId);
+    } else {
+      console.error('onCorrectAnswer is not a function', onCorrectAnswer);
+    }
   };
-
   const handleWrongClick = () => {
-    if (onWrongAnswer) onWrongAnswer(currentPlayerAnswering!.playerId);
-    setTimeout(() => {
-      onNextQuestion();
-    }, 200);
+    if (typeof onWrongAnswer === 'function') {
+      onWrongAnswer(currentPlayerAnswering!.playerId);
+    } else {
+      console.error('onWrongAnswer is not a function', onWrongAnswer);
+    }
   };
 
-  // 4) Render
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
-      {/* Always show question & meta */}
+      {/* — Always show the question & info — */}
       <QuestionCard 
         currentQuestion={currentQuestion}
         questionKey={currentQuestion.id}
@@ -100,7 +100,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         timeLeft={timeLeft}
       />
 
-      {/* If someone queued, show answer buttons; else, show rankings */}
+      {/* — Then either the answering panel or rankings — */}
       {showPendingAnswers && currentPlayerAnswering && playerInfo ? (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in">
           <div className="text-center mb-3">
@@ -145,10 +145,11 @@ const NarratorView: React.FC<NarratorViewProps> = ({
           )}
         </div>
       ) : (
+        // Rankings when no one is queued
         <PlayerRankings players={players} />
       )}
 
-      {/* Manual Next Question when no queue */}
+      {/* Manual “Next Question” when queue empty */}
       {playerAnswers.length === 0 && (
         <Button 
           onClick={onNextQuestion} 
