@@ -1,3 +1,4 @@
+// src/context/GameContext.tsx
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
@@ -8,6 +9,7 @@ export interface Player {
   isHost: boolean;
   score?: number;
   buzzer_sound_url?: string;
+  narrator_order?: number;           // ← added
 }
 
 /* ──────────────── Game state ──────────────── */
@@ -32,6 +34,13 @@ const initialState: GameState = {
   backgroundMusicPlaying: false,
 };
 
+/* ──────────────── Helper: sort by narrator_order ──────────────── */
+function sortByNarrator(a: Player, b: Player) {
+  const na = a.narrator_order ?? 0;
+  const nb = b.narrator_order ?? 0;
+  return na - nb;
+}
+
 /* ──────────────── Action types ──────────────── */
 type GameAction =
   | { type: 'CREATE_GAME'; payload: { gameId: string; pin: string; host: Player } }
@@ -51,42 +60,43 @@ type GameAction =
 /* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'CREATE_GAME':
-      // When creating a game, also store in sessionStorage for persistence
+    case 'CREATE_GAME': {
       sessionStorage.setItem('gameId', action.payload.gameId);
       sessionStorage.setItem('pin', action.payload.pin);
-      console.log('GameContext - CREATE_GAME: Storing session data', {
-        gameId: action.payload.gameId,
-        pin: action.payload.pin
-      });
-      
+      const host = action.payload.host;
       return {
         ...state,
         gameId: action.payload.gameId,
         pin: action.payload.pin,
-        players: [action.payload.host],
-        currentPlayer: action.payload.host,
+        players: [host].sort(sortByNarrator),
+        currentPlayer: host,
       };
-    case 'JOIN_GAME':
+    }
+    case 'JOIN_GAME': {
+      const updated = [...state.players, action.payload.player].sort(sortByNarrator);
       return {
         ...state,
         gameId: action.payload.gameId,
         pin: action.payload.pin,
         currentPlayer: action.payload.player,
-        players: [...state.players, action.payload.player],
+        players: updated,
       };
-    case 'ADD_PLAYER':
-      return { ...state, players: [...state.players, action.payload] };
-    case 'ADD_PLAYER_LIST':
-      return { ...state, players: action.payload };
-    case 'REMOVE_PLAYER':
-      return { ...state, players: state.players.filter(p => p.id !== action.payload) };
+    }
+    case 'ADD_PLAYER': {
+      return { ...state, players: [...state.players, action.payload].sort(sortByNarrator) };
+    }
+    case 'ADD_PLAYER_LIST': {
+      return { ...state, players: [...action.payload].sort(sortByNarrator) };
+    }
+    case 'REMOVE_PLAYER': {
+      const filtered = state.players.filter(p => p.id !== action.payload);
+      return { ...state, players: filtered.sort(sortByNarrator) };
+    }
     case 'SELECT_GAME':
       return { ...state, selectedGame: action.payload };
     case 'START_GAME':
       return { ...state, gameStarted: true };
     case 'END_GAME':
-      // Clear sessionStorage when the game ends
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
@@ -97,7 +107,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         players: state.players.map(p =>
           p.id === action.payload.playerId ? { ...p, score: action.payload.score } : p
-        ),
+        ).sort(sortByNarrator),
       };
     case 'SET_CURRENT_PLAYER':
       return { ...state, currentPlayer: action.payload };
@@ -105,31 +115,28 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, backgroundMusicPlaying: true };
     case 'STOP_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: false };
-    case 'RESTORE_SESSION':
-      // Check for session data to restore
+    case 'RESTORE_SESSION': {
       const gameId = sessionStorage.getItem('gameId');
       const pin = sessionStorage.getItem('pin');
       const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
       const selectedGame = sessionStorage.getItem('selectedGame');
-      
-      // Only restore if we have valid session data
       if (gameId && pin) {
-        console.log('GameContext - Restoring session:', { gameId, pin, gameStarted, selectedGame });
         return {
           ...state,
           gameId,
           pin,
-          gameStarted: gameStarted || false,
+          gameStarted,
           selectedGame: selectedGame || state.selectedGame
         };
       }
       return state;
+    }
     default:
       return state;
   }
 }
 
-/* ──────────────── Context ──────────────── */
+/* ──────────────── Context & Provider ──────────────── */
 interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
@@ -137,27 +144,22 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-/* ──────────────── Provider ──────────────── */
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // Al caricamento iniziale, prova a ripristinare dalla sessionStorage
   useEffect(() => {
     const gameId = sessionStorage.getItem('gameId');
     const pin = sessionStorage.getItem('pin');
-    
     if (gameId && pin && !state.gameId) {
-      console.log('GameProvider - Tentativo di ripristino della sessione', { gameId, pin });
       dispatch({ type: 'RESTORE_SESSION' });
     }
-  }, []);
+  }, [state.gameId]);
 
   return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
 };
 
-/* ──────────────── Hook ──────────────── */
 export const useGame = (): GameContextType => {
-  const context = useContext(GameContext);
-  if (!context) throw new Error('useGame must be used within a GameProvider');
-  return context;
+  const ctx = useContext(GameContext);
+  if (!ctx) throw new Error('useGame must be used within GameProvider');
+  return ctx;
 };
