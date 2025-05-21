@@ -78,26 +78,6 @@ const TriviaGamePage = () => {
   }, [state.gameId, state.pin, state.gameStarted,
       state.selectedGame, language, navigate, toast, dispatch]);
 
-  /* ---- debug effect for game state ---- */
-  useEffect(() => {
-    console.log('[TriviaGamePage] Current round data:', currentRound);
-    console.log('[TriviaGamePage] Round number:', currentRound.roundNumber);
-    console.log('[TriviaGamePage] Player answers updated:', playerAnswers);
-    console.log('[TriviaGamePage] showRoundBridge value:', showRoundBridge);
-    console.log('[TriviaGamePage] nextRoundNumber value:', nextRoundNumber);
-    console.log('[TriviaGamePage] showPendingAnswers value:', showPendingAnswers);
-    console.log('[TriviaGamePage] Current player is narrator:', isNarrator);
-    console.log('[TriviaGamePage] Game over status:', gameOver);
-
-    if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
-      setShowPendingAnswers(true);
-    }
-  }, [
-    playerAnswers, showPendingAnswers, setShowPendingAnswers, 
-    isNarrator, currentRound, gameOver, showRoundBridge, 
-    nextRoundNumber
-  ]);
-
   const handleBackToLobby = () => navigate('/waiting-room');
 
   /* ---- loading spinner (unchanged) ---- */
