@@ -25,7 +25,8 @@ export const useRoundProgress = (
     console.log('[useRoundProgress] Current round number:', currentRound.roundNumber);
     console.log('[useRoundProgress] Next round number state:', nextRoundNumber);
     console.log('[useRoundProgress] Total players:', players.length);
-  }, [currentRound.roundNumber, nextRoundNumber, players.length]);
+    console.log('[useRoundProgress] Game over state:', gameOver);
+  }, [currentRound.roundNumber, nextRoundNumber, players.length, gameOver]);
 
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex
@@ -33,11 +34,13 @@ export const useRoundProgress = (
 
     if (last) {
       // end-of-round
-      // Game over when current round number equals total number of players
+      // Game over when current round number equals or exceeds total number of players
       console.log('[useRoundProgress] End of round. Current round:', currentRound.roundNumber, 'Players:', players.length);
       
+      // Critical fix: Game should end when every player has had a turn as narrator
+      // Since rounds are 1-based and we just finished the current round,
+      // check if the current round number equals total players
       if (currentRound.roundNumber >= players.length) {
-        // final round → game ends when all players have been narrator once
         console.log('[useRoundProgress] Game should end now. Final round completed.');
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setShowRoundBridge(true)
@@ -48,6 +51,8 @@ export const useRoundProgress = (
       } else {
         // prepare next narrator - use join order (array index)
         // Since rounds are 1-based and arrays are 0-based, use roundNumber as index
+        // This is the critical fix - we use the current round number (not currentRound.roundNumber + 1)
+        // to select the next narrator, which is correct since arrays are 0-indexed
         const nextId = players[currentRound.roundNumber]?.id || players[0].id
         const nextRoundNum = currentRound.roundNumber + 1
 

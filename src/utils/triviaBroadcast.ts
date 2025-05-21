@@ -1,4 +1,3 @@
-
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { Player } from '@/context/GameContext';
 import { MIN_SCORE_LIMIT } from './triviaConstants';

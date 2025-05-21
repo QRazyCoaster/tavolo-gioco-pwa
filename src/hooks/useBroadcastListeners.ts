@@ -1,3 +1,4 @@
+
 // src/hooks/useBroadcastListeners.ts
 import { useEffect, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -112,27 +113,29 @@ export const useBroadcastListeners = (
         if (nextNarratorId) {
           setNextNarrator(nextNarratorId);
         }
-        // <— propagate the next round index so the bridge shows correctly
+        
+        // Set the next round number
         setNextRoundNumber(nextRound);
 
         setShowRoundBridge(true);
 
         if (isGameOver) {
+          console.log('[useBroadcastListeners] Game over flag received, setting game over state');
           setTimeout(() => setGameOver(true), 6500);
         }
       }
     );
 
-    // ─── OTHER LISTENERS (fixed overloads) ───────────────────
-    gameChannel.on('disconnect', {}, () => {
+    // ─── OTHER LISTENERS ───────────────────────
+    gameChannel.on('disconnect', () => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
 
-    gameChannel.on('error', {}, (error: any) => {
+    gameChannel.on('error', (error: any) => {
       console.error('[useBroadcastListeners] Game channel error:', error);
     });
 
-    gameChannel.on('reconnect', {}, () => {
+    gameChannel.on('reconnect', () => {
       console.log('[useBroadcastListeners] Game channel reconnected');
     });
 
