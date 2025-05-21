@@ -1,4 +1,3 @@
-
 // src/components/trivia/NarratorView.tsx
 
 import React, { useEffect } from 'react';
@@ -45,7 +44,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // Timer
+  // 1) Timer: auto-advance on timeout, tick at 10s
   useEffect(() => {
     if (timeLeft === 0) {
       toast({
@@ -61,7 +60,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
     }
   }, [timeLeft, language, toast, onNextQuestion]);
 
-  // Show queue panel when someone buzzes
+  // 2) Show answer panel when someone buzzes
   useEffect(() => {
     if (playerAnswers.length > 0 && !showPendingAnswers) {
       setShowPendingAnswers(true);
@@ -71,20 +70,25 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const currentPlayerAnswering = playerAnswers[0];
   const playerInfo = players.find(p => p.id === currentPlayerAnswering?.playerId);
 
-  // Score then advance (with a tick-delay so state.players updates first)
+  // 3) Handlers with 200ms delay before advancing
   const handleCorrectClick = () => {
     if (onCorrectAnswer) onCorrectAnswer(currentPlayerAnswering!.playerId);
-    setTimeout(() => onNextQuestion(), 0);
+    setTimeout(() => {
+      onNextQuestion();
+    }, 200);
   };
 
   const handleWrongClick = () => {
     if (onWrongAnswer) onWrongAnswer(currentPlayerAnswering!.playerId);
-    setTimeout(() => onNextQuestion(), 0);
+    setTimeout(() => {
+      onNextQuestion();
+    }, 200);
   };
 
+  // 4) Render
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto h-full">
-      {/* Always render question & info */}
+      {/* Always show question & meta */}
       <QuestionCard 
         currentQuestion={currentQuestion}
         questionKey={currentQuestion.id}
@@ -96,7 +100,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         timeLeft={timeLeft}
       />
 
-      {/* Answering panel if someone queued, else rankings */}
+      {/* If someone queued, show answer buttons; else, show rankings */}
       {showPendingAnswers && currentPlayerAnswering && playerInfo ? (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg animate-fade-in">
           <div className="text-center mb-3">
@@ -119,4 +123,42 @@ const NarratorView: React.FC<NarratorViewProps> = ({
             <Button
               onClick={handleWrongClick}
               size="lg"
-              className="bg-red-500 hover:bg-red-600 text-white
+              className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2 px-6 py-4"
+            >
+              <ThumbsDown className="h-6 w-6" />
+              <span>{language === 'it' ? '-5 punti' : '-5 points'}</span>
+            </Button>
+          </div>
+
+          {playerAnswers.length > 1 && (
+            <div className="mt-6">
+              <h4 className="font-semibold mb-2 text-center">
+                {language === 'it' ? 'Prossimi in coda:' : 'Next players in queue:'}
+              </h4>
+              <ol className="list-decimal pl-5 space-y-1 text-center">
+                {playerAnswers.slice(1).map(ans => {
+                  const p = players.find(q => q.id === ans.playerId);
+                  return <li key={ans.playerId}>{p?.name || 'Player'}</li>;
+                })}
+              </ol>
+            </div>
+          )}
+        </div>
+      ) : (
+        <PlayerRankings players={players} />
+      )}
+
+      {/* Manual Next Question when no queue */}
+      {playerAnswers.length === 0 && (
+        <Button 
+          onClick={onNextQuestion} 
+          className="w-full mb-4 bg-blue-600 hover:bg-blue-700"
+        >
+          {language === 'it' ? 'Prossima Domanda' : 'Next Question'}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+export default NarratorView;
