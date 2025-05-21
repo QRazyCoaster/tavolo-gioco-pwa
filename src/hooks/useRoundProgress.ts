@@ -20,6 +20,7 @@ export const useRoundProgress = (
   const [nextNarrator, setNextNarrator] = useState<string>('');
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
   const [gameOver, setGameOver] = useState(false);
+  
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex;
     const lastQuestion = idx >= currentRound.questions.length - 1;
