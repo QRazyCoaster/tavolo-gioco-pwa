@@ -1,4 +1,4 @@
-import { supabase } from '@/supabaseClient';
+aimport { supabase } from '@/supabaseClient';
 import { listBuzzers } from '@/actions/listBuzzers';
 import { getBuzzerUrl } from '@/utils/buzzerUtils';
 
@@ -38,6 +38,7 @@ export async function joinGame({ gameId, playerName }) {
     .select()
     .single();
   if (error) throw error;
+  console.log('[JOIN_GAME] Supabase returned player row:', player);
   console.log('[JOIN_GAME] Player inserted:', player);
 
   // 3) Assign buzzer sound (unchanged)…
