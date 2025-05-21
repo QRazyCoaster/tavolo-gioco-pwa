@@ -20,18 +20,6 @@ export const useRoundProgress = (
   const [nextNarrator, setNextNarrator] = useState<string>('');
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1);
   const [gameOver, setGameOver] = useState(false);
-
-  // Debug
-  useEffect(() => {
-    const maxOrder = players.reduce((m, p) => Math.max(m, p.narrator_order ?? 0), 0);
-    console.log('[useRoundProgress] ',
-      'CRound:', currentRound.roundNumber,
-      'NextRound:', nextRoundNumber,
-      'MaxOrder:', maxOrder,
-      'Players sorted:', players.map(p => p.narrator_order)
-    );
-  }, [currentRound.roundNumber, nextRoundNumber, players]);
-
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex;
     const lastQuestion = idx >= currentRound.questions.length - 1;
