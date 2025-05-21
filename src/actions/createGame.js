@@ -33,6 +33,7 @@ export async function createGame({ gameType, hostName }) {
     .select()
     .single();
   if (hostError) throw hostError;
+  console.log('[CREATE_GAME] Supabase returned host row:', host);
   console.log('[CREATE_GAME] Host player created with narrator_order=1:', host);
 
   // 4) Assign buzzer sound (unchanged)…
