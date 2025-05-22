@@ -1,3 +1,4 @@
+// src/hooks/useRoundProgress.ts
 
 import { useState, useCallback, useEffect } from 'react'
 import { Round } from '@/types/trivia'
@@ -16,47 +17,44 @@ export const useRoundProgress = (
   setShowPending: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false)
-  const [nextNarrator, setNextNarrator] = useState<string>('')  
-  // -- REMOVED nextRoundNumber state entirely --                        ← CHANGED
+  const [nextNarrator, setNextNarrator] = useState<string>('')
   const [gameOver, setGameOver] = useState(false)
 
   // Debug effect for round progression
   useEffect(() => {
-    console.log('[useRoundProgress] Current round number:', currentRound.roundNumber);
-    console.log('[useRoundProgress] Total players:', players.length);
-    console.log('[useRoundProgress] Game over state:', gameOver);
-  }, [currentRound.roundNumber, players.length, gameOver]);
+    console.log('[useRoundProgress] Current round number:', currentRound.roundNumber)
+    console.log('[useRoundProgress] Total players:', players.length)
+    console.log('[useRoundProgress] Game over state:', gameOver)
+  }, [currentRound.roundNumber, players.length, gameOver])
 
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex
     const last = idx >= QUESTIONS_PER_ROUND - 1
 
     if (last) {
-      // end-of-round
       console.log(
         '[useRoundProgress] End of round.',
         'Current round:', currentRound.roundNumber,
         'Players:', players.length
       )
-      
+
       if (currentRound.roundNumber >= players.length) {
         // FINAL ROUND
-        console.log('[useRoundProgress] Game should end now.');
+        console.log(
+          `[useRoundProgress] showRoundBridge(true) after finishing round ${currentRound.roundNumber} (FINAL)`
+        )
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setShowRoundBridge(true)
         setTimeout(() => {
-          console.log('[useRoundProgress] Setting gameOver to true');
+          console.log('[useRoundProgress] Setting gameOver to true')
           setGameOver(true)
         }, 6500)
       } else {
         // NEXT ROUND
-        // Use currentRound.roundNumber as zero-based index to pick next narrator
-        const nextId = players[currentRound.roundNumber]?.id || players[0].id
         console.log(
-          '[useRoundProgress] Preparing next round:',
-          currentRound.roundNumber + 1,
-          'Next narrator:', nextId
+          `[useRoundProgress] showRoundBridge(true) after finishing round ${currentRound.roundNumber} (next round)`
         )
+        const nextId = players[currentRound.roundNumber]?.id || players[0].id
         setNextNarrator(nextId)
         broadcastRoundEnd(currentRound.roundNumber, nextId, players)
         setShowRoundBridge(true)
@@ -83,21 +81,19 @@ export const useRoundProgress = (
   ])
 
   const startNextRound = () => {
-    // called by RoundBridgePage
     console.log(
       '[useRoundProgress] Starting next round:',
       currentRound.roundNumber + 1,
       'with narrator:',
       nextNarrator
     )
-    
+
     setCurrentRound(prev => ({
-      // Derive new round number directly from prev.roundNumber
-      roundNumber: prev.roundNumber + 1,                                    // ← CHANGED
+      roundNumber: prev.roundNumber + 1,
       narratorId: nextNarrator,
       questions: prev.questions.map(q => ({
         ...q,
-        id: `r${prev.roundNumber + 1}-${q.id}`                            // ← CHANGED
+        id: `r${prev.roundNumber + 1}-${q.id}`
       })),
       currentQuestionIndex: 0,
       playerAnswers: [],
@@ -113,7 +109,6 @@ export const useRoundProgress = (
     setShowRoundBridge,
     nextNarrator,
     setNextNarrator,
-    // -- REMOVED nextRoundNumber & setNextRoundNumber from return --   ← CHANGED
     gameOver,
     setGameOver,
     handleNextQuestion,
