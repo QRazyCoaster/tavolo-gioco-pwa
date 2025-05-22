@@ -1,6 +1,7 @@
-
 // src/hooks/useBroadcastListeners.ts
+
 import { useEffect, useRef } from 'react';
+import { useGame } from '@/context/GameContext';             // ← added
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Round, PlayerAnswer } from '@/types/trivia';
 import { QUESTION_TIMER } from '@/utils/triviaConstants';
@@ -18,6 +19,8 @@ export const useBroadcastListeners = (
   gameId: string | null,
   currentRound: Round
 ) => {
+  const { state } = useGame();                              // ← added
+  const currentPlayerId = state.currentPlayer?.id;           // ← added
   const hasSetup = useRef(false);
 
   useEffect(() => {
@@ -75,12 +78,7 @@ export const useBroadcastListeners = (
 
         setCurrentRound(prev => {
           if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev;
-
-          const newAnswer: PlayerAnswer = {
-            playerId,
-            playerName,
-            timestamp: Date.now()
-          };
+          const newAnswer: PlayerAnswer = { playerId, playerName, timestamp: Date.now() };
           return { ...prev, playerAnswers: [...prev.playerAnswers, newAnswer] };
         });
 
@@ -94,12 +92,14 @@ export const useBroadcastListeners = (
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
         console.log('[useBroadcastListeners] Received ROUND_END', payload);
-        const {
-          nextRound,
-          nextNarratorId,
-          scores,
-          isGameOver = false
-        } = payload;
+        const { nextRound, nextNarratorId, scores, isGameOver = false } = payload;
+
+        // ← added: log which client got the ROUND_END and what nextRound is
+        console.log(
+          `[useBroadcastListeners] ROUND_END on ${
+            currentPlayerId === nextNarratorId ? 'Narrator' : 'Player'
+          } client; payload.nextRound=${nextRound}`
+        );
 
         if (Array.isArray(scores)) {
           scores.forEach((s: { id: string; score: number }) =>
@@ -113,10 +113,7 @@ export const useBroadcastListeners = (
         if (nextNarratorId) {
           setNextNarrator(nextNarratorId);
         }
-        
-        // Set the next round number
         setNextRoundNumber(nextRound);
-
         setShowRoundBridge(true);
 
         if (isGameOver) {
@@ -126,20 +123,17 @@ export const useBroadcastListeners = (
       }
     );
 
-    // ─── OTHER LISTENERS ───────────────────────
+    // ─── OTHER LISTENERS ────────────────────────────────────
     gameChannel.on('disconnect', () => {
       console.log('[useBroadcastListeners] Game channel disconnected');
     });
-
     gameChannel.on('error', (error: any) => {
       console.error('[useBroadcastListeners] Game channel error:', error);
     });
-
     gameChannel.on('reconnect', () => {
       console.log('[useBroadcastListeners] Game channel reconnected');
     });
 
-    // no cleanup: channel persists
   }, [
     gameChannel,
     dispatch,
@@ -151,6 +145,7 @@ export const useBroadcastListeners = (
     setNextRoundNumber,
     setGameOver,
     gameId,
-    currentRound
+    currentRound,
+    state                           // ← include for effect-re-run
   ]);
 };
