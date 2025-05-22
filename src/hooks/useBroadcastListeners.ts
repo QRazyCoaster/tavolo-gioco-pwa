@@ -1,6 +1,6 @@
-
 // src/hooks/useBroadcastListeners.ts
 import { useEffect, useRef } from 'react';
+import { useGame } from '@/context/GameContext';        // ← ADDED
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Round, PlayerAnswer } from '@/types/trivia';
 import { QUESTION_TIMER } from '@/utils/triviaConstants';
@@ -18,6 +18,8 @@ export const useBroadcastListeners = (
   gameId: string | null,
   currentRound: Round
 ) => {
+  const { state } = useGame();                         // ← ADDED
+  const currentPlayerId = state.currentPlayer?.id;      // ← ADDED
   const hasSetup = useRef(false);
 
   useEffect(() => {
@@ -94,12 +96,14 @@ export const useBroadcastListeners = (
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
         console.log('[useBroadcastListeners] Received ROUND_END', payload);
-        const {
-          nextRound,
-          nextNarratorId,
-          scores,
-          isGameOver = false
-        } = payload;
+        const { nextRound, nextNarratorId, scores, isGameOver = false } = payload;
+
+        // LOG when each client sees the ROUND_END
+        console.log(
+          `[useBroadcastListeners] ROUND_END on ${
+            currentPlayerId === nextNarratorId ? 'Narrator' : 'Player'
+          } client; payload.nextRound=${nextRound}`
+        );
 
         if (Array.isArray(scores)) {
           scores.forEach((s: { id: string; score: number }) =>
@@ -113,8 +117,6 @@ export const useBroadcastListeners = (
         if (nextNarratorId) {
           setNextNarrator(nextNarratorId);
         }
-        
-        // Set the next round number
         setNextRoundNumber(nextRound);
 
         setShowRoundBridge(true);
@@ -151,6 +153,7 @@ export const useBroadcastListeners = (
     setNextRoundNumber,
     setGameOver,
     gameId,
-    currentRound
+    currentRound,
+    state   // ← ensure effect re-runs if currentPlayer changes
   ]);
 };
