@@ -116,6 +116,7 @@ export const useTriviaGame = () => {
     },
     setNextNarrator,
     setShowRoundBridge,
+    setNextRoundNumber,
     setCurrentRound
   );
 
