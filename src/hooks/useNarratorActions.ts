@@ -1,3 +1,5 @@
+// src/hooks/useNarratorActions.ts
+
 import { useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
@@ -21,6 +23,7 @@ export const useNarratorActions = (
   advanceQuestionLocally: (nextIndex: number) => void,
   setNextNarrator: React.Dispatch<React.SetStateAction<string>>,
   setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
+  setNextRoundNumber: React.Dispatch<React.SetStateAction<number>>,  // ← NEW
   setCurrentRound: React.Dispatch<React.SetStateAction<any>>
 ) => {
   const { state, dispatch } = useGame();
@@ -32,10 +35,8 @@ export const useNarratorActions = (
     const current = state.players.find(p => p.id === playerId)?.score || 0;
     const newScore = Math.max(MIN_SCORE_LIMIT, current + delta);
     dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: newScore } });
-
-    // return a fresh copy of all players with the updated score included
     return state.players.map(p =>
-      p.id === playerId ? { ...p, score: newScore } : { ...p }
+      p.id === playerId ? { ...p, score: newScore } : p
     );
   };
 
@@ -45,11 +46,12 @@ export const useNarratorActions = (
   const handleCorrectAnswer = useCallback(
     (playerId: string) => {
       const updatedPlayers = withUpdatedScores(playerId, CORRECT_ANSWER_POINTS);
-
       const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
 
       if (isLast) {
         const nextNarratorId = getNextNarrator();
+        // ← IMMEDIATE bump before broadcasting
+        setNextRoundNumber(currentRoundNumber + 1);
         broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
         setShowRoundBridge(true);
         setNextNarrator(nextNarratorId);
@@ -70,6 +72,7 @@ export const useNarratorActions = (
       getNextNarrator,
       setNextNarrator,
       setShowRoundBridge,
+      setNextRoundNumber,     // ← added dependency
       state.players
     ]
   );
@@ -89,6 +92,8 @@ export const useNarratorActions = (
 
           if (isLast) {
             const nextNarratorId = getNextNarrator();
+            // ← IMMEDIATE bump for wrong-last
+            setNextRoundNumber(currentRoundNumber + 1);
             broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
             setShowRoundBridge(true);
             setNextNarrator(nextNarratorId);
@@ -98,7 +103,12 @@ export const useNarratorActions = (
             advanceQuestionLocally(nextIdx);
             broadcastNextQuestion(nextIdx, updatedPlayers);
             playAudio('notification');
-            return { ...prev, currentQuestionIndex: nextIdx, playerAnswers: [], timeLeft: QUESTION_TIMER };
+            return {
+              ...prev,
+              currentQuestionIndex: nextIdx,
+              playerAnswers: [],
+              timeLeft: QUESTION_TIMER
+            };
           }
         }
         return { ...prev, playerAnswers: remaining };
@@ -113,17 +123,22 @@ export const useNarratorActions = (
       advanceQuestionLocally,
       setNextNarrator,
       setShowRoundBridge,
+      setNextRoundNumber,   // ← added dependency
       setCurrentRound,
       state.players
     ]
   );
 
   // ───────────────────────────────────────────────────────────
+  //  Manual “Next Question” (last‐question case)
+  // ───────────────────────────────────────────────────────────
   const handleNextQuestion = useCallback(() => {
     const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
 
     if (isLast) {
       const nextNarratorId = getNextNarrator();
+      // ← IMMEDIATE bump for manual-next
+      setNextRoundNumber(currentRoundNumber + 1);
       broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
       setShowRoundBridge(true);
       setNextNarrator(nextNarratorId);
@@ -141,14 +156,20 @@ export const useNarratorActions = (
     getNextNarrator,
     setNextNarrator,
     setShowRoundBridge,
+    setNextRoundNumber,    // ← added dependency
     state.players
   ]);
 
+  // ───────────────────────────────────────────────────────────
+  //  Time-up handler
+  // ───────────────────────────────────────────────────────────
   const handleTimeUp = () => {
     const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
 
     if (isLast) {
       const nextNarratorId = getNextNarrator();
+      // ← IMMEDIATE bump for time-up
+      setNextRoundNumber(currentRoundNumber + 1);
       broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
       setNextNarrator(nextNarratorId);
       setShowRoundBridge(true);
