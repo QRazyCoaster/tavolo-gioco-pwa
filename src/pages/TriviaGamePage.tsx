@@ -145,7 +145,7 @@ const TriviaGamePage = () => {
 
         {showRoundBridge && nextNarrator ? (
           <RoundBridgePage
-            nextRoundNumber={currentRound.roundNumber + 1}
+            nextRoundNumber={nextRoundNumber}
             nextNarrator={nextNarrator}
             onCountdownComplete={startNextRound}
           />
