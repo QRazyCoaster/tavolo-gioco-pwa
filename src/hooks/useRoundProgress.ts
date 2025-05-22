@@ -16,17 +16,16 @@ export const useRoundProgress = (
   setShowPending: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false)
-  const [nextNarrator, setNextNarrator] = useState<string>('')
-  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1) 
+  const [nextNarrator, setNextNarrator] = useState<string>('')  
+  // -- REMOVED nextRoundNumber state entirely --                        ← CHANGED
   const [gameOver, setGameOver] = useState(false)
 
   // Debug effect for round progression
   useEffect(() => {
     console.log('[useRoundProgress] Current round number:', currentRound.roundNumber);
-    console.log('[useRoundProgress] Next round number state:', nextRoundNumber);
     console.log('[useRoundProgress] Total players:', players.length);
     console.log('[useRoundProgress] Game over state:', gameOver);
-  }, [currentRound.roundNumber, nextRoundNumber, players.length, gameOver]);
+  }, [currentRound.roundNumber, players.length, gameOver]);
 
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex
@@ -34,14 +33,15 @@ export const useRoundProgress = (
 
     if (last) {
       // end-of-round
-      // Game over when current round number equals or exceeds total number of players
-      console.log('[useRoundProgress] End of round. Current round:', currentRound.roundNumber, 'Players:', players.length);
+      console.log(
+        '[useRoundProgress] End of round.',
+        'Current round:', currentRound.roundNumber,
+        'Players:', players.length
+      )
       
-      // Critical fix: Game should end when every player has had a turn as narrator
-      // Since rounds are 1-based and we just finished the current round,
-      // check if the current round number equals total players
       if (currentRound.roundNumber >= players.length) {
-        console.log('[useRoundProgress] Game should end now. Final round completed.');
+        // FINAL ROUND
+        console.log('[useRoundProgress] Game should end now.');
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setShowRoundBridge(true)
         setTimeout(() => {
@@ -49,17 +49,15 @@ export const useRoundProgress = (
           setGameOver(true)
         }, 6500)
       } else {
-        // prepare next narrator - use join order (array index)
-        // Since rounds are 1-based and arrays are 0-based, use roundNumber as index
-        // This is the critical fix - we use the current round number (not currentRound.roundNumber + 1)
-        // to select the next narrator, which is correct since arrays are 0-indexed
+        // NEXT ROUND
+        // Use currentRound.roundNumber as zero-based index to pick next narrator
         const nextId = players[currentRound.roundNumber]?.id || players[0].id
-        const nextRoundNum = currentRound.roundNumber + 1
-
-        console.log('[useRoundProgress] Setting up next round:', nextRoundNum, 'Next narrator:', nextId);
-        
+        console.log(
+          '[useRoundProgress] Preparing next round:',
+          currentRound.roundNumber + 1,
+          'Next narrator:', nextId
+        )
         setNextNarrator(nextId)
-        setNextRoundNumber(nextRoundNum)
         broadcastRoundEnd(currentRound.roundNumber, nextId, players)
         setShowRoundBridge(true)
       }
@@ -86,12 +84,21 @@ export const useRoundProgress = (
 
   const startNextRound = () => {
     // called by RoundBridgePage
-    console.log('[useRoundProgress] Starting next round:', nextRoundNumber, 'with narrator:', nextNarrator);
+    console.log(
+      '[useRoundProgress] Starting next round:',
+      currentRound.roundNumber + 1,
+      'with narrator:',
+      nextNarrator
+    )
     
     setCurrentRound(prev => ({
-      roundNumber: nextRoundNumber,
+      // Derive new round number directly from prev.roundNumber
+      roundNumber: prev.roundNumber + 1,                                    // ← CHANGED
       narratorId: nextNarrator,
-      questions: prev.questions.map(q => ({ ...q, id: `r${nextRoundNumber}-${q.id}` })),
+      questions: prev.questions.map(q => ({
+        ...q,
+        id: `r${prev.roundNumber + 1}-${q.id}`                            // ← CHANGED
+      })),
       currentQuestionIndex: 0,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER
@@ -106,8 +113,7 @@ export const useRoundProgress = (
     setShowRoundBridge,
     nextNarrator,
     setNextNarrator,
-    nextRoundNumber,
-    setNextRoundNumber,
+    // -- REMOVED nextRoundNumber & setNextRoundNumber from return --   ← CHANGED
     gameOver,
     setGameOver,
     handleNextQuestion,
