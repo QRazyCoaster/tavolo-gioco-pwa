@@ -117,7 +117,8 @@ export const useTriviaGame = () => {
     setNextNarrator,
     setShowRoundBridge,
     setNextRoundNumber,
-    setCurrentRound
+    setCurrentRound,
+    state.players
   );
 
   // ───────── Narrator timer ─────────
