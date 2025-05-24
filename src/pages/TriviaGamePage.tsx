@@ -45,7 +45,6 @@ const TriviaGamePage = () => {
 
   /* ────────────────────────────────────────────────── */
   useEffect(() => {
-    console.log('[TriviaGamePage] mounted, stopping music')
     stopBackgroundMusic()
     if ((window as any).waitMusic) {
       (window as any).waitMusic.pause()
@@ -72,12 +71,14 @@ const TriviaGamePage = () => {
   ])
 
   useEffect(() => {
-    console.log('[TriviaGamePage] round:', currentRound.roundNumber,
-                'bridge:', showRoundBridge,
-                'next #:', nextRoundNumber,
-                'pending:', showPendingAnswers,
-                'narrator?', isNarrator,
-                'over?', gameOver)
+    console.log(
+      '[TriviaGamePage] round:', currentRound.roundNumber,
+      'bridge:', showRoundBridge,
+      'next #:', nextRoundNumber,
+      'pending:', showPendingAnswers,
+      'narrator?', isNarrator,
+      'over?', gameOver
+    )
     if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
       setShowPendingAnswers(true)
     }
@@ -113,7 +114,6 @@ const TriviaGamePage = () => {
   if (!state.gameId || !state.pin) return null
 
   if (gameOver) {
-    console.log('[TriviaGamePage] Game is over, showing GameOverPage')
     return (
       <GameOverPage
         players={state.players}
@@ -146,12 +146,12 @@ const TriviaGamePage = () => {
         </div>
 
         {/*
-          Only show the round-bridge on non-final rounds:
-          final round number === number of players
+          Only show the round bridge when it’s not the very last round:
+          nextRoundNumber ≤ total players
         */}
         {showRoundBridge &&
          nextNarrator &&
-         currentRound.roundNumber < state.players.length ? (
+         nextRoundNumber <= state.players.length ? (
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
             nextNarrator={nextNarrator}
