@@ -1,27 +1,26 @@
 // src/pages/TriviaGamePage.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/context/LanguageContext';
-import { useGame } from '@/context/GameContext';
-import { useTriviaGame } from '@/hooks/useTriviaGame';
-import { Button } from '@/components/ui/button';
-import NarratorView from '@/components/trivia/NarratorView';
-import PlayerView from '@/components/trivia/PlayerView';
-import RoundBridgePage from '@/components/trivia/RoundBridgePage';
-import GameOverPage from '@/components/trivia/GameOverPage';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
-import { stopBackgroundMusic } from '@/utils/audioUtils';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useLanguage } from '@/context/LanguageContext'
+import { useGame } from '@/context/GameContext'
+import { useTriviaGame } from '@/hooks/useTriviaGame'
+import { Button } from "@/components/ui/button"
+import NarratorView from '@/components/trivia/NarratorView'
+import PlayerView from '@/components/trivia/PlayerView'
+import RoundBridgePage from '@/components/trivia/RoundBridgePage'
+import GameOverPage from '@/components/trivia/GameOverPage'
+import { useToast } from '@/hooks/use-toast'
+import { ArrowLeft } from 'lucide-react'
+import { stopBackgroundMusic } from '@/utils/audioUtils'
 
-const TriviaGamePage: React.FC = () => {
-  const { t, language }    = useLanguage();
-  const navigate            = useNavigate();
-  const { state, dispatch } = useGame();
-  const { toast }           = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+const TriviaGamePage = () => {
+  const { t, language } = useLanguage()
+  const navigate = useNavigate()
+  const { state, dispatch } = useGame()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
 
-  /* ─────────── Game‐round hook ─────────── */
   const {
     currentRound,
     isNarrator,
@@ -41,42 +40,62 @@ const TriviaGamePage: React.FC = () => {
     nextNarrator,
     nextRoundNumber,
     startNextRound,
-    gameOver,
-    setGameOver
-  } = useTriviaGame();
+    gameOver
+  } = useTriviaGame()
 
-  /* ───────── Stop waiting music on mount ───────── */
+  /* ────────────────────────────────────────────────── */
   useEffect(() => {
-    stopBackgroundMusic();
+    console.log('[TriviaGamePage] mounted, stopping music')
+    stopBackgroundMusic()
     if ((window as any).waitMusic) {
-      (window as any).waitMusic.pause();
-      (window as any).waitMusic.currentTime = 0;
-      (window as any).waitMusic = null;
+      (window as any).waitMusic.pause()
+      (window as any).waitMusic.currentTime = 0
+      ;(window as any).waitMusic = null
     }
     if (state.backgroundMusicPlaying) {
-      dispatch({ type: 'STOP_BACKGROUND_MUSIC' });
+      dispatch({ type: 'STOP_BACKGROUND_MUSIC' })
     }
-  }, [dispatch, state.backgroundMusicPlaying]);
+  }, [dispatch, state.backgroundMusicPlaying])
 
-  /* ───────── Session‐validation effect ───────── */
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, language, navigate, toast, dispatch]);
+    const timer = setTimeout(() => setIsLoading(false), 300)
+    return () => clearTimeout(timer)
+  }, [
+    state.gameId,
+    state.pin,
+    state.gameStarted,
+    state.selectedGame,
+    language,
+    navigate,
+    toast,
+    dispatch
+  ])
 
-  /* ───────── Ensure queue pops open ───────── */
   useEffect(() => {
+    console.log('[TriviaGamePage] round:', currentRound.roundNumber,
+                'bridge:', showRoundBridge,
+                'next #:', nextRoundNumber,
+                'pending:', showPendingAnswers,
+                'narrator?', isNarrator,
+                'over?', gameOver)
     if (playerAnswers.length > 0 && !showPendingAnswers && isNarrator) {
-      setShowPendingAnswers(true);
+      setShowPendingAnswers(true)
     }
-  }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator]);
+  }, [
+    currentRound,
+    playerAnswers,
+    showPendingAnswers,
+    isNarrator,
+    nextRoundNumber,
+    gameOver,
+    setShowPendingAnswers
+  ])
 
-  const handleBackToLobby = () => navigate('/waiting-room');
+  const handleBackToLobby = () => navigate('/waiting-room')
 
-  /* ───────── Loading spinner ───────── */
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-pulse flex space-x-2 mb-4 justify-center">
             <div className="w-3 h-3 bg-blue-400 rounded-full" />
@@ -88,21 +107,24 @@ const TriviaGamePage: React.FC = () => {
           </p>
         </div>
       </div>
-    );
+    )
   }
 
-  /* ───────── Null if no game ───────── */
-  if (!state.gameId || !state.pin) return null;
+  if (!state.gameId || !state.pin) return null
 
-  /* ───────── Show GameOver if finished ───────── */
   if (gameOver) {
-    return <GameOverPage players={state.players} onBackToLobby={handleBackToLobby} />;
+    console.log('[TriviaGamePage] Game is over, showing GameOverPage')
+    return (
+      <GameOverPage
+        players={state.players}
+        onBackToLobby={handleBackToLobby}
+      />
+    )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <Button
@@ -117,26 +139,23 @@ const TriviaGamePage: React.FC = () => {
           </div>
           <div className="bg-primary px-3 py-1 rounded-lg text-white text-center">
             <span className="text-sm font-semibold">{t('common.pin')}: </span>
-            <span className="text-lg font-bold tracking-wider">{state.pin}</span>
+            <span className="text-lg font-bold tracking-wider">
+              {state.pin}
+            </span>
           </div>
         </div>
 
-        {/* ─── Bridge / NarratorView / PlayerView ─── */}
-        {showRoundBridge 
-          && nextNarrator 
-          && currentRound.roundNumber < state.players.length  // ← only show bridge if not last round
-        ? (
+        {/*
+          Only show the round-bridge on non-final rounds:
+          final round number === number of players
+        */}
+        {showRoundBridge &&
+         nextNarrator &&
+         currentRound.roundNumber < state.players.length ? (
           <RoundBridgePage
             nextRoundNumber={nextRoundNumber}
             nextNarrator={nextNarrator}
-            onCountdownComplete={() => {
-              // For non-final rounds, advance; for final round, end immediately
-              if (currentRound.roundNumber >= state.players.length) {
-                setGameOver(true);
-              } else {
-                startNextRound();
-              }
-            }}
+            onCountdownComplete={startNextRound}
           />
         ) : isNarrator ? (
           <NarratorView
@@ -166,7 +185,7 @@ const TriviaGamePage: React.FC = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TriviaGamePage;
+export default TriviaGamePage
