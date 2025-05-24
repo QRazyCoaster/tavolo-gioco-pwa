@@ -1,7 +1,5 @@
-// src/hooks/useBroadcastListeners.ts
 
 import { useEffect, useRef } from 'react';
-import { useGame } from '@/context/GameContext';             // ← added
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Round, PlayerAnswer } from '@/types/trivia';
 import { QUESTION_TIMER } from '@/utils/triviaConstants';
@@ -19,30 +17,30 @@ export const useBroadcastListeners = (
   gameId: string | null,
   currentRound: Round
 ) => {
-  const { state } = useGame();                              // ← added
-  const currentPlayerId = state.currentPlayer?.id;           // ← added
   const hasSetup = useRef(false);
 
   useEffect(() => {
     if (!gameChannel || hasSetup.current) return;
     hasSetup.current = true;
 
-    console.log('[useBroadcastListeners] Setting up event handlers for gameId:', gameId);
+    console.log('[useBroadcastListeners] Subscribing to game channel', gameId);
 
-    // ─── NEXT_QUESTION ─────────────────────────────────────
+    // ─── NEXT QUESTION ───────────────────────────────────────
     gameChannel.on(
       'broadcast',
       { event: 'NEXT_QUESTION' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received NEXT_QUESTION', payload);
+        console.log('[useBroadcastListeners] NEXT_QUESTION', payload);
         const { questionIndex, scores } = payload;
 
+        // Update scores
         if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          );
+          scores.forEach((s: { id: string; score: number }) => {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+          });
         }
 
+        // Advance question
         setCurrentRound(prev => ({
           ...prev,
           currentQuestionIndex: questionIndex,
@@ -54,26 +52,27 @@ export const useBroadcastListeners = (
       }
     );
 
-    // ─── SCORE_UPDATE ───────────────────────────────────────
+    // ─── SCORE UPDATE ────────────────────────────────────────
     gameChannel.on(
       'broadcast',
       { event: 'SCORE_UPDATE' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received SCORE_UPDATE', payload);
+        console.log('[useBroadcastListeners] SCORE_UPDATE', payload);
         const { scores } = payload;
-        if (!Array.isArray(scores)) return;
-        scores.forEach((s: { id: string; score: number }) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        );
+        if (Array.isArray(scores)) {
+          scores.forEach((s: { id: string; score: number }) => {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+          });
+        }
       }
     );
 
-    // ─── BUZZ ────────────────────────────────────────────────
+    // ─── BUZZ ─────────────────────────────────────────────────
     gameChannel.on(
       'broadcast',
       { event: 'BUZZ' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received BUZZ', payload);
+        console.log('[useBroadcastListeners] BUZZ', payload);
         const { playerId, playerName } = payload;
 
         setCurrentRound(prev => {
@@ -86,66 +85,25 @@ export const useBroadcastListeners = (
       }
     );
 
-    // ─── ROUND_END ───────────────────────────────────────────
+    // ─── ROUND END ────────────────────────────────────────────
     gameChannel.on(
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received ROUND_END', payload);
-        const { nextRound, nextNarratorId, scores, isGameOver = false } = payload;
+        console.log('[useBroadcastListeners] ROUND_END', payload);
+        const {
+          nextRound,
+          nextNarratorId,
+          scores,
+          isGameOver = false
+        } = payload;
 
-        // ← added: log which client got the ROUND_END and what nextRound is
-        console.log(
-          `[useBroadcastListeners] ROUND_END on ${
-            currentPlayerId === nextNarratorId ? 'Narrator' : 'Player'
-          } client; payload.nextRound=${nextRound}`
-        );
-
+        // Update final scores
         if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          );
+          scores.forEach((s: { id: string; score: number }) => {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } });
+          });
         }
 
-        setAnsweredPlayers(new Set());
-        setShowPendingAnswers(false);
-
-        if (nextNarratorId) {
-          setNextNarrator(nextNarratorId);
-        }
-        setNextRoundNumber(nextRound);
-        setShowRoundBridge(true);
-
-        if (isGameOver) {
-          console.log('[useBroadcastListeners] Game over flag received, setting game over state');
-          setTimeout(() => setGameOver(true), 6500);
-        }
-      }
-    );
-
-    // ─── OTHER LISTENERS ────────────────────────────────────
-    gameChannel.on('disconnect', () => {
-      console.log('[useBroadcastListeners] Game channel disconnected');
-    });
-    gameChannel.on('error', (error: any) => {
-      console.error('[useBroadcastListeners] Game channel error:', error);
-    });
-    gameChannel.on('reconnect', () => {
-      console.log('[useBroadcastListeners] Game channel reconnected');
-    });
-
-  }, [
-    gameChannel,
-    dispatch,
-    setCurrentRound,
-    setAnsweredPlayers,
-    setShowPendingAnswers,
-    setNextNarrator,
-    setShowRoundBridge,
-    setNextRoundNumber,
-    setGameOver,
-    gameId,
-    currentRound,
-    state                           // ← include for effect-re-run
-  ]);
-};
+        // Clear buzzers
+        setAnsweredPlayers(new Set())
