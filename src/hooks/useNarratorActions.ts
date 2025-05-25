@@ -46,6 +46,8 @@ export const useNarratorActions = (
   // ───────────────────────────────────────────────────────────
   const handleCorrectAnswer = useCallback(
     (playerId: string) => {
+     console.log('[useNarratorActions] round=', currentRoundNumber,
+                'players=', players.length);
       const updatedPlayers = withUpdatedScores(playerId, CORRECT_ANSWER_POINTS);
       const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
 
@@ -91,6 +93,8 @@ export const useNarratorActions = (
   // ───────────────────────────────────────────────────────────
   const handleWrongAnswer = useCallback(
     (playerId: string) => {
+      console.log('[useNarratorActions] round=', currentRoundNumber,
+                'players=', players.length);
       const updatedPlayers = withUpdatedScores(playerId, WRONG_ANSWER_POINTS);
 
       setCurrentRound(prev => {
@@ -148,6 +152,8 @@ export const useNarratorActions = (
   //  Manual “Next Question” (last‐question case)
   // ───────────────────────────────────────────────────────────
   const handleNextQuestion = useCallback(() => {
+   console.log('[useNarratorActions] round=', currentRoundNumber,
+                'players=', players.length);
     const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
     if (isLast) {
       if (currentRoundNumber >= players.length) {
