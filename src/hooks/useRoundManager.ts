@@ -37,9 +37,16 @@ export function useRoundManager(hostId: string) {
   useEffect(() => {
     if (fetchedQuestions.length > 0) {
       console.log('[useRoundManager] Updating round with fetched questions:', fetchedQuestions)
+      console.log('[useRoundManager] Number of questions fetched:', fetchedQuestions.length)
+      console.log('[useRoundManager] QUESTIONS_PER_ROUND constant:', QUESTIONS_PER_ROUND)
+      
+      // Ensure we have enough questions for a full round
+      const questionsForRound = fetchedQuestions.slice(0, QUESTIONS_PER_ROUND)
+      console.log('[useRoundManager] Questions selected for round:', questionsForRound.length)
+      
       setCurrentRound(prev => ({
         ...prev,
-        questions: fetchedQuestions.map((q): TriviaQuestion => ({ 
+        questions: questionsForRound.map((q): TriviaQuestion => ({ 
           ...q, 
           id: `r1-${q.id}` 
         }))
@@ -70,6 +77,7 @@ export function useRoundManager(hostId: string) {
    * clearing out answers + resetting timer.
    */
   const advanceQuestionLocal = (index: number) => {
+    console.log('[useRoundManager] Advancing to question index:', index, 'Total questions:', currentRound.questions.length)
     setCurrentRound(prev => ({
       ...prev,
       currentQuestionIndex: index,

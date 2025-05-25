@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/supabaseClient';
 import { TriviaQuestion } from '@/types/trivia';
 import { Language } from '@/context/LanguageContext';
+import { QUESTIONS_PER_ROUND } from '@/utils/triviaConstants';
 
 interface DatabaseQuestion {
   id: string;
@@ -55,31 +56,58 @@ export const useQuestionFetcher = (language: Language = 'it') => {
 
       console.log('[useQuestionFetcher] Questions grouped by category:', categorizedQuestions);
 
-      // Select one question per category (up to 7 categories)
+      // Select one question per category (up to QUESTIONS_PER_ROUND)
       const selectedQuestions: TriviaQuestion[] = [];
       const availableCategories = Object.keys(categorizedQuestions);
       
-      availableCategories.forEach((category, index) => {
-        if (index < 7) { // Limit to 7 questions per round
-          const categoryQuestions = categorizedQuestions[category];
-          const randomQuestion = categoryQuestions[Math.floor(Math.random() * categoryQuestions.length)];
+      console.log('[useQuestionFetcher] Available categories:', availableCategories.length);
+      console.log('[useQuestionFetcher] QUESTIONS_PER_ROUND:', QUESTIONS_PER_ROUND);
+      
+      // If we have fewer categories than QUESTIONS_PER_ROUND, select multiple questions from some categories
+      const questionsNeeded = QUESTIONS_PER_ROUND;
+      let questionsSelected = 0;
+      let categoryIndex = 0;
+      
+      while (questionsSelected < questionsNeeded && availableCategories.length > 0) {
+        const category = availableCategories[categoryIndex % availableCategories.length];
+        const categoryQuestions = categorizedQuestions[category];
+        
+        if (categoryQuestions.length > 0) {
+          // Select a random question from this category that hasn't been used
+          const availableFromCategory = categoryQuestions.filter(q => 
+            !selectedQuestions.some(selected => selected.id === q.id)
+          );
           
-          // Transform database format to TriviaQuestion format
-          const triviaQuestion: TriviaQuestion = {
-            id: randomQuestion.id,
-            categoryId: randomQuestion.category,
-            textEn: '', // Empty for now since we only have Italian questions
-            textIt: randomQuestion.question,
-            answerEn: '', // Empty for now since we only have Italian questions
-            answerIt: randomQuestion.correct_answer,
-            difficulty: 'medium' as const // Default difficulty for now
-          };
-          
-          selectedQuestions.push(triviaQuestion);
+          if (availableFromCategory.length > 0) {
+            const randomQuestion = availableFromCategory[Math.floor(Math.random() * availableFromCategory.length)];
+            
+            // Transform database format to TriviaQuestion format
+            const triviaQuestion: TriviaQuestion = {
+              id: randomQuestion.id,
+              categoryId: randomQuestion.category,
+              textEn: '', // Empty for now since we only have Italian questions
+              textIt: randomQuestion.question,
+              answerEn: '', // Empty for now since we only have Italian questions
+              answerIt: randomQuestion.correct_answer,
+              difficulty: 'medium' as const // Default difficulty for now
+            };
+            
+            selectedQuestions.push(triviaQuestion);
+            questionsSelected++;
+          }
         }
-      });
+        
+        categoryIndex++;
+        
+        // Safety check to prevent infinite loop
+        if (categoryIndex > availableCategories.length * questionsNeeded) {
+          console.warn('[useQuestionFetcher] Could not fetch enough questions, stopping at:', questionsSelected);
+          break;
+        }
+      }
 
       console.log('[useQuestionFetcher] Final selected questions:', selectedQuestions);
+      console.log('[useQuestionFetcher] Number of questions selected:', selectedQuestions.length);
       setQuestions(selectedQuestions);
 
     } catch (err) {
