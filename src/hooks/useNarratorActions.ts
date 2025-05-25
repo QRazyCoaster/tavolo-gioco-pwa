@@ -1,3 +1,4 @@
+
 // src/hooks/useNarratorActions.ts
 import { useCallback } from 'react';
 import { useGame, Player } from '@/context/GameContext';
@@ -24,7 +25,7 @@ export const useNarratorActions = (
   setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
   setNextRoundNumber: React.Dispatch<React.SetStateAction<number>>,
   setCurrentRound: React.Dispatch<React.SetStateAction<any>>,
-  players: Player[]                               // ← type was Player[]  ✅
+  players: Player[]
 ) => {
   const { state, dispatch } = useGame();
 
@@ -48,8 +49,9 @@ export const useNarratorActions = (
 
       if (isLast) {
         if (currentRoundNumber >= players.length) {
+          console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, NO bridge');
           broadcastRoundEnd(currentRoundNumber, '', updatedPlayers, true);
-          setShowRoundBridge(true);
+          // DO NOT call setShowRoundBridge(true) for final round
         } else {
           const nextNarratorId = getNextNarrator();
           setNextRoundNumber(currentRoundNumber + 1);
@@ -94,8 +96,9 @@ export const useNarratorActions = (
 
           if (isLast) {
             if (currentRoundNumber >= players.length) {
+              console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, NO bridge');
               broadcastRoundEnd(currentRoundNumber, '', updatedPlayers, true);
-              setShowRoundBridge(true);
+              // DO NOT call setShowRoundBridge(true) for final round
             } else {
               const nextNarratorId = getNextNarrator();
               setNextRoundNumber(currentRoundNumber + 1);
@@ -143,8 +146,9 @@ export const useNarratorActions = (
     const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
     if (isLast) {
       if (currentRoundNumber >= players.length) {
+        console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, NO bridge');
         broadcastRoundEnd(currentRoundNumber, '', state.players, true);
-        setShowRoundBridge(true);
+        // DO NOT call setShowRoundBridge(true) for final round
       } else {
         const nextNarratorId = getNextNarrator();
         setNextRoundNumber(currentRoundNumber + 1);
@@ -175,8 +179,9 @@ export const useNarratorActions = (
     const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
     if (isLast) {
       if (currentRoundNumber >= players.length) {
+        console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, NO bridge');
         broadcastRoundEnd(currentRoundNumber, '', state.players, true);
-        setShowRoundBridge(true);
+        // DO NOT call setShowRoundBridge(true) for final round
       } else {
         const nextNarratorId = getNextNarrator();
         setNextRoundNumber(currentRoundNumber + 1);
