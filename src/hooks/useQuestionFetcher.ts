@@ -29,8 +29,7 @@ export const useQuestionFetcher = (language: Language = 'it') => {
       const { data, error: fetchError } = await supabase
         .from('trivia_questions')
         .select('*')
-        .eq('language', language)
-        .limit(100); // Get more than we need for better randomization
+        .eq('language', language);
 
       if (fetchError) {
         console.error('[useQuestionFetcher] Database error:', fetchError);
@@ -45,51 +44,52 @@ export const useQuestionFetcher = (language: Language = 'it') => {
         return;
       }
 
-      // IMPROVED RANDOMIZATION: First shuffle all questions globally
-      const shuffledQuestions = [...data].sort(() => Math.random() - 0.5);
-      console.log('[useQuestionFetcher] Shuffled all questions globally');
-
-      // Group shuffled questions by category for diversity
+      // Group questions by category
       const categorizedQuestions: { [category: string]: DatabaseQuestion[] } = {};
-      shuffledQuestions.forEach((q: DatabaseQuestion) => {
+      data.forEach((q: DatabaseQuestion) => {
         if (!categorizedQuestions[q.category]) {
           categorizedQuestions[q.category] = [];
         }
         categorizedQuestions[q.category].push(q);
       });
 
-      console.log('[useQuestionFetcher] Questions grouped by category:', Object.keys(categorizedQuestions));
-
-      // Select questions with better distribution
-      const selectedQuestions: TriviaQuestion[] = [];
       const availableCategories = Object.keys(categorizedQuestions);
-      const questionsNeeded = QUESTIONS_PER_ROUND;
-      
-      console.log('[useQuestionFetcher] Available categories:', availableCategories.length);
-      console.log('[useQuestionFetcher] QUESTIONS_PER_ROUND:', QUESTIONS_PER_ROUND);
-      
+      console.log('[useQuestionFetcher] Available categories:', availableCategories);
+      console.log('[useQuestionFetcher] Questions per category:', 
+        Object.fromEntries(availableCategories.map(cat => [cat, categorizedQuestions[cat].length]))
+      );
+
       if (availableCategories.length === 0) {
         console.warn('[useQuestionFetcher] No categories available');
         setQuestions([]);
         return;
       }
 
-      // Strategy: Try to get one question from each category first, then fill remaining slots
-      let questionsSelected = 0;
-      let categoryIndex = 0;
+      // NEW STRATEGY: Guarantee exactly one question per category
+      // Shuffle the categories to randomize selection order
+      const shuffledCategories = [...availableCategories].sort(() => Math.random() - 0.5);
+      console.log('[useQuestionFetcher] Shuffled categories order:', shuffledCategories);
+
+      const selectedQuestions: TriviaQuestion[] = [];
       const usedQuestionIds = new Set<string>();
 
-      // First pass: one question per category
-      while (questionsSelected < questionsNeeded && categoryIndex < availableCategories.length) {
-        const category = availableCategories[categoryIndex];
+      // Take exactly one question from each category (up to QUESTIONS_PER_ROUND)
+      const categoriesToUse = shuffledCategories.slice(0, QUESTIONS_PER_ROUND);
+      console.log('[useQuestionFetcher] Using categories for this round:', categoriesToUse);
+
+      categoriesToUse.forEach((category, index) => {
         const categoryQuestions = categorizedQuestions[category];
         
+        // Shuffle questions within this category
+        const shuffledCategoryQuestions = [...categoryQuestions].sort(() => Math.random() - 0.5);
+        
         // Find an unused question from this category
-        const availableFromCategory = categoryQuestions.filter(q => !usedQuestionIds.has(q.id));
+        const availableFromCategory = shuffledCategoryQuestions.filter(q => !usedQuestionIds.has(q.id));
         
         if (availableFromCategory.length > 0) {
-          // Pick the first available (already randomized from global shuffle)
           const selectedQuestion = availableFromCategory[0];
+          
+          console.log(`[useQuestionFetcher] Selected question ${index + 1} from category "${category}":`, selectedQuestion.question.substring(0, 50) + '...');
           
           // Transform database format to TriviaQuestion format
           const triviaQuestion: TriviaQuestion = {
@@ -104,20 +104,24 @@ export const useQuestionFetcher = (language: Language = 'it') => {
           
           selectedQuestions.push(triviaQuestion);
           usedQuestionIds.add(selectedQuestion.id);
-          questionsSelected++;
+        } else {
+          console.warn(`[useQuestionFetcher] No available questions found in category: ${category}`);
+        }
+      });
+
+      // If we don't have enough categories to fill QUESTIONS_PER_ROUND, 
+      // fill remaining slots with random questions from any category
+      while (selectedQuestions.length < QUESTIONS_PER_ROUND) {
+        const allAvailableQuestions = data.filter(q => !usedQuestionIds.has(q.id));
+        
+        if (allAvailableQuestions.length === 0) {
+          console.warn('[useQuestionFetcher] No more questions available to fill remaining slots');
+          break;
         }
         
-        categoryIndex++;
-      }
-
-      // Second pass: fill remaining slots with any available questions
-      const allAvailableQuestions = shuffledQuestions.filter(q => !usedQuestionIds.has(q.id));
-      
-      while (questionsSelected < questionsNeeded && allAvailableQuestions.length > 0) {
-        const randomQuestion = allAvailableQuestions.splice(
-          Math.floor(Math.random() * allAvailableQuestions.length), 
-          1
-        )[0];
+        const randomQuestion = allAvailableQuestions[Math.floor(Math.random() * allAvailableQuestions.length)];
+        
+        console.log(`[useQuestionFetcher] Filling slot ${selectedQuestions.length + 1} with random question from category "${randomQuestion.category}"`);
         
         const triviaQuestion: TriviaQuestion = {
           id: randomQuestion.id,
@@ -131,16 +135,15 @@ export const useQuestionFetcher = (language: Language = 'it') => {
         
         selectedQuestions.push(triviaQuestion);
         usedQuestionIds.add(randomQuestion.id);
-        questionsSelected++;
       }
 
-      // Final shuffle of selected questions
+      // Final shuffle of the selected questions to randomize their order
       const finalShuffledQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
 
-      console.log('[useQuestionFetcher] Final selected questions:', finalShuffledQuestions);
-      console.log('[useQuestionFetcher] Number of questions selected:', finalShuffledQuestions.length);
+      console.log('[useQuestionFetcher] Final selected questions:', finalShuffledQuestions.length);
       console.log('[useQuestionFetcher] Categories in final selection:', 
         [...new Set(finalShuffledQuestions.map(q => q.categoryId))]);
+      console.log('[useQuestionFetcher] Question IDs:', finalShuffledQuestions.map(q => q.id));
       
       setQuestions(finalShuffledQuestions);
 
