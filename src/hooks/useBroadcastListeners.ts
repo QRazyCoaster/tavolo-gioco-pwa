@@ -1,3 +1,4 @@
+
 // src/hooks/useBroadcastListeners.ts
 import { useEffect, useRef } from 'react'
 import { useGame }            from '@/context/GameContext'
@@ -10,10 +11,10 @@ export const useBroadcastListeners = (
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
   setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>,
-  setNextNarrator: (id: string) => void,
-  setShowRoundBridge: (show: boolean) => void,
-  setNextRoundNumber: (roundNum: number) => void,
-  setGameOver: (over: boolean) => void,
+  setNextNarrator: React.Dispatch<React.SetStateAction<string>>,
+  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
+  setNextRoundNumber: React.Dispatch<React.SetStateAction<number>>,
+  setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
   dispatch: React.Dispatch<any>,
   gameId: string | null,
   currentRound: Round
