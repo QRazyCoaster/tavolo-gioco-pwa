@@ -1,5 +1,4 @@
 
-
 // src/hooks/useBroadcastListeners.ts
 import { useEffect, useRef } from 'react'
 import { useGame }            from '@/context/GameContext'
@@ -105,8 +104,8 @@ export const useBroadcastListeners = (
         setShowPendingAnswers(false)
 
         if (isGameOver) {
-          console.log('[useBroadcastListeners] FINAL round → skipping bridge, setting game over')
-          setTimeout(() => setGameOver(true), 6500)
+          console.log('[useBroadcastListeners] FINAL round → showing game over immediately')
+          setGameOver(true)
         } else {
           if (nextNarratorId) setNextNarrator(nextNarratorId)
           setNextRoundNumber(nextRound)
@@ -135,4 +134,3 @@ export const useBroadcastListeners = (
     state
   ])
 }
-
