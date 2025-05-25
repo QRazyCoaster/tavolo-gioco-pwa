@@ -5,22 +5,24 @@ import { generateGamePin } from '@/utils/gameUtils';
 import { listBuzzers } from './listBuzzers';
 import { getBuzzerUrl } from '@/utils/buzzerUtils';
 
-export async function createGame({ gameType, hostName }) {
+export async function createGame({ gameType, hostName, language = 'it' }) {
   console.log('[CREATE_GAME] Starting game creation');
   console.log('[CREATE_GAME] Host name:', hostName);
   console.log('[CREATE_GAME] Game type:', gameType);
+  console.log('[CREATE_GAME] Language:', language);
   
   try {
     // 1. Generate a PIN for the game
     const pinCode = generateGamePin();
     
-    // 2. Insert a new game record
+    // 2. Insert a new game record with language
     const { data: game, error } = await supabase
       .from('games')
       .insert({
         pin_code: pinCode,
         status: 'waiting',
-        game_type: gameType
+        game_type: gameType,
+        language: language  // Store the game language
       })
       .select()
       .single();
@@ -30,7 +32,7 @@ export async function createGame({ gameType, hostName }) {
       throw error;
     }
     
-    console.log('[CREATE_GAME] Game created:', game);
+    console.log('[CREATE_GAME] Game created with language:', game);
     
     // 3. Create a host player, setting narrator_order = 1
     const { data: host, error: hostError } = await supabase
@@ -39,11 +41,7 @@ export async function createGame({ gameType, hostName }) {
         game_id: game.id,
         name: hostName,
         is_host: true,
-        
-        // ─── ADD THIS LINE ────────────────────────────────────
-        narrator_order: 1,   // ← Assign the host the first narrator_order
-        // ─────────────────────────────────────────────────────
-
+        narrator_order: 1,
       })
       .select()
       .single();
@@ -53,12 +51,7 @@ export async function createGame({ gameType, hostName }) {
       throw hostError;
     }
     
-    // ─── INSERT DEBUG LOG HERE ────────────────────────────
-    // This will let us see exactly what Supabase returned,
-    // including whether narrator_order actually got set.
     console.log('[CREATE_GAME] Supabase returned host row:', host);
-    // ─────────────────────────────────────────────────────
-
     console.log('[CREATE_GAME] Host player created with narrator_order=1:', host);
     
     // 4. Assign a buzzer sound to the host (unchanged)

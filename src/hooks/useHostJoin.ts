@@ -1,3 +1,4 @@
+
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
 import { createGame } from '@/actions/createGame';
@@ -44,13 +45,14 @@ export const useHostJoin = (core: Core) => {
     
     // Show loading immediately and prevent multiple submissions
     setLoading(true);
-    console.log('[HOST] Creating game with name:', name);
+    console.log('[HOST] Creating game with name:', name, 'and language:', language);
     
     try {
       console.log('[HOST] API call to createGame starting...');
       const { game, hostPlayer } = await createGame({
         gameType: 'trivia',
-        hostName: name
+        hostName: name,
+        language: language  // Pass the current language to createGame
       });
 
       console.log('[HOST] Game created successfully:', game);

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 // Export the Language type so it can be imported elsewhere
@@ -39,6 +40,16 @@ const translations: Translations = {
   'trivia.seconds': {
     en: '{{count}} seconds',
     it: '{{count}} secondi',
+  },
+
+  // NEW: Language mismatch error messages
+  'error.languageMismatch.italian': {
+    en: 'This game was created in Italian. Please go to the Italian Trivia page to join.',
+    it: 'Questo gioco è stato creato in italiano. Per unirti, vai alla pagina Trivia Italiana.',
+  },
+  'error.languageMismatch.english': {
+    en: 'This game was created in English. Please go to the English Trivia page to join.',
+    it: 'Questo gioco è stato creato in inglese. Per unirti, vai alla pagina Trivia Inglese.',
   },
 };
 

@@ -1,3 +1,4 @@
+
 // src/hooks/usePlayerJoin.ts
 import { supabase } from '@/supabaseClient';
 import { joinGame } from '@/actions/joinGame';
@@ -37,10 +38,10 @@ export const usePlayerJoin = (core: Core) => {
     playAudio('buttonClick');
 
     try {
-      // 1. Look up game ID from the PIN
+      // 1. Look up game ID and language from the PIN
       const { data: gameRow, error: gErr } = await supabase
         .from('games')
-        .select('id')
+        .select('id, language')
         .eq('pin_code', pin)
         .single();
 
@@ -54,14 +55,35 @@ export const usePlayerJoin = (core: Core) => {
         return;
       }
 
-      // 2. Create the player in the game
+      // 2. Check if the game language matches the current language
+      if (gameRow.language !== language) {
+        const errorKey = gameRow.language === 'it' 
+          ? 'error.languageMismatch.italian' 
+          : 'error.languageMismatch.english';
+        
+        toast({
+          title: language === 'it' ? 'Lingua non compatibile' : 'Language Mismatch',
+          description: language === 'it' 
+            ? (gameRow.language === 'it' 
+              ? 'Questo gioco è stato creato in italiano. Per unirti, vai alla pagina Trivia Italiana.'
+              : 'Questo gioco è stato creato in inglese. Per unirti, vai alla pagina Trivia Inglese.')
+            : (gameRow.language === 'it'
+              ? 'This game was created in Italian. Please go to the Italian Trivia page to join.'
+              : 'This game was created in English. Please go to the English Trivia page to join.'),
+          variant: "destructive",
+        });
+        setShowPinError(true);
+        return;
+      }
+
+      // 3. Create the player in the game (language validation passed)
       const player = await joinGame({
         gameId: gameRow.id,
         playerName: name
       });
       logPlayerData(player, 'PLAYER_JOIN');
 
-      // 3. Update global state and sessionStorage
+      // 4. Update global state and sessionStorage
       dispatch({
         type: 'JOIN_GAME',
         payload: { gameId: gameRow.id, pin, player }
