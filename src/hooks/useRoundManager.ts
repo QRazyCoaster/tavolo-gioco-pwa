@@ -1,13 +1,15 @@
-import { useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { Round, TriviaQuestion } from '@/types/trivia'
+import { useQuestionFetcher } from './useQuestionFetcher'
+import { useLanguage } from '@/context/LanguageContext'
 import {
-  mockQuestions,
   QUESTION_TIMER,
   QUESTIONS_PER_ROUND
 } from '@/utils/triviaConstants'
 
 /**
- * Manages the current round’s in‐memory state:
+ * Manages the current round's in‐memory state:
  *   • roundNumber, narratorId
  *   • questions array
  *   • currentQuestionIndex
@@ -16,12 +18,13 @@ import {
  * Also provides helpers to reset/advance the question locally.
  */
 export function useRoundManager(hostId: string) {
+  const { language } = useLanguage()
+  const { questions: fetchedQuestions, loading, error } = useQuestionFetcher(language)
+  
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
     narratorId: hostId,
-    questions: mockQuestions
-      .slice(0, QUESTIONS_PER_ROUND)
-      .map((q): TriviaQuestion => ({ ...q, id: `r1-${q.id}` })),
+    questions: [], // Start with empty array, will be populated when questions are fetched
     currentQuestionIndex: 0,
     playerAnswers: [],
     timeLeft: QUESTION_TIMER,
@@ -29,6 +32,27 @@ export function useRoundManager(hostId: string) {
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set())
   const [showPendingAnswers, setShowPendingAnswers] = useState(false)
+
+  // Update round questions when fetched questions are available
+  useEffect(() => {
+    if (fetchedQuestions.length > 0) {
+      console.log('[useRoundManager] Updating round with fetched questions:', fetchedQuestions)
+      setCurrentRound(prev => ({
+        ...prev,
+        questions: fetchedQuestions.map((q): TriviaQuestion => ({ 
+          ...q, 
+          id: `r1-${q.id}` 
+        }))
+      }))
+    }
+  }, [fetchedQuestions])
+
+  // Log any errors from question fetching
+  useEffect(() => {
+    if (error) {
+      console.error('[useRoundManager] Error fetching questions:', error)
+    }
+  }, [error])
 
   /** Clears answers + resets timer for the next question in the same round */
   const resetForNextQuestion = () => {
@@ -65,5 +89,7 @@ export function useRoundManager(hostId: string) {
     setShowPendingAnswers,
     resetForNextQuestion,
     advanceQuestionLocal,
+    questionsLoading: loading,
+    questionsError: error,
   }
 }
