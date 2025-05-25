@@ -1,3 +1,4 @@
+
 // src/hooks/useTriviaGame.ts
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback }       from 'react';
@@ -42,7 +43,7 @@ export const useTriviaGame = () => {
     setShowRoundBridge,
     nextNarrator,
     nextRoundNumber,
-    setNextRoundNumber,    // ← now destructured
+    setNextRoundNumber,
     gameOver,
     setGameOver,
     setNextNarrator,
@@ -59,7 +60,6 @@ export const useTriviaGame = () => {
   // ───────── Channel & listeners ─────────
   const gameChannelRef = useGameChannel(state.gameId);
 
-  // ← pass along setNextRoundNumber so remote clients update it
   useBroadcastListeners(
     gameChannelRef.current,
     setCurrentRound,
@@ -118,6 +118,7 @@ export const useTriviaGame = () => {
     setShowRoundBridge,
     setNextRoundNumber,
     setCurrentRound,
+    setGameOver,
     state.players
   );
 
