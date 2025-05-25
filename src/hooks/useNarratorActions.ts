@@ -47,6 +47,12 @@ export const useNarratorActions = (
       const updatedPlayers = withUpdatedScores(playerId, CORRECT_ANSWER_POINTS);
       const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
 
+      // Clear player answers immediately after correct answer
+      setCurrentRound(prev => ({
+        ...prev,
+        playerAnswers: []
+      }));
+
       if (isLast) {
         if (currentRoundNumber >= players.length) {
           console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, NO bridge');
@@ -78,6 +84,7 @@ export const useNarratorActions = (
       setNextNarrator,
       setShowRoundBridge,
       setNextRoundNumber,
+      setCurrentRound,
       state.players
     ]
   );

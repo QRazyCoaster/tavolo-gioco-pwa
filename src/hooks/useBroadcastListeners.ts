@@ -131,6 +131,6 @@ export const useBroadcastListeners = (
     setGameOver,
     gameId,
     currentRound,
-    state
+    currentPlayerId
   ])
 }
