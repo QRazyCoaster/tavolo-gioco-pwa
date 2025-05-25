@@ -10,8 +10,23 @@ export const useQuestionManager = (currentRound: Round) => {
     return currentRound.currentQuestionIndex;
   };
 
+  // Add safety check for currentQuestion
+  const currentQuestion = currentRound.questions?.[currentRound.currentQuestionIndex];
+  
+  if (!currentQuestion) {
+    console.warn('[useQuestionManager] No question found at index:', currentRound.currentQuestionIndex, 'Questions:', currentRound.questions);
+  }
+
   return {
-    currentQuestion: currentRound.questions[currentRound.currentQuestionIndex],
+    currentQuestion: currentQuestion || {
+      id: 'loading',
+      categoryId: '',
+      textEn: '',
+      textIt: 'Loading question...',
+      answerEn: '',
+      answerIt: 'Loading...',
+      difficulty: 'medium' as const
+    },
     questionNumber: currentRound.currentQuestionIndex + 1,
     totalQuestions: QUESTIONS_PER_ROUND,
     handleNextQuestion

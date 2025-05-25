@@ -36,9 +36,11 @@ export const useBroadcastListeners = (
         const { questionIndex, scores } = payload
 
         if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
+          scores.forEach((s: { id: string; score: number }) => {
+            if (s && s.id !== undefined) {
+              dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+            }
+          })
         }
 
         setCurrentRound(prev => ({
@@ -57,11 +59,14 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'SCORE_UPDATE' },
       ({ payload }: { payload: any }) => {
+        console.log('[useBroadcastListeners] Received SCORE_UPDATE', payload)
         const { scores } = payload
         if (!Array.isArray(scores)) return
-        scores.forEach((s: { id: string; score: number }) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        )
+        scores.forEach((s: { id: string; score: number }) => {
+          if (s && s.id !== undefined) {
+            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+          }
+        })
       }
     )
 
@@ -70,7 +75,13 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'BUZZ' },
       ({ payload }: { payload: any }) => {
+        console.log('[useBroadcastListeners] Received BUZZ', payload)
         const { playerId, playerName } = payload
+        if (!playerId || !playerName) {
+          console.warn('[useBroadcastListeners] Invalid BUZZ payload:', payload)
+          return
+        }
+        
         setCurrentRound(prev => {
           if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev
           const newAnswer: PlayerAnswer = { playerId, playerName, timestamp: Date.now() }
@@ -95,9 +106,11 @@ export const useBroadcastListeners = (
         )
 
         if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
+          scores.forEach((s: { id: string; score: number }) => {
+            if (s && s.id !== undefined) {
+              dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+            }
+          })
         }
 
         setAnsweredPlayers(new Set())
