@@ -30,24 +30,15 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const { language } = useLanguage();
   const { state } = useGame();
   const { toast } = useToast();
-  const [isPressed, setIsPressed] = useState(false);
   const [screenShake, setScreenShake] = useState(false);
 
   // Use the players directly from GameContext to ensure we always have the latest scores
   const currentPlayers = state.players;
 
-  // Reset the pressed state when the question changes or when player role changes
-  useEffect(() => {
-    setIsPressed(hasAnswered);
-  }, [questionNumber, roundNumber, hasAnswered, isCurrentPlayerNarrator]);
-
   const handlePress = () => {
     // Don't allow buzzer press if player already answered or is the narrator
     if (hasAnswered || isCurrentPlayerNarrator) return;
     
-    // Update local UI state
-    setIsPressed(true);
-
     // Trigger screen shake animation
     setScreenShake(true);
     setTimeout(() => setScreenShake(false), 500);
@@ -59,7 +50,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
       playAudio('buzzer');
     }
 
-    // Notify game system
+    // Notify game system - this is the crucial part that communicates with the narrator
     onBuzzerPressed();
 
     // Show feedback to the player
@@ -79,8 +70,6 @@ const PlayerView: React.FC<PlayerViewProps> = ({
           className={`w-64 h-64 rounded-full text-6xl font-black transition-all duration-200 flex items-center justify-center relative overflow-hidden ${
             hasAnswered || isCurrentPlayerNarrator
               ? 'bg-gray-400 cursor-not-allowed shadow-lg'
-              : isPressed
-              ? 'bg-red-700 hover:bg-red-700 shadow-2xl transform scale-95'
               : 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 shadow-2xl border-4 border-red-400 transform hover:scale-105 active:scale-95'
           } ${
             hasAnswered ? 'animate-pulse' : ''
