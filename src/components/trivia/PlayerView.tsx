@@ -31,6 +31,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const { state } = useGame();
   const { toast } = useToast();
   const [isPressed, setIsPressed] = useState(false);
+  const [screenShake, setScreenShake] = useState(false);
 
   // Use the players directly from GameContext to ensure we always have the latest scores
   const currentPlayers = state.players;
@@ -46,6 +47,10 @@ const PlayerView: React.FC<PlayerViewProps> = ({
     
     // Update local UI state
     setIsPressed(true);
+
+    // Trigger screen shake animation
+    setScreenShake(true);
+    setTimeout(() => setScreenShake(false), 500);
 
     // Play buzzer sound
     if (window.myBuzzer) {
@@ -65,29 +70,49 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-full max-w-md mx-auto h-full">
-      {/* Big buzzer button */}
+    <div className={`flex flex-col w-full max-w-md mx-auto h-full transition-transform duration-300 ${
+      screenShake ? 'animate-[shake_0.5s_ease-in-out]' : ''
+    }`}>
+      {/* Big 3D buzzer button */}
       <div className="flex justify-center items-center mb-8" style={{ height: '40vh' }}>
         <Button
-          className={`w-64 h-64 rounded-full text-2xl font-bold shadow-xl transition-all duration-300 flex items-center justify-center ${
+          className={`w-64 h-64 rounded-full text-6xl font-black transition-all duration-200 flex items-center justify-center relative overflow-hidden ${
             hasAnswered || isCurrentPlayerNarrator
-              ? 'bg-gray-400 cursor-not-allowed'
+              ? 'bg-gray-400 cursor-not-allowed shadow-lg'
               : isPressed
-              ? 'bg-red-700 hover:bg-red-700 border-4 border-blue-200'
-              : 'bg-red-600 hover:bg-red-700 transform hover:scale-105 active:scale-95'
+              ? 'bg-red-700 hover:bg-red-700 shadow-2xl transform scale-95'
+              : 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 shadow-2xl border-4 border-red-400 transform hover:scale-105 active:scale-95'
+          } ${
+            hasAnswered ? 'animate-pulse' : ''
           }`}
+          style={{
+            boxShadow: hasAnswered || isCurrentPlayerNarrator 
+              ? '0 8px 16px rgba(0,0,0,0.3)' 
+              : '0 12px 24px rgba(220, 38, 38, 0.4), inset 0 -8px 0 rgba(0,0,0,0.2)'
+          }}
           onClick={handlePress}
           disabled={hasAnswered || isCurrentPlayerNarrator}
         >
-          <div className="text-white">
-            {isPressed ? (language === 'it' ? 'ATTESA' : 'WAITING') : 'PUSH'}
+          <div className="text-white drop-shadow-lg tracking-wider">
+            {hasAnswered ? (
+              <div className="text-3xl animate-bounce">
+                {language === 'it' ? 'ATTESA...' : 'WAITING...'}
+              </div>
+            ) : (
+              'PUSH'
+            )}
           </div>
+          
+          {/* 3D highlight effect */}
+          {!hasAnswered && !isCurrentPlayerNarrator && (
+            <div className="absolute top-4 left-4 right-4 h-8 bg-gradient-to-b from-white/30 to-transparent rounded-full blur-sm" />
+          )}
         </Button>
       </div>
 
       {/* Narrator notification */}
       {isCurrentPlayerNarrator && (
-        <div className="mb-4 bg-blue-100 text-blue-800 p-3 rounded-lg text-center">
+        <div className="mb-4 bg-blue-100 text-blue-800 p-3 rounded-lg text-center animate-fade-in">
           {language === 'it' ? 'Sei il narratore di questo round!' : 'You are the narrator for this round!'}
         </div>
       )}
@@ -103,7 +128,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
 
       {/* Answer status notification */}
       {hasAnswered && (
-        <div className="mb-4 bg-green-100 text-green-800 p-3 rounded-lg text-center">
+        <div className="mb-4 bg-green-100 text-green-800 p-3 rounded-lg text-center animate-fade-in">
           {language === 'it' ? 'Ti sei prenotato! Attendi il tuo turno.' : 'You are queued! Waiting for your turn.'}
         </div>
       )}
