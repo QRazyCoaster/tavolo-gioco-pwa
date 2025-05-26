@@ -27,6 +27,51 @@ export const useBroadcastListeners = (
     if (!gameChannel || hasSetup.current) return
     hasSetup.current = true
 
+    console.log('[useBroadcastListeners] Setting up broadcast listeners for game channel');
+
+    /* ───────────────────────── BUZZ ───────────────────────── */
+    gameChannel.on(
+      'broadcast',
+      { event: 'BUZZ' },
+      ({ payload }: { payload: any }) => {
+        console.log('[useBroadcastListeners] Received BUZZ event', payload)
+        const { playerId, playerName, questionIndex, timestamp } = payload
+        
+        if (!playerId || !playerName) {
+          console.warn('[useBroadcastListeners] Invalid BUZZ payload:', payload)
+          return
+        }
+        
+        console.log('[useBroadcastListeners] Processing BUZZ for player:', playerName, 'at question index:', questionIndex)
+        
+        setCurrentRound(prev => {
+          // Check if player already answered
+          const existingAnswer = prev.playerAnswers.find(a => a.playerId === playerId);
+          if (existingAnswer) {
+            console.log('[useBroadcastListeners] Player already in queue, ignoring duplicate buzz');
+            return prev;
+          }
+          
+          const newAnswer: PlayerAnswer = { 
+            playerId, 
+            playerName, 
+            timestamp: timestamp || Date.now() 
+          };
+          
+          console.log('[useBroadcastListeners] Adding new answer to queue:', newAnswer);
+          
+          return { 
+            ...prev, 
+            playerAnswers: [...prev.playerAnswers, newAnswer] 
+          };
+        });
+        
+        // Always show pending answers when someone buzzes
+        console.log('[useBroadcastListeners] Setting showPendingAnswers to true');
+        setShowPendingAnswers(true);
+      }
+    )
+
     /* ───────────────────────── NEXT_QUESTION ───────────────────────── */
     gameChannel.on(
       'broadcast',
@@ -67,27 +112,6 @@ export const useBroadcastListeners = (
             dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
           }
         })
-      }
-    )
-
-    /* ───────────────────────── BUZZ ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'BUZZ' },
-      ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received BUZZ', payload)
-        const { playerId, playerName } = payload
-        if (!playerId || !playerName) {
-          console.warn('[useBroadcastListeners] Invalid BUZZ payload:', payload)
-          return
-        }
-        
-        setCurrentRound(prev => {
-          if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev
-          const newAnswer: PlayerAnswer = { playerId, playerName, timestamp: Date.now() }
-          return { ...prev, playerAnswers: [...prev.playerAnswers, newAnswer] }
-        })
-        setShowPendingAnswers(true)
       }
     )
 
