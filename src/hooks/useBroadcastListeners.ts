@@ -129,9 +129,12 @@ export const useBroadcastListeners = (
     )
 
     /* ───────────────────────── housekeeping ───────────────────────── */
-    gameChannel.on('disconnect', () => console.log('[useBroadcastListeners] Game channel disconnected'))
-    gameChannel.on('error', (error: any) => console.error('[useBroadcastListeners] Game channel error:', error))
-    gameChannel.on('reconnect', () => console.log('[useBroadcastListeners] Game channel reconnected'))
+    const unsubscribe = () => {
+      console.log('[useBroadcastListeners] Unsubscribing from game channel')
+      gameChannel.unsubscribe()
+    }
+
+    return unsubscribe
   }, [
     gameChannel,
     dispatch,
