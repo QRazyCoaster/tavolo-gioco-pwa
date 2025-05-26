@@ -70,7 +70,7 @@ const JoinGame = () => {
     >
       <div className="w-full max-w-md flex flex-col items-center">
         <div className="w-full flex justify-end mb-4">
-          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" />
+          <MusicToggle className="bg-white/50 backdrop-blur-sm text-primary rounded-full" size="lg" />
         </div>
       
         {renderContent()}

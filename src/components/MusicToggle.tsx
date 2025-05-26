@@ -9,12 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MusicToggleProps {
   className?: string;
+  size?: 'default' | 'lg';
 }
 
-const MusicToggle = ({ className = "" }: MusicToggleProps) => {
+const MusicToggle = ({ className = "", size = 'default' }: MusicToggleProps) => {
   const { t } = useLanguage();
   const { state, dispatch } = useGame();
   const { toast } = useToast();
+
+  const iconSize = size === 'lg' ? 28 : 20;
+  const buttonSize = size === 'lg' ? 'lg' : 'icon';
 
   const toggleBackgroundMusic = () => {
     console.log('MusicToggle: Toggle button clicked');
@@ -57,12 +61,12 @@ const MusicToggle = ({ className = "" }: MusicToggleProps) => {
   return (
     <Button
       variant="ghost"
-      size="icon"
+      size={buttonSize}
       onClick={toggleBackgroundMusic}
       title={state.backgroundMusicPlaying ? t('common.muteMusic') : t('common.playMusic')}
       className={className}
     >
-      {state.backgroundMusicPlaying ? <Music size={20} /> : <VolumeX size={20} />}
+      {state.backgroundMusicPlaying ? <Music size={iconSize} /> : <VolumeX size={iconSize} />}
     </Button>
   );
 };
