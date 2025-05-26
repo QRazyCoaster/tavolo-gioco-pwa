@@ -20,7 +20,7 @@ declare global {
 }
 
 const WaitingRoomPage = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { state, dispatch } = useGame();
 
@@ -82,7 +82,9 @@ const WaitingRoomPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">Tavolo Gioco</h1>
+          <h1 className="text-4xl font-bold text-primary">
+            {language === 'it' ? 'Vediamo quando sei nerd...' : "Who's the biggest nerd?!"}
+          </h1>
           <MusicToggle />
         </div>
         
