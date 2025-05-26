@@ -40,8 +40,12 @@ const InputOTPSlot = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "relative flex h-10 w-10 items-center justify-center border-3 border-[#8c2f50] text-sm transition-all bg-gray-50 -ml-[3px] first:ml-0 first:rounded-l-md last:rounded-r-md",
+        "relative flex h-10 w-10 items-center justify-center border-3 border-[#8c2f50] text-sm transition-all -ml-[3px] first:ml-0 first:rounded-l-md last:rounded-r-md",
+        // Default state - light background to show divisions
+        !char && !isActive && "bg-gray-100",
+        // Active state - white background with ring
         isActive && "z-10 ring-2 ring-[#8c2f50] ring-offset-background border-[#8c2f50] bg-white",
+        // When character is entered - white background
         char && "bg-white",
         className
       )}
