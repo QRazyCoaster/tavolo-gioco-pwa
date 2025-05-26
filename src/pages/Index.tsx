@@ -48,10 +48,10 @@ const Index = () => {
     }}>
         <div className="grid gap-6 mb-12">
           <Card className="p-6 bg-white/80 backdrop-blur-sm cursor-pointer" onClick={() => handleLanguage('it')}>
-            <div className="flex items-center justify-center text-2xl"><span className="text-3xl mr-3">🇮🇹</span>Italiano</div>
+            <div className="flex items-center justify-center text-2xl"><span className="text-3xl mr-3">🇮🇹</span>Giochi Italiani</div>
           </Card>
           <Card className="p-6 bg-white/80 backdrop-blur-sm cursor-pointer" onClick={() => handleLanguage('en')}>
-            <div className="flex items-center justify-center py-0 text-2xl"><span className="text-3xl mr-3">🇬🇧</span>English</div>
+            <div className="flex items-center justify-center py-0 text-2xl"><span className="text-3xl mr-3">🇬🇧</span>English Games</div>
           </Card>
         </div>
       </div>
