@@ -13,8 +13,95 @@ interface Translations {
 
 // Translations dictionary
 const translations: Translations = {
-  /* …all your existing keys… */
+  // Common translations
+  'common.chooseLanguage': {
+    en: 'Choose Language',
+    it: 'Scegli Lingua',
+  },
+  'common.chooseRole': {
+    en: 'Choose Your Role',
+    it: 'Scegli il Tuo Ruolo',
+  },
+  'common.enterPin': {
+    en: 'Enter Game PIN',
+    it: 'Inserisci PIN del Gioco',
+  },
+  'common.chooseName': {
+    en: 'Choose Your Name',
+    it: 'Scegli il Tuo Nome',
+  },
+  'common.join': {
+    en: 'Join Game',
+    it: 'Unisciti al Gioco',
+  },
+  'common.back': {
+    en: 'Back',
+    it: 'Indietro',
+  },
+  'common.continue': {
+    en: 'Continue',
+    it: 'Continua',
+  },
+  'common.next': {
+    en: 'Next',
+    it: 'Avanti',
+  },
+  'common.loading': {
+    en: 'Loading...',
+    it: 'Caricamento...',
+  },
+  'common.players': {
+    en: 'players',
+    it: 'giocatori',
+  },
+  'common.select': {
+    en: 'Select',
+    it: 'Seleziona',
+  },
+  'common.createGame': {
+    en: 'Create Game',
+    it: 'Crea Gioco',
+  },
+  'common.pin': {
+    en: 'PIN',
+    it: 'PIN',
+  },
+  'common.waitingForPlayers': {
+    en: 'Waiting for Players',
+    it: 'In Attesa di Giocatori',
+  },
+  'common.waitingForPlayersToJoin': {
+    en: 'Waiting for other players to join...',
+    it: 'In attesa che altri giocatori si uniscano...',
+  },
+  'common.startGame': {
+    en: 'Start Game',
+    it: 'Inizia Gioco',
+  },
+  'common.firstNarrator': {
+    en: 'First Narrator',
+    it: '1° Narratore',
+  },
+  'common.rules': {
+    en: 'Rules',
+    it: 'Regole',
+  },
+  'common.noGameSelected': {
+    en: 'No game selected',
+    it: 'Nessun gioco selezionato',
+  },
 
+  // Games
+  'games.trivia': {
+    en: 'Trivia Challenge',
+    it: 'Sfida Trivia',
+  },
+  'games.bottleGame': {
+    en: 'Word Association',
+    it: 'Associazione di Parole',
+  },
+
+  // Trivia specific
   'trivia.yourTurn': {
     en: "It's your turn to answer!",
     it: "È il tuo turno di rispondere!",
@@ -35,14 +122,12 @@ const translations: Translations = {
     en: "Waiting for the narrator to show the question...",
     it: "In attesa che il narratore mostri la domanda...",
   },
-
-  // ← NEW: localized seconds label with interpolation
   'trivia.seconds': {
     en: '{{count}} seconds',
     it: '{{count}} secondi',
   },
 
-  // NEW: Language mismatch error messages
+  // Language mismatch error messages
   'error.languageMismatch.italian': {
     en: 'This game was created in Italian. Please go to the Italian Trivia page to join.',
     it: 'Questo gioco è stato creato in italiano. Per unirti, vai alla pagina Trivia Italiana.',

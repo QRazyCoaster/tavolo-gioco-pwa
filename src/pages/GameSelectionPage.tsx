@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/context/LanguageContext';
@@ -13,15 +12,23 @@ import MusicToggle from '@/components/MusicToggle';
 const GameSelectionPage = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { state } = useGame();
+  const { dispatch } = useGame();
   
   const handleSelectGame = (gameId: string) => {
-    // Just store selected game in sessionStorage for now (no game created yet)
-    sessionStorage.setItem('selectedGame', gameId);
     playAudio('buttonClick');
     
-    // Go to join page to create/join game
-    navigate('/join');
+    // Store selected game
+    dispatch({ type: 'SELECT_GAME', payload: gameId });
+    sessionStorage.setItem('selectedGame', gameId);
+    
+    // Navigate based on game type
+    if (gameId === 'trivia') {
+      // Trivia goes to rules first
+      navigate('/rules');
+    } else {
+      // Other games go directly to join
+      navigate('/join');
+    }
   };
   
   const handleBack = () => {
