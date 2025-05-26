@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
@@ -81,11 +80,13 @@ const WaitingRoomPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="w-full max-w-md">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">
+        <div className="flex justify-center items-center mb-8 relative">
+          <h1 className="text-4xl font-bold text-primary text-center">
             {language === 'it' ? 'Vediamo quando sei nerd...' : "Who's the biggest nerd?!"}
           </h1>
-          <MusicToggle />
+          <div className="absolute right-0">
+            <MusicToggle />
+          </div>
         </div>
         
         <WaitingRoom onStartGame={handleStartGame} />
