@@ -27,30 +27,39 @@ export const useBroadcastListeners = (
     if (!gameChannel || hasSetup.current) return
     hasSetup.current = true
 
-    /* ───────────────────────── NEXT_QUESTION ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'NEXT_QUESTION' },
-      ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received NEXT_QUESTION', payload)
-        const { questionIndex, scores } = payload
+// ─── NEXT_QUESTION ─────────────────────────────────────
+gameChannel.on(
+  'broadcast',
+  { event: 'NEXT_QUESTION' },
+  ({ payload }: { payload: any }) => {
+    console.log('[useBroadcastListeners] Received NEXT_QUESTION', payload)
+    const { questionIndex, scores } = payload
 
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
-        }
+    /* ✱✱ NEW guard – ignore bogus index at end-of-round ✱✱ */
+    if (questionIndex >= currentRound.questions.length) {
+      console.warn('[useBroadcastListeners] Ignoring NEXT_QUESTION index',
+                   questionIndex, '>=', currentRound.questions.length)
+      return
+    }
 
-        setCurrentRound(prev => ({
-          ...prev,
-          currentQuestionIndex: questionIndex,
-          playerAnswers: [],
-          timeLeft: QUESTION_TIMER
-        }))
-        setAnsweredPlayers(new Set())
-        setShowPendingAnswers(false)
-      }
-    )
+    /* …rest of the handler stays identical… */
+    if (Array.isArray(scores)) {
+      scores.forEach((s: { id: string; score: number }) =>
+        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
+      )
+    }
+
+    setCurrentRound(prev => ({
+      ...prev,
+      currentQuestionIndex: questionIndex,
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    }))
+    setAnsweredPlayers(new Set())
+    setShowPendingAnswers(false)
+  }
+)
+
 
     /* ───────────────────────── SCORE_UPDATE ───────────────────────── */
     gameChannel.on(
