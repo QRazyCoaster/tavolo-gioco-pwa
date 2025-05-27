@@ -44,6 +44,7 @@ export const useBroadcastListeners = (
         
         console.log('[useBroadcastListeners] Processing BUZZ for player:', playerName, 'at question index:', questionIndex)
         
+        // Update the current round with the new player answer
         setCurrentRound(prev => {
           // Check if player already answered
           const existingAnswer = prev.playerAnswers.find(a => a.playerId === playerId);
@@ -60,10 +61,21 @@ export const useBroadcastListeners = (
           
           console.log('[useBroadcastListeners] Adding new answer to queue:', newAnswer);
           
-          return { 
+          const updatedRound = { 
             ...prev, 
             playerAnswers: [...prev.playerAnswers, newAnswer] 
           };
+          
+          console.log('[useBroadcastListeners] Updated round playerAnswers:', updatedRound.playerAnswers);
+          return updatedRound;
+        });
+        
+        // Update answered players set
+        setAnsweredPlayers(prev => {
+          const newSet = new Set(prev);
+          newSet.add(playerId);
+          console.log('[useBroadcastListeners] Updated answered players:', Array.from(newSet));
+          return newSet;
         });
         
         // Always show pending answers when someone buzzes
