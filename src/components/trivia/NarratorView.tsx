@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -45,13 +44,6 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   const { language } = useLanguage();
   const { toast } = useToast();
 
-  // Debug logging for narrator view
-  useEffect(() => {
-    console.log('[NarratorView] Player answers updated:', playerAnswers);
-    console.log('[NarratorView] Show pending answers:', showPendingAnswers);
-    console.log('[NarratorView] Players data:', players);
-  }, [playerAnswers, showPendingAnswers, players]);
-
   // Timer: narrator only
   useEffect(() => {
     if (timeLeft === 0) {
@@ -71,10 +63,7 @@ const NarratorView: React.FC<NarratorViewProps> = ({
 
   // Whenever we have answers ensure the queue is visible
   useEffect(() => {
-    if (playerAnswers.length > 0 && !showPendingAnswers) {
-      console.log('[NarratorView] Auto-showing pending answers due to new player answers');
-      setShowPendingAnswers(true);
-    }
+    if (playerAnswers.length > 0 && !showPendingAnswers) setShowPendingAnswers(true);
   }, [playerAnswers, showPendingAnswers, setShowPendingAnswers]);
 
   return (
@@ -134,15 +123,6 @@ const NarratorView: React.FC<NarratorViewProps> = ({
         </div>
       ) : (
         <PlayerRankings players={players} />
-      )}
-
-      {/* Debug info for narrator */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-2 bg-gray-100 text-xs">
-          <div>Player Answers Count: {playerAnswers.length}</div>
-          <div>Show Pending: {showPendingAnswers.toString()}</div>
-          <div>Current Player Answering: {currentPlayerAnswering?.playerName || 'None'}</div>
-        </div>
       )}
 
       {/* Manual next question (visible only when queue empty) */}
