@@ -1,3 +1,4 @@
+
 // src/hooks/useRoundProgress.ts
 
 import { useState, useCallback, useEffect } from 'react'
@@ -14,7 +15,8 @@ export const useRoundProgress = (
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
   players: Player[],
   setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setShowPending: React.Dispatch<React.SetStateAction<boolean>>
+  setShowPending: React.Dispatch<React.SetStateAction<boolean>>,
+  loadQuestionsForNewRound?: (roundNumber: number) => Promise<any[]>
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false)
   const [nextNarrator, setNextNarrator] = useState<string>('')
@@ -84,20 +86,30 @@ export const useRoundProgress = (
     setShowPending
   ])
 
-  const startNextRound = () => {
+  const startNextRound = async () => {
     console.log(
       '[useRoundProgress] Starting next round:',
       nextRoundNumber,
       'with narrator:',
       nextNarrator
     )
+
+    // Load new questions for the round if function is provided
+    let newQuestions = currentRound.questions;
+    if (loadQuestionsForNewRound) {
+      try {
+        newQuestions = await loadQuestionsForNewRound(nextRoundNumber);
+        console.log('[useRoundProgress] Loaded', newQuestions.length, 'new questions for round', nextRoundNumber);
+      } catch (error) {
+        console.error('[useRoundProgress] Error loading questions for new round:', error);
+        // Continue with existing questions as fallback
+      }
+    }
+
     setCurrentRound(prev => ({
       roundNumber: nextRoundNumber,
       narratorId: nextNarrator,
-      questions: prev.questions.map(q => ({
-        ...q,
-        id: `r${nextRoundNumber}-${q.id}`
-      })),
+      questions: newQuestions,
       currentQuestionIndex: 0,
       playerAnswers: [],
       timeLeft: QUESTION_TIMER

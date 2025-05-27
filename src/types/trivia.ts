@@ -7,13 +7,11 @@ export interface Category {
 
 export interface TriviaQuestion {
   id: string;
-  categoryId: string;
-  textEn: string;
-  textIt: string;
-  answerEn: string;
-  answerIt: string;
-  options?: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
+  language: 'en' | 'it';
+  category: string;
+  question: string;
+  correct_answer: string;
+  created_at?: string;
 }
 
 export interface PlayerAnswer {

@@ -34,7 +34,10 @@ export const useTriviaGame = () => {
     answeredPlayers,
     setAnsweredPlayers,
     showPendingAnswers,
-    setShowPendingAnswers
+    setShowPendingAnswers,
+    loadQuestionsForNewRound,
+    questionsLoaded,
+    questionsError
   } = useRoundManager(hostId);
 
   // ───────── Round progression ─────────
@@ -54,7 +57,8 @@ export const useTriviaGame = () => {
     setCurrentRound,
     state.players,
     setAnsweredPlayers,
-    setShowPendingAnswers
+    setShowPendingAnswers,
+    loadQuestionsForNewRound
   );
 
   // ───────── Channel & listeners ─────────
@@ -151,5 +155,7 @@ export const useTriviaGame = () => {
     nextRoundNumber,
     startNextRound,
     gameOver,
+    questionsLoaded,
+    questionsError,
   };
 };
