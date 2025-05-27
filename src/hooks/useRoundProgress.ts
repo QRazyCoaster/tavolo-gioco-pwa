@@ -1,4 +1,5 @@
 // src/hooks/useRoundProgress.ts
+
 import { useState, useCallback, useEffect } from 'react'
 import { Round } from '@/types/trivia'
 import { QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants'
@@ -21,7 +22,7 @@ export const useRoundProgress = (
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
   const [gameOver, setGameOver] = useState(false)
 
-  /* ───── debug ───── */
+  // Debug effect for round progression
   useEffect(() => {
     console.log(
       '[useRoundProgress] Current round number:', currentRound.roundNumber,
@@ -31,7 +32,6 @@ export const useRoundProgress = (
     )
   }, [currentRound.roundNumber, nextRoundNumber, players.length, gameOver])
 
-  /* ──────────────────────────── */
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex
     const last = idx >= QUESTIONS_PER_ROUND - 1
@@ -44,7 +44,7 @@ export const useRoundProgress = (
       )
 
       if (currentRound.roundNumber >= players.length) {
-        /* FINAL ROUND */
+        // FINAL ROUND: broadcast end & directly trigger game over (no bridge)
         console.log(
           `[useRoundProgress] FINAL round ${currentRound.roundNumber} complete → skipping bridge`
         )
@@ -54,27 +54,18 @@ export const useRoundProgress = (
           setGameOver(true)
         }, 6500)
       } else {
-        /* NEXT ROUND */
+        // NEXT ROUND: normal bridge flow
         console.log(
           `[useRoundProgress] showRoundBridge(true) after finishing round ${currentRound.roundNumber} (next round)`
         )
-
-        /* --- FIX: choose next narrator safely --- */
-        const nextIdx = currentRound.roundNumber            // zero-based index
-        console.log('[useRoundProgress] players.length=', players.length,
-                    'nextIdx=', nextIdx)
-        const nextId =
-          players[nextIdx]           ? players[nextIdx]!.id   // in-bounds
-          : players[0]?.id ?? ''                              // fallback (should never hit)
-        /* ---------------------------------------- */
-
+        const nextId = players[currentRound.roundNumber]?.id || players[0].id
         setNextNarrator(nextId)
         setNextRoundNumber(currentRound.roundNumber + 1)
         broadcastRoundEnd(currentRound.roundNumber, nextId, players)
         setShowRoundBridge(true)
       }
     } else {
-      /* same round → next question */
+      // same round → next question
       const next = idx + 1
       setCurrentRound(prev => ({
         ...prev,
@@ -94,7 +85,6 @@ export const useRoundProgress = (
     setShowPending
   ])
 
-  /* ──────────────────────────── */
   const startNextRound = async () => {
     console.log(
       '[useRoundProgress] Starting next round:',
@@ -103,17 +93,24 @@ export const useRoundProgress = (
       nextNarrator
     )
 
-    /* optional: load new Qs */
-    let newQuestions = currentRound.questions
+    // Load new questions for the round if function is provided
+    let newQuestions = currentRound.questions;
     if (loadQuestionsForNewRound) {
       try {
-        console.log('[useRoundProgress] Loading NEW questions for round', nextRoundNumber)
-        newQuestions = await loadQuestionsForNewRound(nextRoundNumber)
-        console.log('[useRoundProgress] Loaded', newQuestions.length,
-                    'NEW questions for round', nextRoundNumber)
-      } catch (err) {
-        console.error('[useRoundProgress] Error loading questions:', err)
+        console.log('[useRoundProgress] Loading NEW questions for round', nextRoundNumber);
+        newQuestions = await loadQuestionsForNewRound(nextRoundNumber);
+        console.log('[useRoundProgress] Loaded', newQuestions.length, 'NEW questions for round', nextRoundNumber);
+        
+        // Log the new questions to verify they're different
+        newQuestions.forEach((q, index) => {
+          console.log(`[useRoundProgress] New R${nextRoundNumber} Q${index + 1}:`, q.question.substring(0, 50) + '...');
+        });
+      } catch (error) {
+        console.error('[useRoundProgress] Error loading questions for new round:', error);
+        // Continue with existing questions as fallback
       }
+    } else {
+      console.warn('[useRoundProgress] No loadQuestionsForNewRound function provided - reusing questions');
     }
 
     setCurrentRound(prev => ({

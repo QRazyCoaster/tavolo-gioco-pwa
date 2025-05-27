@@ -14,10 +14,6 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
-  + build: {
-+   // emit source-maps even for the production/preview build
-+   sourcemap: true
-+ },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

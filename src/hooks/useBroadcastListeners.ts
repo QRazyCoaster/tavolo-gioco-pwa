@@ -1,4 +1,3 @@
-
 // src/hooks/useBroadcastListeners.ts
 import { useEffect, useRef } from 'react'
 import { useGame }            from '@/context/GameContext'
@@ -27,50 +26,21 @@ export const useBroadcastListeners = (
     if (!gameChannel || hasSetup.current) return
     hasSetup.current = true
 
-// ─── NEXT_QUESTION ─────────────────────────────────────
-gameChannel.on(
-  'broadcast',
-  { event: 'NEXT_QUESTION' },
-  ({ payload }: { payload: any }) => {
-    console.log('[useBroadcastListeners] Received NEXT_QUESTION', payload)
-    const { questionIndex, scores } = payload
-
-    /* ✱✱ NEW guard – ignore bogus index at end-of-round ✱✱ */
-    if (questionIndex >= currentRound.questions.length) {
-      console.warn('[useBroadcastListeners] Ignoring NEXT_QUESTION index',
-                   questionIndex, '>=', currentRound.questions.length)
-      return
-    }
-
-    /* …rest of the handler stays identical… */
-    if (Array.isArray(scores)) {
-      scores.forEach((s: { id: string; score: number }) =>
-        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-      )
-    }
-
-    setCurrentRound(prev => ({
-      ...prev,
-      currentQuestionIndex: questionIndex,
-      playerAnswers: [],
-      timeLeft: QUESTION_TIMER
-    }))
-    setAnsweredPlayers(new Set())
-    setShowPendingAnswers(false)
-  }
-)
-
+    /* ───────────────────────── NEXT_QUESTION ───────────────────────── */
+    gameChannel.on(
+      'broadcast',
+      { event: 'NEXT_QUESTION' },
+      ({ payload }: { payload: any }) => {
+        /* … */
+      }
+    )
 
     /* ───────────────────────── SCORE_UPDATE ───────────────────────── */
     gameChannel.on(
       'broadcast',
       { event: 'SCORE_UPDATE' },
       ({ payload }: { payload: any }) => {
-        const { scores } = payload
-        if (!Array.isArray(scores)) return
-        scores.forEach((s: { id: string; score: number }) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        )
+        /* … */
       }
     )
 
@@ -79,13 +49,7 @@ gameChannel.on(
       'broadcast',
       { event: 'BUZZ' },
       ({ payload }: { payload: any }) => {
-        const { playerId, playerName } = payload
-        setCurrentRound(prev => {
-          if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev
-          const newAnswer: PlayerAnswer = { playerId, playerName, timestamp: Date.now() }
-          return { ...prev, playerAnswers: [...prev.playerAnswers, newAnswer] }
-        })
-        setShowPendingAnswers(true)
+        /* … */
       }
     )
 
@@ -94,40 +58,26 @@ gameChannel.on(
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received ROUND_END', payload)
-        const { nextRound, nextNarratorId, scores, isGameOver = false } = payload
-
-        console.log(
-          `[useBroadcastListeners] ROUND_END on ${
-            currentPlayerId === nextNarratorId ? 'Narrator' : 'Player'
-          } client; payload.nextRound=${nextRound}`
-        )
-
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
-        }
-
-        setAnsweredPlayers(new Set())
-        setShowPendingAnswers(false)
-
-        if (isGameOver) {
-          console.log('[useBroadcastListeners] FINAL round → showing game over immediately')
-          setGameOver(true)
-        } else {
-          if (nextNarratorId) setNextNarrator(nextNarratorId)
-          setNextRoundNumber(nextRound)
-          console.log('[useBroadcastListeners] Showing RoundBridge')
-          setShowRoundBridge(true)
-        }
+        /* … */
       }
     )
 
     /* ───────────────────────── housekeeping ───────────────────────── */
-    gameChannel.on('disconnect', () => console.log('[useBroadcastListeners] Game channel disconnected'))
-    gameChannel.on('error', (error: any) => console.error('[useBroadcastListeners] Game channel error:', error))
-    gameChannel.on('reconnect', () => console.log('[useBroadcastListeners] Game channel reconnected'))
+    gameChannel.on(
+      'disconnect',
+      {},
+      () => console.log('[useBroadcastListeners] Game channel disconnected')
+    )
+    gameChannel.on(
+      'error',
+      {},
+      (error: any) => console.error('[useBroadcastListeners] Game channel error:', error)
+    )
+    gameChannel.on(
+      'reconnect',
+      {},
+      () => console.log('[useBroadcastListeners] Game channel reconnected')
+    )
   }, [
     gameChannel,
     dispatch,
