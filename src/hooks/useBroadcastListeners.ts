@@ -130,7 +130,7 @@ export const useBroadcastListeners = (
     setNextRoundNumber,
     setGameOver,
     gameId,
-    currentRound,
+    currentRound.roundNumber, // Changed from currentRound to avoid stale closure
     currentPlayerId
   ])
 }

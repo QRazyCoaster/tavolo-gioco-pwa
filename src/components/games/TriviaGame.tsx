@@ -33,6 +33,19 @@ const TriviaGame = () => {
     handleNextQuestion
   } = useTriviaGameState();
 
+  // Convert the old question format to the new format for compatibility
+  const convertedQuestion = currentQuestion ? {
+    id: currentQuestion.id,
+    question: language === 'it' ? currentQuestion.textIt : currentQuestion.textEn,
+    correct_answer: language === 'it' ? currentQuestion.answerIt : currentQuestion.answerEn,
+    category: 'general' // Default category since the old hook doesn't provide it
+  } : {
+    id: '',
+    question: '',
+    correct_answer: '',
+    category: 'general'
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full">
       {/* Header with question number and round */}
@@ -63,7 +76,7 @@ const TriviaGame = () => {
           
           {/* Question display */}
           <TriviaQuestion
-            question={currentQuestion}
+            question={convertedQuestion}
             showAnswer={showAnswer && isHost}
             language={language}
           />

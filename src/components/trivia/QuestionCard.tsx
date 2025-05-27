@@ -59,7 +59,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion, questionKe
                 {language === 'it' ? 'Domanda:' : 'Question:'}
               </h2>
               <p className="text-xl text-center">
-                {language === 'it' ? currentQuestion.textIt : currentQuestion.textEn}
+                {currentQuestion.question}
               </p>
               
               <div className="mt-6 text-sm text-gray-500">
@@ -82,7 +82,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({ currentQuestion, questionKe
                 {language === 'it' ? 'Risposta:' : 'Answer:'}
               </h2>
               <p className="text-xl font-semibold text-center text-blue-900">
-                {language === 'it' ? currentQuestion.answerIt : currentQuestion.answerEn}
+                {currentQuestion.correct_answer}
               </p>
               
               <div className="mt-6 text-sm text-gray-500">
