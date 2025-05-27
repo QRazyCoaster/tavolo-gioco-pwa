@@ -40,7 +40,16 @@ const NarratorView: React.FC<NarratorViewProps> = ({
   timeLeft,
   showPendingAnswers,
   setShowPendingAnswers
-}) => {
+}) => 
+  // ── defensive guard ──────────────────────────────────────────────
+  if (!currentQuestion) {
+    console.warn(
+      '[NarratorView] currentQuestion is undefined – most likely we just ran out of questions.',
+      { roundNumber, questionNumber }
+    );
+    return null;   // or return a tiny “Loading…” placeholder if you prefer
+  }
+
   const { language } = useLanguage();
   const { toast } = useToast();
 
