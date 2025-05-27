@@ -25,6 +25,7 @@ export class QuestionService {
       const stored = localStorage.getItem(USED_QUESTIONS_KEY);
       if (stored) {
         this.usedQuestions = new Set(JSON.parse(stored));
+        console.log('[QuestionService] Loaded', this.usedQuestions.size, 'used questions from storage');
       }
     } catch (error) {
       console.error('[QuestionService] Error loading used questions:', error);
@@ -35,6 +36,7 @@ export class QuestionService {
   private saveUsedQuestions(): void {
     try {
       localStorage.setItem(USED_QUESTIONS_KEY, JSON.stringify([...this.usedQuestions]));
+      console.log('[QuestionService] Saved', this.usedQuestions.size, 'used questions to storage');
     } catch (error) {
       console.error('[QuestionService] Error saving used questions:', error);
     }
@@ -53,39 +55,39 @@ export class QuestionService {
       throw error;
     }
 
-    console.log('[QuestionService] Fetched', data?.length || 0, 'questions');
+    console.log('[QuestionService] Fetched', data?.length || 0, 'questions from database');
     return data || [];
   }
 
   selectQuestionsForRound(availableQuestions: TriviaQuestion[]): TriviaQuestion[] {
-    console.log('[QuestionService] Selecting questions for round from', availableQuestions.length, 'available');
-    console.log('[QuestionService] Currently used questions:', this.usedQuestions.size);
+    console.log('[QuestionService] Starting question selection');
+    console.log('[QuestionService] Available questions:', availableQuestions.length);
+    console.log('[QuestionService] Used questions count:', this.usedQuestions.size);
     
     const selectedQuestions: TriviaQuestion[] = [];
 
     // Group questions by category, excluding already used ones
     const questionsByCategory = CATEGORIES.reduce((acc, category) => {
-      acc[category] = availableQuestions.filter(q => 
+      const categoryQuestions = availableQuestions.filter(q => 
         q.category === category && !this.usedQuestions.has(q.id)
       );
+      acc[category] = categoryQuestions;
+      console.log(`[QuestionService] Category ${category}: ${categoryQuestions.length} unused questions`);
       return acc;
     }, {} as Record<QuestionCategory, TriviaQuestion[]>);
 
-    // Log available questions per category
-    CATEGORIES.forEach(category => {
-      console.log(`[QuestionService] Category ${category}: ${questionsByCategory[category].length} unused questions`);
-    });
-
     // Check if we need to reset used questions
     const totalAvailableUnused = Object.values(questionsByCategory).reduce((sum, questions) => sum + questions.length, 0);
+    console.log('[QuestionService] Total unused questions across all categories:', totalAvailableUnused);
     
     if (totalAvailableUnused < 7) {
-      console.log('[QuestionService] Not enough unused questions, resetting used questions pool');
+      console.log('[QuestionService] Insufficient unused questions, resetting used questions pool');
       this.resetUsedQuestions();
       
       // Rebuild the groups without used questions filter
       CATEGORIES.forEach(category => {
         questionsByCategory[category] = availableQuestions.filter(q => q.category === category);
+        console.log(`[QuestionService] After reset - Category ${category}: ${questionsByCategory[category].length} questions`);
       });
     }
 
@@ -98,7 +100,7 @@ export class QuestionService {
         const selectedQuestion = categoryQuestions[randomIndex];
         selectedQuestions.push(selectedQuestion);
         
-        console.log('[QuestionService] Selected question from category', category, ':', selectedQuestion.id);
+        console.log('[QuestionService] Selected question from category', category, ':', selectedQuestion.id, '-', selectedQuestion.question.substring(0, 50) + '...');
       } else {
         console.warn('[QuestionService] No questions available for category:', category);
       }
@@ -107,15 +109,17 @@ export class QuestionService {
     // Mark selected questions as used
     selectedQuestions.forEach(q => {
       this.usedQuestions.add(q.id);
+      console.log('[QuestionService] Marked question as used:', q.id);
     });
     this.saveUsedQuestions();
 
-    console.log('[QuestionService] Selected', selectedQuestions.length, 'questions for round');
+    console.log('[QuestionService] Final selection:', selectedQuestions.length, 'questions');
+    console.log('[QuestionService] New used questions count:', this.usedQuestions.size);
     return selectedQuestions;
   }
 
   resetUsedQuestions(): void {
-    console.log('[QuestionService] Resetting used questions');
+    console.log('[QuestionService] Resetting used questions pool');
     this.usedQuestions.clear();
     this.saveUsedQuestions();
   }

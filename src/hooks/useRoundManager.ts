@@ -43,17 +43,19 @@ export function useRoundManager(hostId: string) {
         console.log('[useRoundManager] Loading questions for language:', language);
         setQuestionsError(null);
         
+        // Try to fetch from database
         const questions = await questionService.fetchQuestionsByLanguage(language);
         
         if (questions.length === 0) {
-          throw new Error('No questions found in database');
+          throw new Error('No questions found in database - using extreme fallback');
         }
 
+        // Try to select questions for the round
         const selectedQuestions = questionService.selectQuestionsForRound(questions);
         
         if (selectedQuestions.length < QUESTIONS_PER_ROUND) {
-          console.warn('[useRoundManager] Only got', selectedQuestions.length, 'questions, using fallback');
-          throw new Error('Insufficient questions available');
+          console.warn('[useRoundManager] Database returned insufficient questions, using extreme fallback');
+          throw new Error('Insufficient questions from database - using extreme fallback');
         }
 
         const questionsWithRoundId = selectedQuestions.map((q): TriviaQuestion => ({ 
@@ -61,24 +63,30 @@ export function useRoundManager(hostId: string) {
           id: `r1-${q.id}` 
         }));
 
+        console.log('[useRoundManager] Successfully loaded database questions:', questionsWithRoundId.length);
+        questionsWithRoundId.forEach(q => {
+          console.log('[useRoundManager] Question loaded:', q.category, '-', q.question.substring(0, 50) + '...');
+        });
+
         setCurrentRound(prev => ({
           ...prev,
           questions: questionsWithRoundId
         }));
         
         setQuestionsLoaded(true);
-        console.log('[useRoundManager] Successfully loaded', questionsWithRoundId.length, 'questions');
         
       } catch (error) {
-        console.error('[useRoundManager] Error loading questions:', error);
-        setQuestionsError(error instanceof Error ? error.message : 'Unknown error');
+        console.error('[useRoundManager] Database unavailable, using EXTREME fallback questions:', error);
+        setQuestionsError('Database unavailable - using backup questions');
         
-        // Fallback to mock questions
+        // EXTREME FALLBACK: Only use when database is completely unavailable
         const fallbackQuestions = language === 'it' ? mockQuestionsItalian : mockQuestions;
         const questionsWithRoundId = fallbackQuestions.map((q): TriviaQuestion => ({ 
           ...q, 
-          id: `r1-${q.id}` 
+          id: `r1-fallback-${q.id}` 
         }));
+        
+        console.log('[useRoundManager] Using extreme fallback questions:', questionsWithRoundId.length);
         
         setCurrentRound(prev => ({
           ...prev,
@@ -86,7 +94,6 @@ export function useRoundManager(hostId: string) {
         }));
         
         setQuestionsLoaded(true);
-        console.log('[useRoundManager] Using fallback questions');
       }
     };
 
@@ -126,17 +133,17 @@ export function useRoundManager(hostId: string) {
     try {
       console.log('[useRoundManager] Loading questions for new round:', roundNumber);
       
+      // Try to fetch from database
       const questions = await questionService.fetchQuestionsByLanguage(language);
+      
+      if (questions.length === 0) {
+        throw new Error('No questions found in database');
+      }
+
       const selectedQuestions = questionService.selectQuestionsForRound(questions);
       
       if (selectedQuestions.length < QUESTIONS_PER_ROUND) {
-        // Use fallback questions if not enough available
-        const fallbackQuestions = language === 'it' ? mockQuestionsItalian : mockQuestions;
-        const questionsWithRoundId = fallbackQuestions.map((q): TriviaQuestion => ({ 
-          ...q, 
-          id: `r${roundNumber}-${q.id}` 
-        }));
-        return questionsWithRoundId;
+        throw new Error('Insufficient questions from database');
       }
 
       const questionsWithRoundId = selectedQuestions.map((q): TriviaQuestion => ({ 
@@ -144,18 +151,20 @@ export function useRoundManager(hostId: string) {
         id: `r${roundNumber}-${q.id}` 
       }));
 
+      console.log('[useRoundManager] Successfully loaded questions for round', roundNumber, ':', questionsWithRoundId.length);
       return questionsWithRoundId;
       
     } catch (error) {
-      console.error('[useRoundManager] Error loading questions for new round:', error);
+      console.error('[useRoundManager] Error loading questions for new round, using extreme fallback:', error);
       
-      // Fallback to mock questions
+      // EXTREME FALLBACK: Only use when database is completely unavailable
       const fallbackQuestions = language === 'it' ? mockQuestionsItalian : mockQuestions;
       const questionsWithRoundId = fallbackQuestions.map((q): TriviaQuestion => ({ 
         ...q, 
-        id: `r${roundNumber}-${q.id}` 
+        id: `r${roundNumber}-fallback-${q.id}` 
       }));
       
+      console.log('[useRoundManager] Using extreme fallback for round', roundNumber);
       return questionsWithRoundId;
     }
   };
