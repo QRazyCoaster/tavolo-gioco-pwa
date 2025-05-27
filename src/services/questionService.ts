@@ -8,9 +8,10 @@ const USED_QUESTIONS_KEY = 'trivia_used_questions';
 export class QuestionService {
   private static instance: QuestionService;
   private usedQuestions: Set<string> = new Set();
+  private currentGameId: string | null = null;
 
   private constructor() {
-    this.loadUsedQuestions();
+    // Don't load used questions on construction - wait for game ID
   }
 
   static getInstance(): QuestionService {
@@ -20,12 +21,20 @@ export class QuestionService {
     return QuestionService.instance;
   }
 
-  private loadUsedQuestions(): void {
+  private getUsedQuestionsKey(gameId: string): string {
+    return `${USED_QUESTIONS_KEY}_${gameId}`;
+  }
+
+  private loadUsedQuestions(gameId: string): void {
     try {
-      const stored = localStorage.getItem(USED_QUESTIONS_KEY);
+      const key = this.getUsedQuestionsKey(gameId);
+      const stored = localStorage.getItem(key);
       if (stored) {
         this.usedQuestions = new Set(JSON.parse(stored));
-        console.log('[QuestionService] Loaded', this.usedQuestions.size, 'used questions from storage');
+        console.log('[QuestionService] Loaded', this.usedQuestions.size, 'used questions for game', gameId);
+      } else {
+        this.usedQuestions = new Set();
+        console.log('[QuestionService] No used questions found for game', gameId, '- starting fresh');
       }
     } catch (error) {
       console.error('[QuestionService] Error loading used questions:', error);
@@ -34,11 +43,22 @@ export class QuestionService {
   }
 
   private saveUsedQuestions(): void {
+    if (!this.currentGameId) return;
+    
     try {
-      localStorage.setItem(USED_QUESTIONS_KEY, JSON.stringify([...this.usedQuestions]));
-      console.log('[QuestionService] Saved', this.usedQuestions.size, 'used questions to storage');
+      const key = this.getUsedQuestionsKey(this.currentGameId);
+      localStorage.setItem(key, JSON.stringify([...this.usedQuestions]));
+      console.log('[QuestionService] Saved', this.usedQuestions.size, 'used questions for game', this.currentGameId);
     } catch (error) {
       console.error('[QuestionService] Error saving used questions:', error);
+    }
+  }
+
+  setGameId(gameId: string): void {
+    if (this.currentGameId !== gameId) {
+      console.log('[QuestionService] Switching to game:', gameId);
+      this.currentGameId = gameId;
+      this.loadUsedQuestions(gameId);
     }
   }
 
@@ -60,7 +80,7 @@ export class QuestionService {
   }
 
   selectQuestionsForRound(availableQuestions: TriviaQuestion[]): TriviaQuestion[] {
-    console.log('[QuestionService] Starting question selection');
+    console.log('[QuestionService] Starting question selection for game:', this.currentGameId);
     console.log('[QuestionService] Available questions:', availableQuestions.length);
     console.log('[QuestionService] Used questions count:', this.usedQuestions.size);
     
@@ -76,12 +96,12 @@ export class QuestionService {
       return acc;
     }, {} as Record<QuestionCategory, TriviaQuestion[]>);
 
-    // Check if we need to reset used questions
-    const totalAvailableUnused = Object.values(questionsByCategory).reduce((sum, questions) => sum + questions.length, 0);
-    console.log('[QuestionService] Total unused questions across all categories:', totalAvailableUnused);
+    // Check if we can select one question from each category
+    const categoriesWithQuestions = CATEGORIES.filter(category => questionsByCategory[category].length > 0);
+    console.log('[QuestionService] Categories with unused questions:', categoriesWithQuestions.length, 'out of', CATEGORIES.length);
     
-    if (totalAvailableUnused < 7) {
-      console.log('[QuestionService] Insufficient unused questions, resetting used questions pool');
+    if (categoriesWithQuestions.length < CATEGORIES.length) {
+      console.log('[QuestionService] Cannot select one question per category, resetting used questions pool');
       this.resetUsedQuestions();
       
       // Rebuild the groups without used questions filter
@@ -119,9 +139,18 @@ export class QuestionService {
   }
 
   resetUsedQuestions(): void {
-    console.log('[QuestionService] Resetting used questions pool');
+    console.log('[QuestionService] Resetting used questions pool for game:', this.currentGameId);
     this.usedQuestions.clear();
     this.saveUsedQuestions();
+  }
+
+  clearGameData(gameId: string): void {
+    console.log('[QuestionService] Clearing all data for game:', gameId);
+    const key = this.getUsedQuestionsKey(gameId);
+    localStorage.removeItem(key);
+    if (this.currentGameId === gameId) {
+      this.usedQuestions.clear();
+    }
   }
 
   getUsedQuestionsCount(): number {

@@ -1,4 +1,3 @@
-
 // src/hooks/useRoundProgress.ts
 
 import { useState, useCallback, useEffect } from 'react'
@@ -98,12 +97,20 @@ export const useRoundProgress = (
     let newQuestions = currentRound.questions;
     if (loadQuestionsForNewRound) {
       try {
+        console.log('[useRoundProgress] Loading NEW questions for round', nextRoundNumber);
         newQuestions = await loadQuestionsForNewRound(nextRoundNumber);
-        console.log('[useRoundProgress] Loaded', newQuestions.length, 'new questions for round', nextRoundNumber);
+        console.log('[useRoundProgress] Loaded', newQuestions.length, 'NEW questions for round', nextRoundNumber);
+        
+        // Log the new questions to verify they're different
+        newQuestions.forEach((q, index) => {
+          console.log(`[useRoundProgress] New R${nextRoundNumber} Q${index + 1}:`, q.question.substring(0, 50) + '...');
+        });
       } catch (error) {
         console.error('[useRoundProgress] Error loading questions for new round:', error);
         // Continue with existing questions as fallback
       }
+    } else {
+      console.warn('[useRoundProgress] No loadQuestionsForNewRound function provided - reusing questions');
     }
 
     setCurrentRound(prev => ({
