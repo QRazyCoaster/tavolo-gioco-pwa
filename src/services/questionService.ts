@@ -59,11 +59,11 @@ export class QuestionService {
 
   selectQuestionsForRound(availableQuestions: TriviaQuestion[]): TriviaQuestion[] {
     console.log('[QuestionService] Selecting questions for round from', availableQuestions.length, 'available');
+    console.log('[QuestionService] Currently used questions:', this.usedQuestions.size);
     
     const selectedQuestions: TriviaQuestion[] = [];
-    const categoriesUsed = new Set<string>();
 
-    // Group questions by category
+    // Group questions by category, excluding already used ones
     const questionsByCategory = CATEGORIES.reduce((acc, category) => {
       acc[category] = availableQuestions.filter(q => 
         q.category === category && !this.usedQuestions.has(q.id)
@@ -71,7 +71,25 @@ export class QuestionService {
       return acc;
     }, {} as Record<QuestionCategory, TriviaQuestion[]>);
 
-    // Select one question from each category
+    // Log available questions per category
+    CATEGORIES.forEach(category => {
+      console.log(`[QuestionService] Category ${category}: ${questionsByCategory[category].length} unused questions`);
+    });
+
+    // Check if we need to reset used questions
+    const totalAvailableUnused = Object.values(questionsByCategory).reduce((sum, questions) => sum + questions.length, 0);
+    
+    if (totalAvailableUnused < 7) {
+      console.log('[QuestionService] Not enough unused questions, resetting used questions pool');
+      this.resetUsedQuestions();
+      
+      // Rebuild the groups without used questions filter
+      CATEGORIES.forEach(category => {
+        questionsByCategory[category] = availableQuestions.filter(q => q.category === category);
+      });
+    }
+
+    // Select one random question from each category
     for (const category of CATEGORIES) {
       const categoryQuestions = questionsByCategory[category];
       
@@ -79,23 +97,10 @@ export class QuestionService {
         const randomIndex = Math.floor(Math.random() * categoryQuestions.length);
         const selectedQuestion = categoryQuestions[randomIndex];
         selectedQuestions.push(selectedQuestion);
-        categoriesUsed.add(category);
         
         console.log('[QuestionService] Selected question from category', category, ':', selectedQuestion.id);
       } else {
-        console.warn('[QuestionService] No unused questions available for category:', category);
-      }
-    }
-
-    // If we couldn't get 7 questions, we might need to reset the used questions pool
-    if (selectedQuestions.length < 7) {
-      console.warn('[QuestionService] Only found', selectedQuestions.length, 'questions, may need to reset used pool');
-      
-      // If we have less than 7 questions total, reset used questions and try again
-      if (selectedQuestions.length < 3) {
-        console.log('[QuestionService] Resetting used questions pool');
-        this.resetUsedQuestions();
-        return this.selectQuestionsForRound(availableQuestions);
+        console.warn('[QuestionService] No questions available for category:', category);
       }
     }
 
