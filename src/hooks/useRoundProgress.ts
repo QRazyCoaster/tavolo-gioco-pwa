@@ -21,15 +21,7 @@ export const useRoundProgress = (
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
   const [gameOver, setGameOver] = useState(false)
 
-  /* ───── debug ───── */
-  useEffect(() => {
-    console.log(
-      '[useRoundProgress] Current round number:', currentRound.roundNumber,
-      'Next round number state:', nextRoundNumber,
-      'Total players:', players.length,
-      'Game over state:', gameOver
-    )
-  }, [currentRound.roundNumber, nextRoundNumber, players.length, gameOver])
+  // Debug effect removed - enable for debugging if needed
 
   /* ──────────────────────────── */
   const handleNextQuestion = useCallback(() => {
@@ -37,36 +29,27 @@ export const useRoundProgress = (
     const last = idx >= QUESTIONS_PER_ROUND - 1
 
     if (last) {
-      console.log(
-        '[useRoundProgress] End of round.',
-        'Current round:', currentRound.roundNumber,
-        'Players:', players.length
-      )
+        // End of round logic
 
       if (currentRound.roundNumber >= players.length) {
         /* FINAL ROUND */
-        console.log(
-          `[useRoundProgress] FINAL round ${currentRound.roundNumber} complete → skipping bridge`
-        )
+        // Final round complete
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
         setTimeout(() => {
-          console.log('[useRoundProgress] Setting gameOver to true')
           setGameOver(true)
         }, 6500)
       } else {
         /* NEXT ROUND */
-        console.log(
-          `[useRoundProgress] showRoundBridge(true) after finishing round ${currentRound.roundNumber} (next round)`
-        )
+        // Transition to next round
 
-        /* --- FIX: choose next narrator safely --- */
-        const nextIdx = currentRound.roundNumber            // zero-based index
-        console.log('[useRoundProgress] players.length=', players.length,
-                    'nextIdx=', nextIdx)
-        const nextId =
-          players[nextIdx]           ? players[nextIdx]!.id   // in-bounds
-          : players[0]?.id ?? ''                              // fallback (should never hit)
-        /* ---------------------------------------- */
+        /* --- Choose next narrator safely --- */
+        const nextIdx = currentRound.roundNumber % players.length // Safe modulo for wraparound
+        const nextId = players[nextIdx]?.id ?? players[0]?.id ?? ''
+        
+        if (!nextId) {
+          console.error('[useRoundProgress] No valid next narrator found!')
+          return
+        }
 
         setNextNarrator(nextId)
         setNextRoundNumber(currentRound.roundNumber + 1)
@@ -96,21 +79,12 @@ export const useRoundProgress = (
 
   /* ──────────────────────────── */
   const startNextRound = async () => {
-    console.log(
-      '[useRoundProgress] Starting next round:',
-      nextRoundNumber,
-      'with narrator:',
-      nextNarrator
-    )
 
     /* optional: load new Qs */
     let newQuestions = currentRound.questions
     if (loadQuestionsForNewRound) {
       try {
-        console.log('[useRoundProgress] Loading NEW questions for round', nextRoundNumber)
         newQuestions = await loadQuestionsForNewRound(nextRoundNumber)
-        console.log('[useRoundProgress] Loaded', newQuestions.length,
-                    'NEW questions for round', nextRoundNumber)
       } catch (err) {
         console.error('[useRoundProgress] Error loading questions:', err)
       }

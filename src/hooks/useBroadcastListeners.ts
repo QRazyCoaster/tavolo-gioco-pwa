@@ -32,7 +32,6 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'NEXT_QUESTION' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received NEXT_QUESTION', payload)
         const { questionIndex, scores } = payload
 
         if (Array.isArray(scores)) {
@@ -85,14 +84,7 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
-        console.log('[useBroadcastListeners] Received ROUND_END', payload)
         const { nextRound, nextNarratorId, scores, isGameOver = false } = payload
-
-        console.log(
-          `[useBroadcastListeners] ROUND_END on ${
-            currentPlayerId === nextNarratorId ? 'Narrator' : 'Player'
-          } client; payload.nextRound=${nextRound}`
-        )
 
         if (Array.isArray(scores)) {
           scores.forEach((s: { id: string; score: number }) =>
@@ -104,21 +96,20 @@ export const useBroadcastListeners = (
         setShowPendingAnswers(false)
 
         if (isGameOver) {
-          console.log('[useBroadcastListeners] FINAL round → showing game over immediately')
           setGameOver(true)
         } else {
           if (nextNarratorId) setNextNarrator(nextNarratorId)
           setNextRoundNumber(nextRound)
-          console.log('[useBroadcastListeners] Showing RoundBridge')
           setShowRoundBridge(true)
         }
       }
     )
 
     /* ───────────────────────── housekeeping ───────────────────────── */
-    gameChannel.on('disconnect', () => console.log('[useBroadcastListeners] Game channel disconnected'))
-    gameChannel.on('error', (error: any) => console.error('[useBroadcastListeners] Game channel error:', error))
-    gameChannel.on('reconnect', () => console.log('[useBroadcastListeners] Game channel reconnected'))
+    // Note: These events may need different signatures in newer Supabase versions
+    // gameChannel.on('disconnect', () => console.log('[useBroadcastListeners] Game channel disconnected'))
+    // gameChannel.on('error', (error: any) => console.error('[useBroadcastListeners] Game channel error:', error))
+    // gameChannel.on('reconnect', () => console.log('[useBroadcastListeners] Game channel reconnected'))
   }, [
     gameChannel,
     dispatch,

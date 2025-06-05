@@ -67,12 +67,6 @@ export const usePlayerActions = (
       // Get the game channel and broadcast the buzz event
       const gameChannel = getGameChannel();
       if (gameChannel) {
-        console.log('[handlePlayerBuzzer] Broadcasting buzz event', {
-          playerId: state.currentPlayer.id,
-          playerName: state.currentPlayer.name,
-          questionIndex: currentQuestionIndex
-        });
-        
         gameChannel.send({
           type: 'broadcast',
           event: 'BUZZ',

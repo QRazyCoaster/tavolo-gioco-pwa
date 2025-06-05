@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useGame } from '@/context/GameContext';
 import { Button } from "@/components/ui/button";
 import { playAudio } from '@/utils/audioUtils';
-import TriviaGame from '@/components/games/TriviaGame';
+// TriviaGame removed - using dedicated TriviaGamePage instead
 import { useToast } from '@/hooks/use-toast';
 
 const GamePage = () => {
@@ -20,95 +20,49 @@ const GamePage = () => {
     navigate('/');
   };
   
-  // Migliorata la logica di gestione dello stato della sessione
+  // Session validation effect
   useEffect(() => {
-    console.log('GamePage - Game state values:', {
-      gameId: state.gameId,
-      pin: state.pin,
-      gameStarted: state.gameStarted,
-      selectedGame: state.selectedGame,
-      playersCount: state.players.length
-    });
-    
-    // Ottieni prima i valori della sessione
-    const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
-    const sessionGameId = sessionStorage.getItem('gameId');
-    const sessionPin = sessionStorage.getItem('pin');
-    const sessionSelectedGame = sessionStorage.getItem('selectedGame');
-    
-    console.log('GamePage - Session storage values:', {
-      sessionGameStarted,
-      sessionGameId,
-      sessionPin,
-      sessionSelectedGame
-    });
-    
-    // Se abbiamo i valori dello stato e della sessione, prioritizziamo lo stato
-    if (state.gameId && state.pin && state.gameStarted) {
-      console.log('GamePage - Utilizzo lo stato del gioco dal contesto');
+    // Check if we have a valid game session
+    if (!state.gameId || !state.pin || !state.gameStarted) {
+      const sessionGameStarted = sessionStorage.getItem('gameStarted') === 'true';
+      const sessionGameId = sessionStorage.getItem('gameId');
+      const sessionPin = sessionStorage.getItem('pin');
       
-      // Aggiorna la sessionStorage con lo stato corrente
+      if (sessionGameStarted && sessionGameId && sessionPin) {
+        // Restore from session
+        dispatch({ type: 'RESTORE_SESSION' });
+        if (!state.gameStarted) dispatch({ type: 'START_GAME' });
+        
+        toast({
+          title: language === 'it' ? "Sessione ripristinata" : "Session restored",
+          description: language === 'it' 
+            ? "Sessione di gioco ripristinata con successo" 
+            : "Game session successfully restored"
+        });
+      } else {
+        // No valid session, redirect to home
+        toast({
+          title: language === 'it' ? "Sessione non valida" : "Invalid session",
+          description: language === 'it' 
+            ? "Nessuna sessione di gioco attiva trovata" 
+            : "No active game session found",
+          variant: "destructive"
+        });
+        navigate('/');
+      }
+    } else {
+      // Update session storage with current state
       sessionStorage.setItem('gameStarted', 'true');
       sessionStorage.setItem('gameId', state.gameId);
       sessionStorage.setItem('pin', state.pin);
-      if (state.selectedGame) {
-        sessionStorage.setItem('selectedGame', state.selectedGame);
-      } else {
-        // Imposta un gioco predefinito se non è stato selezionato
+      
+      if (!state.selectedGame) {
         dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
         sessionStorage.setItem('selectedGame', 'trivia');
+      } else {
+        sessionStorage.setItem('selectedGame', state.selectedGame);
       }
-      
-      // Non reindirizzare, abbiamo uno stato valido
-      return;
     }
-    
-    // Se non abbiamo lo stato ma abbiamo i valori di sessione, recuperiamo dalla sessione
-    if ((!state.gameId || !state.pin || !state.gameStarted) && 
-        sessionGameStarted && sessionGameId && sessionPin) {
-      console.log('GamePage - Recupero dallo storage di sessione');
-      
-      // Ripristina il gioco dalla sessione
-      dispatch({ type: 'RESTORE_SESSION' });
-      
-      // Assicurati che il gioco sia avviato
-      if (!state.gameStarted) {
-        dispatch({ type: 'START_GAME' });
-      }
-      
-      // Imposta il tipo di gioco se necessario
-      if (!state.selectedGame && sessionSelectedGame) {
-        dispatch({ type: 'SELECT_GAME', payload: sessionSelectedGame });
-      } else if (!state.selectedGame) {
-        dispatch({ type: 'SELECT_GAME', payload: 'trivia' });
-      }
-      
-      toast({
-        title: language === 'it' ? "Sessione ripristinata" : "Session restored",
-        description: language === 'it' 
-          ? "Sessione di gioco ripristinata con successo" 
-          : "Game session successfully restored"
-      });
-      
-      // Non reindirizzare, abbiamo recuperato lo stato
-      return;
-    }
-    
-    // Se non c'è stato nel contesto o nella sessionStorage, reindirizza alla home
-    if ((!state.gameId || !state.pin || !state.gameStarted) && 
-        (!sessionGameStarted || !sessionGameId || !sessionPin)) {
-      console.log('GamePage - Nessuno stato di gioco nel contesto o nella sessione, reindirizzo alla home');
-      toast({
-        title: language === 'it' ? "Sessione non valida" : "Invalid session",
-        description: language === 'it' 
-          ? "Nessuna sessione di gioco attiva trovata" 
-          : "No active game session found",
-        variant: "destructive"
-      });
-      navigate('/');
-      return;
-    }
-    
   }, [state.gameId, state.pin, state.gameStarted, state.selectedGame, navigate, dispatch, language, toast]);
   
   // Se ancora non pronto, mostra il caricamento
@@ -125,13 +79,13 @@ const GamePage = () => {
     );
   }
   
-  // Renderizza il gioco in base al tipo selezionato
+  // Render game based on selected type
   const renderGame = () => {
-    console.log('GamePage - Rendering game:', state.selectedGame);
-    
     switch (state.selectedGame) {
       case 'trivia':
-        return <TriviaGame />;
+        // Redirect to dedicated trivia page
+        navigate('/trivia');
+        return null;
       case 'bottlegame':
         return (
           <div className="flex items-center justify-center p-10">
