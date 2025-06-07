@@ -10,8 +10,17 @@ export const useQuestionManager = (currentRound: Round) => {
     return currentRound.currentQuestionIndex;
   };
 
+  // Defensive programming - ensure we never return undefined
+  const safeCurrentQuestion: TriviaQuestion = currentRound.questions[currentRound.currentQuestionIndex] || {
+    id: 'fallback',
+    question: 'Loading question...',
+    correct_answer: '',
+    category: '',
+    language: 'en' as const
+  };
+
   return {
-    currentQuestion: currentRound.questions[currentRound.currentQuestionIndex],
+    currentQuestion: safeCurrentQuestion,
     questionNumber: currentRound.currentQuestionIndex + 1,
     totalQuestions: QUESTIONS_PER_ROUND,
     handleNextQuestion

@@ -26,7 +26,7 @@ export const useRoundProgress = (
   /* ──────────────────────────── */
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex
-    const last = idx >= QUESTIONS_PER_ROUND - 1
+    const last = idx >= currentRound.questions.length - 1
 
     if (last) {
         // End of round logic

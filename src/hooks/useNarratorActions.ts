@@ -46,7 +46,7 @@ export const useNarratorActions = (
       console.log('[useNarratorActions] round=', currentRoundNumber, 'players=', players.length);
 
       const updatedPlayers = withUpdatedScores(playerId, CORRECT_ANSWER_POINTS);
-      const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
+      const isLast = currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
 
       // Clear player answers immediately after correct answer
       setCurrentRound(prev => ({
@@ -102,7 +102,7 @@ export const useNarratorActions = (
       setCurrentRound(prev => {
         const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);
         if (remaining.length === 0) {
-          const isLast = prev.currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
+          const isLast = prev.currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
 
           if (isLast) {
             if (currentRoundNumber >= players.length) {
@@ -155,7 +155,7 @@ export const useNarratorActions = (
   const handleNextQuestion = useCallback(() => {
     console.log('[useNarratorActions] round=', currentRoundNumber, 'players=', players.length);
 
-    const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
+    const isLast = currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
     if (isLast) {
       if (currentRoundNumber >= players.length) {
         console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, showing immediately for narrator');
@@ -190,7 +190,7 @@ export const useNarratorActions = (
 
   /* ───────── time-up ───────── */
   const handleTimeUp = () => {
-    const isLast = currentQuestionIndex === QUESTIONS_PER_ROUND - 1;
+    const isLast = currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
     if (isLast) {
       if (currentRoundNumber >= players.length) {
         console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, showing immediately for narrator');
