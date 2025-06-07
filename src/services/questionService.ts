@@ -80,11 +80,23 @@ export class QuestionService {
   }
 
   selectQuestionsForRound(availableQuestions: TriviaQuestion[]): TriviaQuestion[] {
+    console.log('[QuestionService] ===============================');
     console.log('[QuestionService] Starting question selection for game:', this.currentGameId);
     console.log('[QuestionService] Available questions:', availableQuestions.length);
     console.log('[QuestionService] Used questions count:', this.usedQuestions.size);
+    console.log('[QuestionService] Expected categories:', CATEGORIES);
     
     const selectedQuestions: TriviaQuestion[] = [];
+
+    // First, let's see what categories are actually in the database
+    const categoriesInDatabase = new Set(availableQuestions.map(q => q.category));
+    console.log('[QuestionService] Categories found in database:', [...categoriesInDatabase]);
+    
+    // Check for missing categories
+    const missingCategories = CATEGORIES.filter(cat => !categoriesInDatabase.has(cat));
+    if (missingCategories.length > 0) {
+      console.error('[QuestionService] ❌ MISSING CATEGORIES in database:', missingCategories);
+    }
 
     // Group questions by category, excluding already used ones
     const questionsByCategory = CATEGORIES.reduce((acc, category) => {
@@ -92,7 +104,19 @@ export class QuestionService {
         q.category === category && !this.usedQuestions.has(q.id)
       );
       acc[category] = categoryQuestions;
-      console.log(`[QuestionService] Category ${category}: ${categoryQuestions.length} unused questions`);
+      
+      // Special attention to drinks category
+      if (category === 'drinks') {
+        console.log(`[QuestionService] 🍺 DRINKS category detailed analysis:`);
+        console.log(`[QuestionService] 🍺 Total drinks in database: ${availableQuestions.filter(q => q.category === 'drinks').length}`);
+        console.log(`[QuestionService] 🍺 Used drinks: ${[...this.usedQuestions].filter(id => availableQuestions.find(q => q.id === id)?.category === 'drinks').length}`);
+        console.log(`[QuestionService] 🍺 Available unused drinks: ${categoryQuestions.length}`);
+        if (categoryQuestions.length > 0) {
+          console.log(`[QuestionService] 🍺 First few available drinks:`, categoryQuestions.slice(0, 3).map(q => ({ id: q.id, question: q.question.substring(0, 30) + '...' })));
+        }
+      }
+      
+      console.log(`[QuestionService] Category ${category}: ${categoryQuestions.length} unused questions (${availableQuestions.filter(q => q.category === category).length} total)`);
       return acc;
     }, {} as Record<QuestionCategory, TriviaQuestion[]>);
 
@@ -101,7 +125,10 @@ export class QuestionService {
     console.log('[QuestionService] Categories with unused questions:', categoriesWithQuestions.length, 'out of', CATEGORIES.length);
     
     if (categoriesWithQuestions.length < CATEGORIES.length) {
-      console.log('[QuestionService] Cannot select one question per category, resetting used questions pool');
+      console.warn('[QuestionService] ⚠️ Cannot select one question per category, resetting used questions pool');
+      const missingCats = CATEGORIES.filter(category => questionsByCategory[category].length === 0);
+      console.log('[QuestionService] ⚠️ Categories with no unused questions:', missingCats);
+      
       this.resetUsedQuestions();
       
       // Rebuild the groups without used questions filter
@@ -112,6 +139,7 @@ export class QuestionService {
     }
 
     // Select one random question from each category
+    console.log('[QuestionService] Starting selection process...');
     for (const category of CATEGORIES) {
       const categoryQuestions = questionsByCategory[category];
       
@@ -120,21 +148,35 @@ export class QuestionService {
         const selectedQuestion = categoryQuestions[randomIndex];
         selectedQuestions.push(selectedQuestion);
         
-        console.log('[QuestionService] Selected question from category', category, ':', selectedQuestion.id, '-', selectedQuestion.question.substring(0, 50) + '...');
+        console.log(`[QuestionService] ✅ Selected from ${category} (${selectedQuestions.length}/7):`, selectedQuestion.id, '-', selectedQuestion.question.substring(0, 50) + '...');
       } else {
-        console.warn('[QuestionService] No questions available for category:', category);
+        console.error(`[QuestionService] ❌ No questions available for category: ${category}`);
+        console.error(`[QuestionService] ❌ This will cause the 7th question to be undefined!`);
       }
     }
 
+    // Validation: Ensure we have exactly 7 questions
+    if (selectedQuestions.length !== 7) {
+      console.error('[QuestionService] ❌ CRITICAL ERROR: Expected 7 questions, got:', selectedQuestions.length);
+      console.error('[QuestionService] ❌ Selected questions by category:', selectedQuestions.map(q => ({ category: q.category, id: q.id })));
+      console.error('[QuestionService] ❌ This WILL cause the "Loading question..." bug!');
+    } else {
+      console.log('[QuestionService] ✅ Successfully selected exactly 7 questions');
+    }
+
     // Mark selected questions as used
-    selectedQuestions.forEach(q => {
+    selectedQuestions.forEach((q, index) => {
       this.usedQuestions.add(q.id);
-      console.log('[QuestionService] Marked question as used:', q.id);
+      console.log(`[QuestionService] Marked question ${index + 1}/7 as used: ${q.id} (${q.category})`);
     });
     this.saveUsedQuestions();
 
-    console.log('[QuestionService] Final selection:', selectedQuestions.length, 'questions');
-    console.log('[QuestionService] New used questions count:', this.usedQuestions.size);
+    console.log('[QuestionService] Final selection summary:');
+    console.log('[QuestionService] - Selected questions:', selectedQuestions.length);
+    console.log('[QuestionService] - Categories covered:', selectedQuestions.map(q => q.category));
+    console.log('[QuestionService] - New used questions count:', this.usedQuestions.size);
+    console.log('[QuestionService] ===============================');
+    
     return selectedQuestions;
   }
 
