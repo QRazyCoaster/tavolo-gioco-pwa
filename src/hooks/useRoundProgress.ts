@@ -33,11 +33,9 @@ export const useRoundProgress = (
 
       if (currentRound.roundNumber >= players.length) {
         /* FINAL ROUND */
-        // Final round complete
+        // Final round complete - immediately end game without delay
         broadcastRoundEnd(currentRound.roundNumber, '', players, true)
-        setTimeout(() => {
-          setGameOver(true)
-        }, 6500)
+        setGameOver(true)
       } else {
         /* NEXT ROUND */
         // Transition to next round
