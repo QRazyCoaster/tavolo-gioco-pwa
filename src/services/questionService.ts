@@ -68,7 +68,8 @@ export class QuestionService {
     const { data, error } = await supabase
       .from('trivia_questions')
       .select('*')
-      .eq('language', language);
+      .eq('language', language)
+      .range(0, 20000);
 
     if (error) {
       console.error('[QuestionService] Error fetching questions:', error);
