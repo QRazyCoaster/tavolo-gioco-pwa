@@ -64,39 +64,72 @@ export class QuestionService {
 
   /** Fetch all questions for the given language, regardless of total size */
   async fetchQuestionsByLanguage(language: 'en' | 'it'): Promise<TriviaQuestion[]> {
-    console.log('[QuestionService] Fetching questions for language:', language);
+    console.log('[QuestionService] 🔍 DEBUGGING: Fetching questions for language:', language);
 
-    // 1) Initial fetch, also ask supabase for exact count
+    // 1) Initial fetch with count to understand the limitation
     const { data: firstBatch, count, error: countErr } = await supabase
-      .from<TriviaQuestion>('trivia_questions')
+      .from('trivia_questions')
       .select('*', { count: 'exact' })
       .eq('language', language);
 
     if (countErr) {
-      console.error('[QuestionService] Error fetching count:', countErr);
+      console.error('[QuestionService] ❌ Error fetching count:', countErr);
       throw countErr;
     }
+    
     const total = count ?? 0;
-    console.log(`[QuestionService] Total questions in DB: ${total}`);
-    console.log(`[QuestionService] Fetched first batch length: ${firstBatch?.length ?? 0}`);
-
-    // 2) If there are more rows than the first batch, fetch them all
-    if (firstBatch && total > firstBatch.length) {
-      const { data: allData, error: fetchErr } = await supabase
-        .from<TriviaQuestion>('trivia_questions')
-        .select('*')
-        .eq('language', language)
-        .range(0, total - 1);
-
-      if (fetchErr) {
-        console.error('[QuestionService] Error fetching full set:', fetchErr);
-        throw fetchErr;
-      }
-      console.log(`[QuestionService] Fetched full set: ${allData?.length ?? 0} rows`);
-      return allData || [];
+    console.log(`[QuestionService] 📊 DEBUGGING: Database reports total questions: ${total}`);
+    console.log(`[QuestionService] 📊 DEBUGGING: First batch returned: ${firstBatch?.length ?? 0} questions`);
+    
+    // Debug: Check categories in first batch
+    if (firstBatch) {
+      const categoriesInFirstBatch = new Set(firstBatch.map(q => q.category));
+      console.log(`[QuestionService] 📊 DEBUGGING: Categories in first batch:`, [...categoriesInFirstBatch]);
+      const drinksInFirstBatch = firstBatch.filter(q => q.category === 'drinks').length;
+      console.log(`[QuestionService] 🍺 DEBUGGING: Drinks questions in first batch: ${drinksInFirstBatch}`);
     }
 
-    return firstBatch || [];
+    // 2) Force fetch ALL questions with explicit high limit to bypass any default limits
+    console.log(`[QuestionService] 🚀 DEBUGGING: Attempting to fetch ALL ${total} questions with explicit limit...`);
+    const { data: allData, error: fetchErr } = await supabase
+      .from('trivia_questions')
+      .select('*')
+      .eq('language', language)
+      .limit(5000) // Force high limit to bypass Supabase defaults
+      .order('id'); // Add consistent ordering
+
+    if (fetchErr) {
+      console.error('[QuestionService] ❌ Error fetching all questions:', fetchErr);
+      throw fetchErr;
+    }
+
+    const actualFetched = allData?.length ?? 0;
+    console.log(`[QuestionService] ✅ DEBUGGING: Successfully fetched ${actualFetched} questions (expected ${total})`);
+    
+    // Debug: Analyze the full dataset
+    if (allData) {
+      const allCategories = new Set(allData.map(q => q.category));
+      console.log(`[QuestionService] 📊 DEBUGGING: All categories in dataset:`, [...allCategories]);
+      
+      const categoryBreakdown = {};
+      allCategories.forEach(cat => {
+        const count = allData.filter(q => q.category === cat).length;
+        categoryBreakdown[cat] = count;
+        console.log(`[QuestionService] 📊 DEBUGGING: Category '${cat}': ${count} questions`);
+      });
+      
+      const drinksQuestions = allData.filter(q => q.category === 'drinks');
+      console.log(`[QuestionService] 🍺 DEBUGGING: Total drinks questions found: ${drinksQuestions.length}`);
+      if (drinksQuestions.length > 0) {
+        console.log(`[QuestionService] 🍺 DEBUGGING: First drinks question:`, drinksQuestions[0]);
+      }
+    }
+
+    if (actualFetched !== total) {
+      console.warn(`[QuestionService] ⚠️ DEBUGGING: Mismatch! Database says ${total} but we fetched ${actualFetched}`);
+    }
+
+    return allData || [];
   }
 
   selectQuestionsForRound(availableQuestions: TriviaQuestion[]): TriviaQuestion[] {
