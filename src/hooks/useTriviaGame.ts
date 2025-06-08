@@ -104,10 +104,6 @@ export const useTriviaGame = () => {
   const { handleCorrectAnswer, handleWrongAnswer } = useNarratorActions(
     currentRound.roundNumber,
     currentRound.currentQuestionIndex,
-    () => {
-      const nextRoundIndex = currentRound.roundNumber;
-      return state.players[nextRoundIndex]?.id || state.players[0].id;
-    },
     (nextIndex) => {
       setCurrentRound(prev => ({
         ...prev,
@@ -118,11 +114,7 @@ export const useTriviaGame = () => {
       setAnsweredPlayers(new Set());
       setShowPendingAnswers(false);
     },
-    setNextNarrator,
-    setShowRoundBridge,
-    setNextRoundNumber,
     setCurrentRound,
-    setGameOver,
     state.players
   );
 

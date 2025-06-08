@@ -19,13 +19,8 @@ import {
 export const useNarratorActions = (
   currentRoundNumber: number,
   currentQuestionIndex: number,
-  getNextNarrator: () => string,
   advanceQuestionLocally: (nextIndex: number) => void,
-  setNextNarrator: React.Dispatch<React.SetStateAction<string>>,
-  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
-  setNextRoundNumber: React.Dispatch<React.SetStateAction<number>>,
   setCurrentRound: React.Dispatch<React.SetStateAction<any>>,
-  setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
   players: Player[]
 ) => {
   const { state, dispatch } = useGame();
@@ -55,18 +50,7 @@ export const useNarratorActions = (
       }));
 
       if (isLast) {
-        if (currentRoundNumber >= players.length) {
-          console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, showing immediately for narrator');
-          broadcastRoundEnd(currentRoundNumber, '', updatedPlayers, true);
-          // Immediately show game over for narrator
-          setGameOver(true);
-        } else {
-          const nextNarratorId = getNextNarrator();
-          setNextRoundNumber(currentRoundNumber + 1);
-          broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
-          setShowRoundBridge(true);
-          setNextNarrator(nextNarratorId);
-        }
+        // Let useRoundProgress handle round transitions
         playAudio('success');
       } else {
         const nextIdx = currentQuestionIndex + 1;
@@ -82,12 +66,7 @@ export const useNarratorActions = (
       currentRoundNumber,
       players,
       advanceQuestionLocally,
-      getNextNarrator,
-      setNextNarrator,
-      setShowRoundBridge,
-      setNextRoundNumber,
       setCurrentRound,
-      setGameOver,
       state.players
     ]
   );
@@ -105,18 +84,7 @@ export const useNarratorActions = (
           const isLast = prev.currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
 
           if (isLast) {
-            if (currentRoundNumber >= players.length) {
-              console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, showing immediately for narrator');
-              broadcastRoundEnd(currentRoundNumber, '', updatedPlayers, true);
-              // Immediately show game over for narrator
-              setGameOver(true);
-            } else {
-              const nextNarratorId = getNextNarrator();
-              setNextRoundNumber(currentRoundNumber + 1);
-              broadcastRoundEnd(currentRoundNumber, nextNarratorId, updatedPlayers);
-              setShowRoundBridge(true);
-              setNextNarrator(nextNarratorId);
-            }
+            // Let useRoundProgress handle round transitions
             playAudio('notification');
           } else {
             const nextIdx = prev.currentQuestionIndex + 1;
@@ -140,75 +108,22 @@ export const useNarratorActions = (
     [
       currentRoundNumber,
       players,
-      getNextNarrator,
       advanceQuestionLocally,
-      setNextNarrator,
-      setShowRoundBridge,
-      setNextRoundNumber,
       setCurrentRound,
-      setGameOver,
       state.players
     ]
   );
 
   /* ───────── manual next question ───────── */
   const handleNextQuestion = useCallback(() => {
-    console.log('[useNarratorActions] round=', currentRoundNumber, 'players=', players.length);
-
-    const isLast = currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
-    if (isLast) {
-      if (currentRoundNumber >= players.length) {
-        console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, showing immediately for narrator');
-        broadcastRoundEnd(currentRoundNumber, '', state.players, true);
-        // Immediately show game over for narrator
-        setGameOver(true);
-      } else {
-        const nextNarratorId = getNextNarrator();
-        setNextRoundNumber(currentRoundNumber + 1);
-        broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
-        setShowRoundBridge(true);
-        setNextNarrator(nextNarratorId);
-      }
-    } else {
-      const nextIdx = currentQuestionIndex + 1;
-      advanceQuestionLocally(nextIdx);
-      broadcastNextQuestion(nextIdx, state.players);
-    }
+    console.log('[useNarratorActions] manual next question - letting useRoundProgress handle progression');
+    // Let useRoundProgress handle all round progression logic
     playAudio('notification');
-  }, [
-    currentQuestionIndex,
-    currentRoundNumber,
-    players,
-    advanceQuestionLocally,
-    getNextNarrator,
-    setNextNarrator,
-    setShowRoundBridge,
-    setNextRoundNumber,
-    setGameOver,
-    state.players
-  ]);
+  }, []);
 
   /* ───────── time-up ───────── */
   const handleTimeUp = () => {
-    const isLast = currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
-    if (isLast) {
-      if (currentRoundNumber >= players.length) {
-        console.log('[useNarratorActions] FINAL ROUND - broadcasting game over, showing immediately for narrator');
-        broadcastRoundEnd(currentRoundNumber, '', state.players, true);
-        // Immediately show game over for narrator
-        setGameOver(true);
-      } else {
-        const nextNarratorId = getNextNarrator();
-        setNextRoundNumber(currentRoundNumber + 1);
-        broadcastRoundEnd(currentRoundNumber, nextNarratorId, state.players);
-        setNextNarrator(nextNarratorId);
-        setShowRoundBridge(true);
-      }
-    } else {
-      const nextIdx = currentQuestionIndex + 1;
-      advanceQuestionLocally(nextIdx);
-      broadcastNextQuestion(nextIdx, state.players);
-    }
+    // Let useRoundProgress handle all round progression logic
   };
 
   return { handleCorrectAnswer, handleWrongAnswer, handleNextQuestion, handleTimeUp };
