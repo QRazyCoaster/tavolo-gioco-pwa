@@ -114,19 +114,6 @@ const TriviaGamePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center">
-            <Button variant="ghost" size="sm" onClick={handleBackToLobby} className="mr-2">
-              <ArrowLeft size={18} />
-            </Button>
-            <h1 className="text-2xl font-bold text-primary">Trivia</h1>
-          </div>
-
-          <div className="bg-primary px-3 py-1 rounded-lg text-white text-center">
-            <span className="text-sm font-semibold">{t('common.pin')}: </span>
-            <span className="text-lg font-bold tracking-wider">{state.pin}</span>
-          </div>
-        </div>
 
         {showRoundBridge && nextNarrator ? (
           <RoundBridgePage
