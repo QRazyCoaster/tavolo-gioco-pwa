@@ -22,6 +22,13 @@ export const useNarratorDisconnectionHandler = ({
     const currentNarratorId = currentRound.narratorId;
     if (!currentNarratorId) return;
 
+    // Wait for presence tracking to establish - don't check until we have active players
+    const allActivePlayers = getActivePlayers();
+    if (allActivePlayers.length === 0) {
+      console.log('[useNarratorDisconnectionHandler] Presence tracking not established yet, skipping check');
+      return;
+    }
+
     const isNarratorActive = isPlayerActive(currentNarratorId);
     const wasNarratorActive = lastNarratorActiveRef.current;
     
@@ -31,7 +38,7 @@ export const useNarratorDisconnectionHandler = ({
       console.log('[useNarratorDisconnectionHandler] Current narrator disconnected:', currentNarratorId);
       
       // Get list of active players excluding the disconnected narrator
-      const activePlayers = getActivePlayers().filter(p => p.id !== currentNarratorId);
+      const activePlayers = allActivePlayers.filter(p => p.id !== currentNarratorId);
       
       // Check if we have any active players left
       if (activePlayers.length === 0) {
