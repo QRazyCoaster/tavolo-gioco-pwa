@@ -13,7 +13,111 @@ interface Translations {
 
 // Translations dictionary
 const translations: Translations = {
-  /* …all your existing keys… */
+  // Common UI translations
+  'common.chooseLanguage': {
+    en: 'Choose Language',
+    it: 'Scegli Lingua',
+  },
+  'common.chooseRole': {
+    en: 'Choose your role',
+    it: 'Scegli il tuo ruolo',
+  },
+  'common.chooseName': {
+    en: 'Choose your name',
+    it: 'Scegli il tuo nome',
+  },
+  'common.enterPin': {
+    en: 'Enter PIN',
+    it: 'Inserisci PIN',
+  },
+  'common.pin': {
+    en: 'PIN',
+    it: 'PIN',
+  },
+  'common.join': {
+    en: 'Join',
+    it: 'Unisciti',
+  },
+  'common.createGame': {
+    en: 'Create Game',
+    it: 'Crea Gioco',
+  },
+  'common.startGame': {
+    en: 'Start Game',
+    it: 'Inizia Gioco',
+  },
+  'common.endGame': {
+    en: 'End Game',
+    it: 'Termina Gioco',
+  },
+  'common.players': {
+    en: 'players',
+    it: 'giocatori',
+  },
+  'common.firstNarrator': {
+    en: 'First Narrator',
+    it: 'Primo Narratore',
+  },
+  'common.waitingForPlayers': {
+    en: 'Waiting for players',
+    it: 'In attesa dei giocatori',
+  },
+  'common.waitingForPlayersToJoin': {
+    en: 'Waiting for other players to join...',
+    it: 'In attesa che altri giocatori si uniscano...',
+  },
+  'common.select': {
+    en: 'Select',
+    it: 'Seleziona',
+  },
+  'common.next': {
+    en: 'Next',
+    it: 'Avanti',
+  },
+  'common.back': {
+    en: 'Back',
+    it: 'Indietro',
+  },
+  'common.continue': {
+    en: 'Continue',
+    it: 'Continua',
+  },
+  'common.loading': {
+    en: 'Loading...',
+    it: 'Caricamento...',
+  },
+  'common.rules': {
+    en: 'Rules',
+    it: 'Regole',
+  },
+  'common.noGameSelected': {
+    en: 'No game selected',
+    it: 'Nessun gioco selezionato',
+  },
+  'common.musicEnabled': {
+    en: 'Music Enabled',
+    it: 'Musica Attivata',
+  },
+  'common.musicDisabled': {
+    en: 'Music Disabled',
+    it: 'Musica Disattivata',
+  },
+  'common.musicEnabledDesc': {
+    en: 'Background music has been turned on.',
+    it: 'La musica di sottofondo è stata attivata.',
+  },
+  'common.musicDisabledDesc': {
+    en: 'Background music has been turned off.',
+    it: 'La musica di sottofondo è stata disattivata.',
+  },
+  'common.playMusic': {
+    en: 'Play music',
+    it: 'Riproduci musica',
+  },
+  'common.muteMusic': {
+    en: 'Mute music',
+    it: 'Silenzia musica',
+  },
 
   'trivia.yourTurn': {
     en: "It's your turn to answer!",
