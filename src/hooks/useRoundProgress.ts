@@ -77,8 +77,29 @@ export const useRoundProgress = (
     players,
     setCurrentRound,
     setAnsweredPlayers,
-    setShowPending
+    setShowPending,
+    getActivePlayers
   ])
+
+  /* ──────────────────────────── */
+  const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
+    console.log('[useRoundProgress] Handling narrator disconnection, next narrator:', nextNarratorId);
+    
+    if (!nextNarratorId) {
+      // No active players left or last narrator disconnected - end game
+      console.log('[useRoundProgress] Ending game due to narrator disconnection');
+      broadcastRoundEnd(currentRound.roundNumber, '', players, true);
+      setGameOver(true);
+      return;
+    }
+    
+    // Skip to round bridge with new narrator
+    console.log('[useRoundProgress] Skipping to round bridge with new narrator:', nextNarratorId);
+    setNextNarrator(nextNarratorId);
+    setNextRoundNumber(currentRound.roundNumber + 1);
+    broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players);
+    setShowRoundBridge(true);
+  }, [currentRound.roundNumber, players, setNextNarrator, setNextRoundNumber, setShowRoundBridge, setGameOver])
 
   /* ──────────────────────────── */
   const startNextRound = async () => {
@@ -116,6 +137,7 @@ export const useRoundProgress = (
     gameOver,
     setGameOver,
     handleNextQuestion,
-    startNextRound
+    startNextRound,
+    handleNarratorDisconnection
   }
 }

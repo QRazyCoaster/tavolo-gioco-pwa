@@ -23,6 +23,7 @@ import { useBroadcastListeners } from './useBroadcastListeners';
 import { useNarratorSubscription } from './useNarratorSubscription';
 import { useNarratorTimer }   from './useNarratorTimer';
 import { usePresenceTracking } from './usePresenceTracking';
+import { useNarratorDisconnectionHandler } from './useNarratorDisconnectionHandler';
 
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
@@ -64,7 +65,8 @@ export const useTriviaGame = () => {
     setGameOver,
     setNextNarrator,
     handleNextQuestion,
-    startNextRound
+    startNextRound,
+    handleNarratorDisconnection
   } = useRoundProgress(
     currentRound,
     setCurrentRound,
@@ -74,6 +76,14 @@ export const useTriviaGame = () => {
     loadQuestionsForNewRound,
     getActivePlayers
   );
+
+  // ───────── Narrator disconnection handling ─────────
+  useNarratorDisconnectionHandler({
+    currentRound,
+    isPlayerActive,
+    getActivePlayers,
+    onNarratorDisconnected: handleNarratorDisconnection
+  });
 
   // ───────── Broadcast listeners ─────────
   useBroadcastListeners(
