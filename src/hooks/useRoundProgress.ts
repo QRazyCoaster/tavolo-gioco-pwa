@@ -31,41 +31,39 @@ export const useRoundProgress = (
     const last = idx >= currentRound.questions.length - 1
 
     if (last) {
-        // End of round logic
-
-      // Check if all original players have completed their narrator turns
-      const allNarratorsCompleted = state.originalNarratorQueue.every(playerId => 
-        state.completedNarrators.has(playerId) || !getActivePlayers().some(p => p.id === playerId)
-      );
+      // End of round logic
       
-      if (allNarratorsCompleted) {
-        /* FINAL ROUND */
-        // All original narrators have had their turn - end game
+      // Mark current narrator as completed
+      dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
+      
+      // Find next narrator from remaining players who haven't narrated yet
+      const activePlayers = getActivePlayers?.() || [];
+      const activePlayerIds = activePlayers.map(p => p.id);
+      
+      // Find next narrator from players who haven't been narrator yet and are active
+      const remainingNarrators = players
+        .filter(p => !state.completedNarrators.has(p.id) && activePlayerIds.includes(p.id))
+        .map(p => p.id);
+      
+      console.log('[useRoundProgress] Remaining narrators:', remainingNarrators);
+      console.log('[useRoundProgress] Completed narrators:', Array.from(state.completedNarrators));
+      
+      if (remainingNarrators.length === 0) {
+        // No more narrators - end game
         console.log('[useRoundProgress] All narrators completed, ending game');
-        dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
         broadcastRoundEnd(currentRound.roundNumber, '', players, true);
         setGameOver(true);
       } else {
-        /* NEXT ROUND */
-        // Transition to next round
-
-        /* --- Choose next narrator based on original queue --- */
-        const nextNarratorId = getNextNarratorFromOriginalQueue()
+        // Move to next round with next narrator
+        const nextNarratorId = remainingNarrators[0]; // Take first available
+        const nextRound = currentRound.roundNumber + 1;
         
-        if (!nextNarratorId) {
-          console.log('[useRoundProgress] No more narrators in queue - ending game')
-          broadcastRoundEnd(currentRound.roundNumber, '', players, true)
-          setGameOver(true)
-          return
-        }
-
-        // Mark current narrator as completed
-        dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId })
+        console.log('[useRoundProgress] Next narrator:', nextNarratorId, 'Next round:', nextRound);
         
-        setNextNarrator(nextNarratorId)
-        setNextRoundNumber(currentRound.roundNumber + 1)
-        broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players)
-        setShowRoundBridge(true)
+        setNextNarrator(nextNarratorId);
+        setNextRoundNumber(nextRound);
+        broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players);
+        setShowRoundBridge(true);
       }
     } else {
       /* same round → next question */
@@ -87,62 +85,33 @@ export const useRoundProgress = (
     setAnsweredPlayers,
     setShowPending,
     getActivePlayers,
-    state.originalNarratorQueue,
     state.completedNarrators,
     dispatch
   ])
 
-  /* ──────────────────────────── */
-  const getNextNarratorFromOriginalQueue = useCallback(() => {
-    console.log('[useRoundProgress] Getting next narrator from original queue')
-    console.log('[useRoundProgress] Original queue:', state.originalNarratorQueue)
-    console.log('[useRoundProgress] Completed narrators:', Array.from(state.completedNarrators))
-    
-    if (!getActivePlayers) {
-      console.log('[useRoundProgress] No getActivePlayers function available')
-      return null
-    }
-    
-    const activePlayers = getActivePlayers()
-    const activePlayerIds = new Set(activePlayers.map(p => p.id))
-    console.log('[useRoundProgress] Active players:', Array.from(activePlayerIds))
-    
-    // Find next narrator from original queue who:
-    // 1. Hasn't been narrator yet
-    // 2. Is currently active
-    for (const playerId of state.originalNarratorQueue) {
-      if (!state.completedNarrators.has(playerId) && activePlayerIds.has(playerId)) {
-        console.log('[useRoundProgress] Found next narrator:', playerId)
-        return playerId
-      }
-    }
-    
-    console.log('[useRoundProgress] No valid next narrator found')
-    return null
-  }, [state.originalNarratorQueue, state.completedNarrators, getActivePlayers])
 
   /* ──────────────────────────── */
   const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
     console.log('[useRoundProgress] Handling narrator disconnection, next narrator:', nextNarratorId);
     
     // Mark current narrator as completed even if they disconnected
-    dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId })
+    dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
     
     if (!nextNarratorId) {
-      // No active players left or no more narrators in queue - end game
-      console.log('[useRoundProgress] Ending game due to narrator disconnection');
+      // No more valid narrators - end game
+      console.log('[useRoundProgress] Ending game due to no more narrators');
       broadcastRoundEnd(currentRound.roundNumber, '', players, true);
       setGameOver(true);
       return;
     }
     
-    // Skip to round bridge with new narrator
+    // Skip to round bridge with new narrator - keep same round number since we're replacing
     console.log('[useRoundProgress] Skipping to round bridge with new narrator:', nextNarratorId);
     setNextNarrator(nextNarratorId);
-    setNextRoundNumber(currentRound.roundNumber + 1);
+    setNextRoundNumber(currentRound.roundNumber + 1); // Next round number for display
     broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players);
     setShowRoundBridge(true);
-  }, [currentRound.roundNumber, currentRound.narratorId, players, setNextNarrator, setNextRoundNumber, setShowRoundBridge, setGameOver, dispatch])
+  }, [currentRound.roundNumber, currentRound.narratorId, players, dispatch])
 
   /* ──────────────────────────── */
   const startNextRound = async () => {
