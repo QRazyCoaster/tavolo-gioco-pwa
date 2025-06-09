@@ -155,6 +155,16 @@ const translations: Translations = {
     en: 'This game was created in English. Please go to the English Trivia page to join.',
     it: 'Questo gioco è stato creato in inglese. Per unirti, vai alla pagina Trivia Inglese.',
   },
+
+  // Game status error messages
+  'error.gameAlreadyStarted': {
+    en: 'This game has already started and cannot accept new players.',
+    it: 'Questo gioco è già iniziato e non può accettare nuovi giocatori.',
+  },
+  'error.gameNotAvailable': {
+    en: 'This game is no longer available.',
+    it: 'Questo gioco non è più disponibile.',
+  },
 };
 
 interface LanguageContextType {

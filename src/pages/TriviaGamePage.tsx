@@ -12,6 +12,7 @@ import GameOverPage from '@/components/trivia/GameOverPage';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { stopBackgroundMusic } from '@/utils/audioUtils';
+import { markGameAsCompleted } from '@/utils/gameEndUtils';
 
 const TriviaGamePage = () => {
   const { t, language }   = useLanguage();
@@ -76,7 +77,13 @@ const TriviaGamePage = () => {
     }
   }, [playerAnswers, showPendingAnswers, setShowPendingAnswers, isNarrator]);
 
-  const handleBackToLobby = () => navigate('/waiting-room');
+  const handleBackToLobby = async () => {
+    // Mark the game as completed when returning to lobby from game over
+    if (gameOver && state.gameId) {
+      await markGameAsCompleted(state.gameId);
+    }
+    navigate('/waiting-room');
+  };
 
   /* ---- loading spinner (unchanged) ---- */
   if (isLoading) {

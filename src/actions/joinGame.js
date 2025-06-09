@@ -30,7 +30,29 @@ export async function joinGame({ gameId, playerName }) {
   console.log('[JOIN_GAME] Assigned narrator_order:', nextOrder);
   // ───────────────────────────────────────────────────────
 
-  // ─── 2) INSERT NEW PLAYER with narrator_order ─────────
+  // ─── 2) VERIFY GAME STATUS BEFORE INSERTING PLAYER ─────
+  try {
+    const { data: gameCheck, error: gameCheckError } = await supabase
+      .from('games')
+      .select('status')
+      .eq('id', gameId)
+      .single();
+
+    if (gameCheckError || !gameCheck) {
+      console.error('[JOIN_GAME] Error checking game status:', gameCheckError);
+      throw new Error('Game not found');
+    }
+
+    if (gameCheck.status !== 'waiting') {
+      console.error('[JOIN_GAME] Game is not accepting players. Status:', gameCheck.status);
+      throw new Error(gameCheck.status === 'active' ? 'Game has already started' : 'Game is no longer available');
+    }
+  } catch (err) {
+    console.error('[JOIN_GAME] Game status check failed:', err);
+    throw err;
+  }
+
+  // ─── 3) INSERT NEW PLAYER with narrator_order ─────────
   const { data: player, error: insertError } = await supabase
     .from('players')
     .insert({
@@ -58,7 +80,7 @@ export async function joinGame({ gameId, playerName }) {
 
   console.log('[JOIN_GAME] Player inserted:', player);
 
-  // ─── 3) ASSIGN BUZZER SOUND (unchanged) ───────────────
+  // ─── 4) ASSIGN BUZZER SOUND (unchanged) ───────────────
   let buzzerSound = null;
   try {
     const files = await listBuzzers();

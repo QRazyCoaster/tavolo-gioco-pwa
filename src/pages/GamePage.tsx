@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { playAudio } from '@/utils/audioUtils';
 // TriviaGame removed - using dedicated TriviaGamePage instead
 import { useToast } from '@/hooks/use-toast';
+import { markGameAsCompleted } from '@/utils/gameEndUtils';
 
 const GamePage = () => {
   const { t, language } = useLanguage();
@@ -14,7 +15,12 @@ const GamePage = () => {
   const { state, dispatch } = useGame();
   const { toast } = useToast();
   
-  const handleEndGame = () => {
+  const handleEndGame = async () => {
+    // Mark the game as completed when host manually ends it
+    if (state.gameId) {
+      await markGameAsCompleted(state.gameId);
+    }
+    
     dispatch({ type: 'END_GAME' });
     playAudio('notification');
     navigate('/');

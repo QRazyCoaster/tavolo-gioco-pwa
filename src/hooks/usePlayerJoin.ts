@@ -38,10 +38,10 @@ export const usePlayerJoin = (core: Core) => {
     playAudio('buttonClick');
 
     try {
-      // 1. Look up game ID and language from the PIN
+      // 1. Look up game ID, language, and status from the PIN
       const { data: gameRow, error: gErr } = await supabase
         .from('games')
-        .select('id, language')
+        .select('id, language, status')
         .eq('pin_code', pin)
         .single();
 
@@ -49,6 +49,35 @@ export const usePlayerJoin = (core: Core) => {
         toast({
           title: language === 'it' ? 'Errore' : 'Error',
           description: language === 'it' ? 'PIN non valido' : 'Invalid PIN',
+          variant: "destructive",
+        });
+        setShowPinError(true);
+        return;
+      }
+
+      // 1.5. Check if the game is still accepting players (status should be 'waiting')
+      if (gameRow.status !== 'waiting') {
+        const { t } = { t: (key: string) => {
+          const translations: any = {
+            'error.gameAlreadyStarted': {
+              en: 'This game has already started and cannot accept new players.',
+              it: 'Questo gioco è già iniziato e non può accettare nuovi giocatori.',
+            },
+            'error.gameNotAvailable': {
+              en: 'This game is no longer available.',
+              it: 'Questo gioco non è più disponibile.',
+            }
+          };
+          return translations[key]?.[language] || key;
+        }};
+        
+        const errorMessage = gameRow.status === 'active' 
+          ? t('error.gameAlreadyStarted')
+          : t('error.gameNotAvailable');
+          
+        toast({
+          title: language === 'it' ? 'Accesso negato' : 'Access Denied',
+          description: errorMessage,
           variant: "destructive",
         });
         setShowPinError(true);
