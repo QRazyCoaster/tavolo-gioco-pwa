@@ -94,7 +94,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
       <div className="flex justify-center items-center mb-8" style={{ height: '40vh' }}>
         <Button
           className={`
-            w-64 h-64 text-xl font-bold shadow-xl transition-all duration-300 flex flex-col items-center justify-center gap-2
+            w-64 h-64 text-xl font-bold shadow-xl transition-all duration-300 flex flex-col items-center justify-center gap-4 px-4
             ${buzzerState.style === 'narrator' 
               ? 'bg-gray-400 cursor-not-allowed rounded-full' 
               : buzzerState.style === 'ready'
@@ -109,17 +109,17 @@ const PlayerView: React.FC<PlayerViewProps> = ({
           onClick={handlePress}
           disabled={buzzerState.disabled}
         >
-          <div className="text-white flex flex-col items-center gap-2">
+          <div className="text-white flex flex-col items-center gap-3 text-center">
             {buzzerState.style === 'go' && (
               <>
-                <CircleCheck size={64} />
-                <span className="text-4xl font-bold">{t('trivia.answerNow')}</span>
+                <span className="text-6xl">🎤</span>
+                <span className="text-3xl font-bold leading-tight">{t('trivia.answerNow')}</span>
               </>
             )}
             {buzzerState.style === 'wait' && (
               <>
-                <Hand size={64} />
-                <span className="text-4xl font-bold">{t('trivia.waitYourTurn')}</span>
+                <span className="text-6xl">✋</span>
+                <span className="text-3xl font-bold leading-tight">{t('trivia.waitYourTurn')}</span>
               </>
             )}
             {buzzerState.style === 'ready' && (
@@ -131,7 +131,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
             {buzzerState.style === 'eliminated' && (
               <>
                 <span className="text-6xl">🥴</span>
-                <span className="text-4xl font-bold">{t('trivia.eliminated')}</span>
+                <span className="text-3xl font-bold leading-tight">{t('trivia.eliminated')}</span>
               </>
             )}
           </div>
