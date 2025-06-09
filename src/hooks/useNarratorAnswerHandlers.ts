@@ -16,7 +16,8 @@ export const useNarratorAnswerHandlers = (
   currentQuestionIndex: number,
   advanceQuestionLocally: (nextIndex: number) => void,
   setCurrentRound: React.Dispatch<React.SetStateAction<any>>,
-  players: Player[]
+  players: Player[],
+  onNextQuestion: () => void
 ) => {
   const { state, dispatch } = useGame();
 
@@ -37,7 +38,8 @@ export const useNarratorAnswerHandlers = (
       }));
 
       if (isLast) {
-        // Let useRoundProgress handle round transitions
+        // Trigger round progression for last question
+        onNextQuestion();
         playAudio('success');
       } else {
         const nextIdx = currentQuestionIndex + 1;
@@ -55,7 +57,8 @@ export const useNarratorAnswerHandlers = (
       advanceQuestionLocally,
       setCurrentRound,
       state.players,
-      dispatch
+      dispatch,
+      onNextQuestion
     ]
   );
 
@@ -73,7 +76,8 @@ export const useNarratorAnswerHandlers = (
           const isLast = prev.currentQuestionIndex >= QUESTIONS_PER_ROUND - 1;
 
           if (isLast) {
-            // Let useRoundProgress handle round transitions
+            // Trigger round progression for last question
+            onNextQuestion();
             playAudio('notification');
           } else {
             const nextIdx = prev.currentQuestionIndex + 1;
@@ -100,7 +104,8 @@ export const useNarratorAnswerHandlers = (
       advanceQuestionLocally,
       setCurrentRound,
       state.players,
-      dispatch
+      dispatch,
+      onNextQuestion
     ]
   );
 

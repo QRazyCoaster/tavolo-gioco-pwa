@@ -115,7 +115,8 @@ export const useTriviaGame = () => {
       setShowPendingAnswers(false);
     },
     setCurrentRound,
-    state.players
+    state.players,
+    handleNextQuestion
   );
 
   // ───────── Narrator timer ─────────

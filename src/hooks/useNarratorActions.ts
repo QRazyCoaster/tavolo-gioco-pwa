@@ -10,7 +10,8 @@ export const useNarratorActions = (
   currentQuestionIndex: number,
   advanceQuestionLocally: (nextIndex: number) => void,
   setCurrentRound: React.Dispatch<React.SetStateAction<any>>,
-  players: Player[]
+  players: Player[],
+  onNextQuestion: () => void
 ) => {
   // Delegate answer handling to specialized hook
   const { handleCorrectAnswer, handleWrongAnswer } = useNarratorAnswerHandlers(
@@ -18,7 +19,8 @@ export const useNarratorActions = (
     currentQuestionIndex,
     advanceQuestionLocally,
     setCurrentRound,
-    players
+    players,
+    onNextQuestion
   );
 
   /* ───────── manual next question ───────── */
