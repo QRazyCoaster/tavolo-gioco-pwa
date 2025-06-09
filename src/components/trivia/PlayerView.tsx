@@ -101,6 +101,8 @@ const PlayerView: React.FC<PlayerViewProps> = ({
               ? 'bg-red-600 hover:bg-red-700 transform hover:scale-105 active:scale-95 rounded-full'
               : buzzerState.style === 'go'
               ? 'bg-green-600 hover:bg-green-600 cursor-not-allowed rounded-lg'
+              : buzzerState.style === 'eliminated'
+              ? 'bg-gray-500 cursor-not-allowed rounded-lg'
               : 'bg-red-800 hover:bg-red-800 cursor-not-allowed rounded-lg'
             }
           `}
@@ -125,6 +127,12 @@ const PlayerView: React.FC<PlayerViewProps> = ({
             )}
             {buzzerState.style === 'narrator' && (
               <span className="text-xl">NARRATOR</span>
+            )}
+            {buzzerState.style === 'eliminated' && (
+              <>
+                <span className="text-3xl">😢</span>
+                <span className="text-lg font-bold">{t('trivia.notGood')}</span>
+              </>
             )}
           </div>
         </Button>
