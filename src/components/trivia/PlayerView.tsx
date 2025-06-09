@@ -131,7 +131,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
             {buzzerState.style === 'eliminated' && (
               <>
                 <span className="text-3xl">😢</span>
-                <span className="text-lg font-bold">{t('trivia.notGood')}</span>
+                <span className="text-lg font-bold">{t('trivia.eliminated')}</span>
               </>
             )}
           </div>
