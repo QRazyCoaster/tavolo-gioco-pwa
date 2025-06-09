@@ -109,17 +109,19 @@ const PlayerView: React.FC<PlayerViewProps> = ({
           onClick={handlePress}
           disabled={buzzerState.disabled}
         >
-          <div className="text-white flex flex-col items-center gap-3 text-center">
+          <div className="text-white flex flex-col items-center justify-center gap-2 text-center h-full">
             {buzzerState.style === 'go' && (
               <>
-                <span className="text-6xl">🎤</span>
-                <span className="text-3xl font-bold leading-tight">{t('trivia.answerNow')}</span>
+                <span className="text-5xl">🎤</span>
+                <span className="text-2xl font-bold leading-tight px-2 break-words">{t('trivia.answerNow')}</span>
               </>
             )}
             {buzzerState.style === 'wait' && (
               <>
-                <span className="text-6xl">✋</span>
-                <span className="text-3xl font-bold leading-tight">{t('trivia.waitYourTurn')}</span>
+                <span className="text-5xl">✋</span>
+                <span className="text-2xl font-bold leading-tight px-2 break-words whitespace-pre-wrap">
+                  {language === 'it' ? 'ASPETTA IL\nTUO TURNO' : 'WAIT YOUR\nTURN'}
+                </span>
               </>
             )}
             {buzzerState.style === 'ready' && (
@@ -130,8 +132,10 @@ const PlayerView: React.FC<PlayerViewProps> = ({
             )}
             {buzzerState.style === 'eliminated' && (
               <>
-                <span className="text-6xl">🥴</span>
-                <span className="text-3xl font-bold leading-tight">{t('trivia.eliminated')}</span>
+                <span className="text-5xl">🥴</span>
+                <span className="text-2xl font-bold leading-tight px-2 break-words whitespace-pre-wrap">
+                  {language === 'it' ? 'NON CI\nSIAMO' : 'NOT\nGOOD'}
+                </span>
               </>
             )}
           </div>
