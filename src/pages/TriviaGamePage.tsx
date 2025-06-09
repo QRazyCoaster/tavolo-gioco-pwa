@@ -157,6 +157,7 @@ const TriviaGamePage = () => {
             players={state.players}
             hasAnswered={hasPlayerAnswered}
             isFirstInQueue={isFirstInQueue}
+            isEliminated={isEliminated}
             onBuzzerPressed={handlePlayerBuzzer}
             isCurrentPlayerNarrator={isNarrator}
           />
