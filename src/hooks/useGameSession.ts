@@ -16,6 +16,8 @@ export const useGameSession = () => {
     const sessionGameId = sessionStorage.getItem('gameId');
     const sessionPin = sessionStorage.getItem('pin');
     const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
+    const currentPlayerId = sessionStorage.getItem('currentPlayerId');
+    const currentPlayerName = sessionStorage.getItem('currentPlayerName');
     
     // We have a game in context, session is valid
     if (state.gameId && state.pin) {
@@ -34,11 +36,25 @@ export const useGameSession = () => {
       console.log('[useGameSession] Game found in session storage:', { 
         sessionGameId, 
         sessionPin,
-        gameStarted
+        gameStarted,
+        currentPlayerId,
+        currentPlayerName
       });
       
       // Try to restore from session
       dispatch({ type: 'RESTORE_SESSION' });
+      
+      // Also restore current player if available
+      if (currentPlayerId && currentPlayerName && !state.currentPlayer) {
+        dispatch({ 
+          type: 'SET_CURRENT_PLAYER', 
+          payload: { 
+            id: currentPlayerId, 
+            name: currentPlayerName, 
+            isHost: false 
+          } 
+        });
+      }
       
       // Give it a moment to update state
       setTimeout(() => {

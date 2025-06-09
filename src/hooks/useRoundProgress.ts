@@ -14,7 +14,8 @@ export const useRoundProgress = (
   players: Player[],
   setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
   setShowPending: React.Dispatch<React.SetStateAction<boolean>>,
-  loadQuestionsForNewRound?: (roundNumber: number) => Promise<any[]>
+  loadQuestionsForNewRound?: (roundNumber: number) => Promise<any[]>,
+  getActivePlayers?: () => Player[]
 ) => {
   const [showRoundBridge, setShowRoundBridge] = useState(false)
   const [nextNarrator, setNextNarrator] = useState<string>('')
@@ -41,8 +42,12 @@ export const useRoundProgress = (
         // Transition to next round
 
         /* --- Choose next narrator safely --- */
-        const nextIdx = currentRound.roundNumber % players.length // Safe modulo for wraparound
-        const nextId = players[nextIdx]?.id ?? players[0]?.id ?? ''
+        // Use active players for narrator selection, fall back to all players if none active
+        const availablePlayers = getActivePlayers ? getActivePlayers() : players
+        const playersToUse = availablePlayers.length > 0 ? availablePlayers : players
+        
+        const nextIdx = currentRound.roundNumber % playersToUse.length // Safe modulo for wraparound
+        const nextId = playersToUse[nextIdx]?.id ?? playersToUse[0]?.id ?? ''
         
         if (!nextId) {
           console.error('[useRoundProgress] No valid next narrator found!')

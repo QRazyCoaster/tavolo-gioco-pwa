@@ -22,6 +22,7 @@ import { useGameChannel }     from './useGameChannel';
 import { useBroadcastListeners } from './useBroadcastListeners';
 import { useNarratorSubscription } from './useNarratorSubscription';
 import { useNarratorTimer }   from './useNarratorTimer';
+import { usePresenceTracking } from './usePresenceTracking';
 
 export const useTriviaGame = () => {
   const { state, dispatch } = useGame();
@@ -48,6 +49,10 @@ export const useTriviaGame = () => {
     setEliminatedPlayers(new Set());
   }, [currentRound.currentQuestionIndex, currentRound.roundNumber]);
 
+  // ───────── Channel & presence tracking ─────────
+  const gameChannelRef = useGameChannel(state.gameId);
+  const { getActivePlayers, isPlayerActive } = usePresenceTracking(gameChannelRef.current);
+
   // ───────── Round progression ─────────
   const {
     showRoundBridge,
@@ -66,12 +71,11 @@ export const useTriviaGame = () => {
     state.players,
     setAnsweredPlayers,
     setShowPendingAnswers,
-    loadQuestionsForNewRound
+    loadQuestionsForNewRound,
+    getActivePlayers
   );
 
-  // ───────── Channel & listeners ─────────
-  const gameChannelRef = useGameChannel(state.gameId);
-
+  // ───────── Broadcast listeners ─────────
   useBroadcastListeners(
     gameChannelRef.current,
     setCurrentRound,

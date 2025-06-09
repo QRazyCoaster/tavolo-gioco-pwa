@@ -100,6 +100,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ),
       };
     case 'SET_CURRENT_PLAYER':
+      // Also store current player in session storage for recovery
+      if (action.payload) {
+        sessionStorage.setItem('currentPlayerId', action.payload.id);
+        sessionStorage.setItem('currentPlayerName', action.payload.name);
+      } else {
+        sessionStorage.removeItem('currentPlayerId');
+        sessionStorage.removeItem('currentPlayerName');
+      }
       return { ...state, currentPlayer: action.payload };
     case 'START_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: true };
