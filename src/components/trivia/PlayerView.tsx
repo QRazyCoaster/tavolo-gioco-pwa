@@ -112,26 +112,26 @@ const PlayerView: React.FC<PlayerViewProps> = ({
           <div className="text-white flex flex-col items-center gap-2">
             {buzzerState.style === 'go' && (
               <>
-                <CircleCheck size={32} />
-                <span className="text-lg font-bold">{t('trivia.answerNow')}</span>
+                <CircleCheck size={64} />
+                <span className="text-4xl font-bold">{t('trivia.answerNow')}</span>
               </>
             )}
             {buzzerState.style === 'wait' && (
               <>
-                <Hand size={32} />
-                <span className="text-lg font-bold">{t('trivia.waitYourTurn')}</span>
+                <Hand size={64} />
+                <span className="text-4xl font-bold">{t('trivia.waitYourTurn')}</span>
               </>
             )}
             {buzzerState.style === 'ready' && (
-              <span className="text-2xl">PUSH</span>
+              <span className="text-5xl font-bold">PUSH</span>
             )}
             {buzzerState.style === 'narrator' && (
-              <span className="text-xl">NARRATOR</span>
+              <span className="text-2xl">NARRATOR</span>
             )}
             {buzzerState.style === 'eliminated' && (
               <>
-                <span className="text-3xl">😢</span>
-                <span className="text-lg font-bold">{t('trivia.eliminated')}</span>
+                <span className="text-6xl">🥴</span>
+                <span className="text-4xl font-bold">{t('trivia.eliminated')}</span>
               </>
             )}
           </div>
