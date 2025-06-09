@@ -16,6 +16,7 @@ interface PlayerViewProps {
   players: Player[];
   hasAnswered: boolean;
   isFirstInQueue: boolean;
+  isEliminated: boolean;
   onBuzzerPressed: () => void;
   isCurrentPlayerNarrator: boolean;
 }
@@ -27,6 +28,7 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   players,
   hasAnswered,
   isFirstInQueue,
+  isEliminated,
   onBuzzerPressed,
   isCurrentPlayerNarrator
 }) => {
@@ -71,6 +73,9 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   const getBuzzerState = () => {
     if (isCurrentPlayerNarrator) {
       return { disabled: true, style: 'narrator' };
+    }
+    if (isEliminated) {
+      return { disabled: true, style: 'eliminated' };
     }
     if (!hasAnswered) {
       return { disabled: false, style: 'ready' };

@@ -1,7 +1,7 @@
 
 // src/hooks/useTriviaGame.ts
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useCallback }       from 'react';
+import { useCallback, useState, useEffect }       from 'react';
 import { useGame }           from '@/context/GameContext';
 import { Round }             from '@/types/trivia';
 import {
@@ -40,6 +40,14 @@ export const useTriviaGame = () => {
     questionsError
   } = useRoundManager(hostId);
 
+  // ───────── Eliminated players state ─────────
+  const [eliminatedPlayers, setEliminatedPlayers] = useState<Set<string>>(new Set());
+
+  // Reset eliminated players when question changes
+  useEffect(() => {
+    setEliminatedPlayers(new Set());
+  }, [currentRound.currentQuestionIndex, currentRound.roundNumber]);
+
   // ───────── Round progression ─────────
   const {
     showRoundBridge,
@@ -75,7 +83,8 @@ export const useTriviaGame = () => {
     setGameOver,
     dispatch,
     state.gameId,
-    currentRound
+    currentRound,
+    setEliminatedPlayers
   );
 
   useNarratorSubscription(
@@ -130,19 +139,24 @@ export const useTriviaGame = () => {
 
   // Calculate current player's position in the answer queue
   const currentPlayerId = state.currentPlayer?.id ?? '';
-  // Sort playerAnswers by timestamp to ensure consistent queue order
-  const sortedPlayerAnswers = [...currentRound.playerAnswers].sort((a, b) => a.timestamp - b.timestamp);
+  // Sort playerAnswers by timestamp and filter out eliminated players
+  const sortedPlayerAnswers = [...currentRound.playerAnswers]
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .filter(answer => !eliminatedPlayers.has(answer.playerId));
+  
   const playerQueuePosition = sortedPlayerAnswers.findIndex(
     answer => answer.playerId === currentPlayerId
   );
   const isFirstInQueue = playerQueuePosition === 0;
   const hasAnswered = answeredPlayers.has(currentPlayerId);
+  const isEliminated = eliminatedPlayers.has(currentPlayerId);
 
   return {
     currentRound,
     isNarrator: state.currentPlayer?.id === currentRound.narratorId,
     hasPlayerAnswered: hasAnswered,
-    isFirstInQueue: hasAnswered && isFirstInQueue,
+    isFirstInQueue: hasAnswered && isFirstInQueue && !isEliminated,
+    isEliminated,
     currentQuestion,
     questionNumber,
     totalQuestions,

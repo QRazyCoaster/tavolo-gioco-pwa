@@ -27,6 +27,7 @@ const TriviaGamePage = () => {
     isNarrator,
     hasPlayerAnswered,
     isFirstInQueue,
+    isEliminated,
     currentQuestion,
     questionNumber,
     totalQuestions,

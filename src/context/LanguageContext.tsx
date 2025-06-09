@@ -128,6 +128,10 @@ const translations: Translations = {
     en: 'WAIT YOUR TURN',
     it: 'ASPETTA IL TUO TURNO',
   },
+  'trivia.eliminated': {
+    en: 'NOT GOOD',
+    it: 'NON CI SIAMO',
+  },
 
   'trivia.yourTurn': {
     en: "It's your turn to answer!",

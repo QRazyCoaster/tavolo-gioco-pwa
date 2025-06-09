@@ -17,7 +17,8 @@ export const useBroadcastListeners = (
   setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
   dispatch: React.Dispatch<any>,
   gameId: string | null,
-  currentRound: Round
+  currentRound: Round,
+  setEliminatedPlayers: React.Dispatch<React.SetStateAction<Set<string>>>
 ) => {
   const { state } = useGame()
   const currentPlayerId = state.currentPlayer?.id
@@ -48,6 +49,7 @@ export const useBroadcastListeners = (
         }))
         setAnsweredPlayers(new Set())
         setShowPendingAnswers(false)
+        setEliminatedPlayers(new Set())
       }
     )
 
@@ -79,6 +81,16 @@ export const useBroadcastListeners = (
       }
     )
 
+    /* ───────────────────────── PLAYER_ELIMINATED ───────────────────────── */
+    gameChannel.on(
+      'broadcast',
+      { event: 'PLAYER_ELIMINATED' },
+      ({ payload }: { payload: any }) => {
+        const { playerId } = payload
+        setEliminatedPlayers(prev => new Set([...prev, playerId]))
+      }
+    )
+
     /* ───────────────────────── ROUND_END ───────────────────────── */
     gameChannel.on(
       'broadcast',
@@ -94,6 +106,7 @@ export const useBroadcastListeners = (
 
         setAnsweredPlayers(new Set())
         setShowPendingAnswers(false)
+        setEliminatedPlayers(new Set())
 
         if (isGameOver) {
           setGameOver(true)
@@ -122,6 +135,7 @@ export const useBroadcastListeners = (
     setGameOver,
     gameId,
     currentRound.roundNumber,
-    currentPlayerId
+    currentPlayerId,
+    setEliminatedPlayers
   ])
 }

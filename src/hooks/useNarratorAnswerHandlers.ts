@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { useGame, Player } from '@/context/GameContext';
 import { playAudio } from '@/utils/audioUtils';
-import { broadcastScoreUpdate, broadcastNextQuestion } from '@/utils/triviaBroadcast';
+import { broadcastScoreUpdate, broadcastNextQuestion, broadcastPlayerEliminated } from '@/utils/triviaBroadcast';
 import { updatePlayerScore } from '@/utils/scoreUtils';
 import {
   QUESTION_TIMER,
@@ -69,6 +69,9 @@ export const useNarratorAnswerHandlers = (
 
       const updatedPlayers = updatePlayerScore(state.players, playerId, WRONG_ANSWER_POINTS);
       dispatch({ type: 'UPDATE_SCORE', payload: { playerId, score: updatedPlayers.find(p => p.id === playerId)?.score || 0 } });
+
+      // Broadcast that this player is eliminated from the current question
+      broadcastPlayerEliminated(playerId);
 
       setCurrentRound(prev => {
         const remaining = prev.playerAnswers.filter(a => a.playerId !== playerId);

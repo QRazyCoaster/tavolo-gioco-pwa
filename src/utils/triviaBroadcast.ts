@@ -78,6 +78,26 @@ export const broadcastNextQuestion = (
   });
 };
 
+export const broadcastPlayerEliminated = (playerId: string) => {
+  if (!gameChannel) {
+    console.error('[triviaBroadcast] Cannot broadcast player elimination - game channel not set');
+    return;
+  }
+  
+  console.log('[triviaBroadcast] Broadcasting player elimination:', playerId);
+  
+  // Send player elimination event to all players
+  gameChannel.send({
+    type: 'broadcast',
+    event: 'PLAYER_ELIMINATED',
+    payload: { playerId }
+  }).then(() => {
+    console.log('[triviaBroadcast] Player elimination broadcast sent successfully');
+  }).catch(error => {
+    console.error('[triviaBroadcast] Error broadcasting player elimination:', error);
+  });
+};
+
 export const broadcastRoundEnd = (
   currentRoundNumber: number,
   nextNarratorId: string,
