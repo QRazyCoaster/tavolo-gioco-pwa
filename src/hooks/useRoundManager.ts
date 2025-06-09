@@ -28,12 +28,23 @@ export function useRoundManager(hostId: string) {
 
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
-    narratorId: hostId,
+    narratorId: state.originalNarratorQueue[0] || hostId, // Use first player from original queue
     questions: [],
     currentQuestionIndex: 0,
     playerAnswers: [],
     timeLeft: QUESTION_TIMER,
   })
+
+  // Update narrator when original queue is initialized
+  useEffect(() => {
+    if (state.originalNarratorQueue.length > 0 && currentRound.narratorId !== state.originalNarratorQueue[0]) {
+      console.log('[useRoundManager] Updating narrator to first in queue:', state.originalNarratorQueue[0]);
+      setCurrentRound(prev => ({
+        ...prev,
+        narratorId: state.originalNarratorQueue[0]
+      }));
+    }
+  }, [state.originalNarratorQueue, currentRound.narratorId]);
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set())
   const [showPendingAnswers, setShowPendingAnswers] = useState(false)

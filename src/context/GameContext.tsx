@@ -19,6 +19,8 @@ export interface GameState {
   gameStarted: boolean;
   currentPlayer: Player | null;
   backgroundMusicPlaying: boolean;
+  originalNarratorQueue: string[]; // Original order of narrator rotation
+  completedNarrators: Set<string>; // Players who have already been narrator
 }
 
 /* ──────────────── Initial state ──────────────── */
@@ -30,6 +32,8 @@ const initialState: GameState = {
   gameStarted: false,
   currentPlayer: null,
   backgroundMusicPlaying: false,
+  originalNarratorQueue: [],
+  completedNarrators: new Set(),
 };
 
 /* ──────────────── Action types ──────────────── */
@@ -46,7 +50,9 @@ type GameAction =
   | { type: 'SET_CURRENT_PLAYER'; payload: Player | null }
   | { type: 'START_BACKGROUND_MUSIC' }
   | { type: 'STOP_BACKGROUND_MUSIC' }
-  | { type: 'RESTORE_SESSION' };
+  | { type: 'RESTORE_SESSION' }
+  | { type: 'INITIALIZE_NARRATOR_QUEUE'; payload: string[] }
+  | { type: 'MARK_NARRATOR_COMPLETED'; payload: string };
 
 /* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -84,14 +90,29 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'SELECT_GAME':
       return { ...state, selectedGame: action.payload };
     case 'START_GAME':
-      return { ...state, gameStarted: true };
+      // Initialize narrator queue with current players when game starts
+      const narratorQueue = state.players.map(p => p.id);
+      return { 
+        ...state, 
+        gameStarted: true,
+        originalNarratorQueue: narratorQueue,
+        completedNarrators: new Set()
+      };
     case 'END_GAME':
       // Clear sessionStorage when the game ends
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
       sessionStorage.removeItem('selectedGame');
-      return { ...state, gameStarted: false, selectedGame: null, gameId: null, pin: null };
+      return { 
+        ...state, 
+        gameStarted: false, 
+        selectedGame: null, 
+        gameId: null, 
+        pin: null,
+        originalNarratorQueue: [],
+        completedNarrators: new Set()
+      };
     case 'UPDATE_SCORE':
       return {
         ...state,
@@ -132,6 +153,19 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
       return state;
+    case 'INITIALIZE_NARRATOR_QUEUE':
+      return {
+        ...state,
+        originalNarratorQueue: action.payload,
+        completedNarrators: new Set()
+      };
+    case 'MARK_NARRATOR_COMPLETED':
+      const newCompletedNarrators = new Set(state.completedNarrators);
+      newCompletedNarrators.add(action.payload);
+      return {
+        ...state,
+        completedNarrators: newCompletedNarrators
+      };
     default:
       return state;
   }

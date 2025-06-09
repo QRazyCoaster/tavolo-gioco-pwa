@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useGame } from '@/context/GameContext';
 import { Round } from '@/types/trivia';
 
@@ -15,8 +15,32 @@ export const useNarratorDisconnectionHandler = ({
   getActivePlayers,
   onNarratorDisconnected
 }: UseNarratorDisconnectionHandlerProps) => {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const lastNarratorActiveRef = useRef<boolean>(true);
+
+  // Helper function to get next narrator from original queue
+  const getNextNarratorFromOriginalQueue = useCallback(() => {
+    console.log('[useNarratorDisconnectionHandler] Getting next narrator from original queue')
+    console.log('[useNarratorDisconnectionHandler] Original queue:', state.originalNarratorQueue)
+    console.log('[useNarratorDisconnectionHandler] Completed narrators:', Array.from(state.completedNarrators))
+    
+    const activePlayers = getActivePlayers()
+    const activePlayerIds = new Set(activePlayers.map(p => p.id))
+    console.log('[useNarratorDisconnectionHandler] Active players:', Array.from(activePlayerIds))
+    
+    // Find next narrator from original queue who:
+    // 1. Hasn't been narrator yet
+    // 2. Is currently active
+    for (const playerId of state.originalNarratorQueue) {
+      if (!state.completedNarrators.has(playerId) && activePlayerIds.has(playerId)) {
+        console.log('[useNarratorDisconnectionHandler] Found next narrator:', playerId)
+        return playerId
+      }
+    }
+    
+    console.log('[useNarratorDisconnectionHandler] No valid next narrator found')
+    return null
+  }, [state.originalNarratorQueue, state.completedNarrators, getActivePlayers]);
 
   useEffect(() => {
     const currentNarratorId = currentRound.narratorId;
@@ -37,40 +61,19 @@ export const useNarratorDisconnectionHandler = ({
     if (wasNarratorActive && !isNarratorActive) {
       console.log('[useNarratorDisconnectionHandler] Current narrator disconnected:', currentNarratorId);
       
-      // Get list of active players excluding the disconnected narrator
-      const activePlayers = allActivePlayers.filter(p => p.id !== currentNarratorId);
-      
-      // Check if we have any active players left
-      if (activePlayers.length === 0) {
-        console.log('[useNarratorDisconnectionHandler] No active players left, ending game');
-        onNarratorDisconnected(null); // Signal game over
-        return;
-      }
-      
-      // Find next narrator from active players based on round rotation
-      // Use round number to determine next narrator position
-      const nextNarratorIndex = currentRound.roundNumber % activePlayers.length;
-      const nextNarratorId = activePlayers[nextNarratorIndex]?.id;
+      // Find next narrator using original queue logic
+      const nextNarratorId = getNextNarratorFromOriginalQueue();
       
       if (!nextNarratorId) {
-        console.log('[useNarratorDisconnectionHandler] Could not find next narrator, ending game');
+        console.log('[useNarratorDisconnectionHandler] No more valid narrators available, ending game');
         onNarratorDisconnected(null); // Signal game over
         return;
       }
       
-      // Check if this would be the last round (all players have been narrator)
-      const totalPlayers = state.players.length;
-      const isLastRound = currentRound.roundNumber >= totalPlayers;
-      
-      if (isLastRound) {
-        console.log('[useNarratorDisconnectionHandler] Last round narrator disconnected, ending game');
-        onNarratorDisconnected(null); // Signal game over
-      } else {
-        console.log('[useNarratorDisconnectionHandler] Transferring to next narrator:', nextNarratorId);
-        onNarratorDisconnected(nextNarratorId);
-      }
+      console.log('[useNarratorDisconnectionHandler] Transferring to next narrator:', nextNarratorId);
+      onNarratorDisconnected(nextNarratorId);
     }
     
     lastNarratorActiveRef.current = isNarratorActive;
-  }, [currentRound.narratorId, currentRound.roundNumber, isPlayerActive, getActivePlayers, onNarratorDisconnected, state.players.length]);
+  }, [currentRound.narratorId, currentRound.roundNumber, isPlayerActive, getActivePlayers, onNarratorDisconnected, getNextNarratorFromOriginalQueue]);
 };
