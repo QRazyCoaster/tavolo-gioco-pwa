@@ -128,10 +128,19 @@ export const useTriviaGame = () => {
     handleNextQuestion
   );
 
+  // Calculate current player's position in the answer queue
+  const currentPlayerId = state.currentPlayer?.id ?? '';
+  const playerQueuePosition = currentRound.playerAnswers.findIndex(
+    answer => answer.playerId === currentPlayerId
+  );
+  const isFirstInQueue = playerQueuePosition === 0;
+  const hasAnswered = answeredPlayers.has(currentPlayerId);
+
   return {
     currentRound,
     isNarrator: state.currentPlayer?.id === currentRound.narratorId,
-    hasPlayerAnswered: answeredPlayers.has(state.currentPlayer?.id ?? ''),
+    hasPlayerAnswered: hasAnswered,
+    isFirstInQueue: hasAnswered && isFirstInQueue,
     currentQuestion,
     questionNumber,
     totalQuestions,

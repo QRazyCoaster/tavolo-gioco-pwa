@@ -119,6 +119,16 @@ const translations: Translations = {
     it: 'Silenzia musica',
   },
 
+  // Player buzzer states
+  'trivia.answerNow': {
+    en: 'ANSWER NOW',
+    it: 'RISPONDI ORA',
+  },
+  'trivia.waitYourTurn': {
+    en: 'WAIT YOUR TURN',
+    it: 'ASPETTA IL TUO TURNO',
+  },
+
   'trivia.yourTurn': {
     en: "It's your turn to answer!",
     it: "È il tuo turno di rispondere!",

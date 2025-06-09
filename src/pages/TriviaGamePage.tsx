@@ -26,6 +26,7 @@ const TriviaGamePage = () => {
     currentRound,
     isNarrator,
     hasPlayerAnswered,
+    isFirstInQueue,
     currentQuestion,
     questionNumber,
     totalQuestions,
@@ -154,6 +155,7 @@ const TriviaGamePage = () => {
             totalQuestions={totalQuestions}
             players={state.players}
             hasAnswered={hasPlayerAnswered}
+            isFirstInQueue={isFirstInQueue}
             onBuzzerPressed={handlePlayerBuzzer}
             isCurrentPlayerNarrator={isNarrator}
           />

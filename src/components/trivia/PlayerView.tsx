@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Player } from '@/context/GameContext';
 import { useToast } from '@/hooks/use-toast';
 import { playAudio } from '@/utils/audioUtils';
+import { Hand, CircleCheck } from 'lucide-react';
 import PlayerRankings from './PlayerRankings';
 
 interface PlayerViewProps {
@@ -14,6 +15,7 @@ interface PlayerViewProps {
   totalQuestions: number;
   players: Player[];
   hasAnswered: boolean;
+  isFirstInQueue: boolean;
   onBuzzerPressed: () => void;
   isCurrentPlayerNarrator: boolean;
 }
@@ -24,10 +26,11 @@ const PlayerView: React.FC<PlayerViewProps> = ({
   totalQuestions,
   players,
   hasAnswered,
+  isFirstInQueue,
   onBuzzerPressed,
   isCurrentPlayerNarrator
 }) => {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const { state } = useGame();
   const { toast } = useToast();
   const [isPressed, setIsPressed] = useState(false);
@@ -59,28 +62,65 @@ const PlayerView: React.FC<PlayerViewProps> = ({
 
     // Show feedback to the player
     toast({
-      title: language === 'it' ? 'Prenotazione effettuata!' : 'Buzz registered!',
-      description: language === 'it' ? 'Sei in attesa di rispondere' : 'Waiting for your turn to answer'
+      title: t('common.loading'),
+      description: t('trivia.waitingForQuestion')
     });
   };
 
+  // Determine buzzer state and styling
+  const getBuzzerState = () => {
+    if (isCurrentPlayerNarrator) {
+      return { disabled: true, style: 'narrator' };
+    }
+    if (!hasAnswered) {
+      return { disabled: false, style: 'ready' };
+    }
+    if (isFirstInQueue) {
+      return { disabled: true, style: 'go' };
+    }
+    return { disabled: true, style: 'wait' };
+  };
+
+  const buzzerState = getBuzzerState();
+
   return (
     <div className="flex flex-col w-full max-w-md mx-auto h-full">
-      {/* Big buzzer button */}
+      {/* Traffic light style buzzer button */}
       <div className="flex justify-center items-center mb-8" style={{ height: '40vh' }}>
         <Button
-          className={`w-64 h-64 rounded-full text-2xl font-bold shadow-xl transition-all duration-300 flex items-center justify-center ${
-            hasAnswered || isCurrentPlayerNarrator
-              ? 'bg-gray-400 cursor-not-allowed'
-              : isPressed
-              ? 'bg-red-700 hover:bg-red-700 border-4 border-blue-200'
-              : 'bg-red-600 hover:bg-red-700 transform hover:scale-105 active:scale-95'
-          }`}
+          className={`
+            w-64 h-64 text-xl font-bold shadow-xl transition-all duration-300 flex flex-col items-center justify-center gap-2
+            ${buzzerState.style === 'narrator' 
+              ? 'bg-gray-400 cursor-not-allowed rounded-full' 
+              : buzzerState.style === 'ready'
+              ? 'bg-red-600 hover:bg-red-700 transform hover:scale-105 active:scale-95 rounded-full'
+              : buzzerState.style === 'go'
+              ? 'bg-green-600 hover:bg-green-600 cursor-not-allowed rounded-lg'
+              : 'bg-red-800 hover:bg-red-800 cursor-not-allowed rounded-lg'
+            }
+          `}
           onClick={handlePress}
-          disabled={hasAnswered || isCurrentPlayerNarrator}
+          disabled={buzzerState.disabled}
         >
-          <div className="text-white">
-            {isPressed ? (language === 'it' ? 'ATTESA' : 'WAITING') : 'PUSH'}
+          <div className="text-white flex flex-col items-center gap-2">
+            {buzzerState.style === 'go' && (
+              <>
+                <CircleCheck size={32} />
+                <span className="text-lg font-bold">{t('trivia.answerNow')}</span>
+              </>
+            )}
+            {buzzerState.style === 'wait' && (
+              <>
+                <Hand size={32} />
+                <span className="text-lg font-bold">{t('trivia.waitYourTurn')}</span>
+              </>
+            )}
+            {buzzerState.style === 'ready' && (
+              <span className="text-2xl">PUSH</span>
+            )}
+            {buzzerState.style === 'narrator' && (
+              <span className="text-xl">NARRATOR</span>
+            )}
           </div>
         </Button>
       </div>
@@ -101,10 +141,21 @@ const PlayerView: React.FC<PlayerViewProps> = ({
         </div>
       </div>
 
-      {/* Answer status notification */}
-      {hasAnswered && (
+      {/* Enhanced answer status notification */}
+      {hasAnswered && isFirstInQueue && (
         <div className="mb-4 bg-green-100 text-green-800 p-3 rounded-lg text-center">
-          {language === 'it' ? 'Ti sei prenotato! Attendi il tuo turno.' : 'You are queued! Waiting for your turn.'}
+          <div className="flex items-center justify-center gap-2">
+            <CircleCheck size={20} />
+            <span className="font-semibold">{t('trivia.answerNow')}</span>
+          </div>
+        </div>
+      )}
+      {hasAnswered && !isFirstInQueue && (
+        <div className="mb-4 bg-red-100 text-red-800 p-3 rounded-lg text-center">
+          <div className="flex items-center justify-center gap-2">
+            <Hand size={20} />
+            <span className="font-semibold">{t('trivia.waitYourTurn')}</span>
+          </div>
         </div>
       )}
 
