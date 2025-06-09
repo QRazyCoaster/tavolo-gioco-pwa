@@ -25,7 +25,8 @@ export const useNarratorDisconnectionHandler = ({
     const isNarratorActive = isPlayerActive(currentNarratorId);
     const wasNarratorActive = lastNarratorActiveRef.current;
     
-    // Narrator just went offline
+    // Only check for disconnections if the narrator was previously active
+    // This prevents triggering on initial load when presence isn't established yet
     if (wasNarratorActive && !isNarratorActive) {
       console.log('[useNarratorDisconnectionHandler] Current narrator disconnected:', currentNarratorId);
       
