@@ -36,9 +36,12 @@ export const useRoundProgress = (
       // Mark current narrator as completed
       dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
       
+      // Create updated completed narrators set (since dispatch is async)
+      const updatedCompletedNarrators = new Set([...state.completedNarrators, currentRound.narratorId]);
+      
       // Find next narrator from original queue who hasn't narrated yet
       const nextNarratorId = state.originalNarratorQueue.find(narratorId => 
-        !state.completedNarrators.has(narratorId) && narratorId !== currentRound.narratorId
+        !updatedCompletedNarrators.has(narratorId)
       );
       
       console.log('[useRoundProgress] Original queue:', state.originalNarratorQueue);
