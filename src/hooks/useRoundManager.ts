@@ -28,7 +28,7 @@ export function useRoundManager(hostId: string) {
 
   const [currentRound, setCurrentRound] = useState<Round>({
     roundNumber: 1,
-    narratorId: hostId, // Start with host as first narrator
+    narratorId: state.originalNarratorQueue[0] || hostId, // Use first from original queue
     questions: [],
     currentQuestionIndex: 0,
     playerAnswers: [],
@@ -94,7 +94,8 @@ export function useRoundManager(hostId: string) {
 
         setCurrentRound(prev => ({
           ...prev,
-          questions: questionsWithRoundId
+          questions: questionsWithRoundId,
+          narratorId: state.originalNarratorQueue[0] || hostId // Ensure correct first narrator
         }));
         
         setQuestionsLoaded(true);
@@ -114,7 +115,8 @@ export function useRoundManager(hostId: string) {
         
         setCurrentRound(prev => ({
           ...prev,
-          questions: questionsWithRoundId
+          questions: questionsWithRoundId,
+          narratorId: state.originalNarratorQueue[0] || hostId // Ensure correct first narrator
         }));
         
         setQuestionsLoaded(true);

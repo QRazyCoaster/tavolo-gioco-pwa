@@ -22,23 +22,21 @@ export const useNarratorDisconnectionHandler = ({
   const getNextNarrator = useCallback(() => {
     console.log('[useNarratorDisconnectionHandler] Getting next narrator')
     console.log('[useNarratorDisconnectionHandler] Completed narrators:', Array.from(state.completedNarrators))
+    console.log('[useNarratorDisconnectionHandler] Original queue:', state.originalNarratorQueue)
     
-    const activePlayers = getActivePlayers()
-    const activePlayerIds = activePlayers.map(p => p.id)
-    console.log('[useNarratorDisconnectionHandler] Active players:', activePlayerIds)
+    // Find next narrator from original queue who hasn't been narrator yet
+    const nextNarratorId = state.originalNarratorQueue.find(narratorId => 
+      !state.completedNarrators.has(narratorId) && narratorId !== currentRound.narratorId
+    );
     
-    // Find next narrator from active players who haven't been narrator yet
-    const remainingNarrators = activePlayers.filter(p => !state.completedNarrators.has(p.id))
-    
-    if (remainingNarrators.length > 0) {
-      const nextNarratorId = remainingNarrators[0].id
+    if (nextNarratorId) {
       console.log('[useNarratorDisconnectionHandler] Found next narrator:', nextNarratorId)
       return nextNarratorId
     }
     
     console.log('[useNarratorDisconnectionHandler] No valid next narrator found')
     return null
-  }, [state.completedNarrators, getActivePlayers]);
+  }, [state.completedNarrators, state.originalNarratorQueue, currentRound.narratorId]);
 
   useEffect(() => {
     const currentNarratorId = currentRound.narratorId;
