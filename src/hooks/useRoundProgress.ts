@@ -39,25 +39,42 @@ export const useRoundProgress = (
       // Create updated completed narrators set (since dispatch is async)
       const updatedCompletedNarrators = new Set([...state.completedNarrators, currentRound.narratorId]);
       
+      // Debug logging
+      console.log('[useRoundProgress] === END OF ROUND DEBUG ===');
+      console.log('[useRoundProgress] Current narrator:', currentRound.narratorId);
+      console.log('[useRoundProgress] Current round:', currentRound.roundNumber);
+      console.log('[useRoundProgress] Original queue:', state.originalNarratorQueue);
+      console.log('[useRoundProgress] State completed narrators:', Array.from(state.completedNarrators));
+      console.log('[useRoundProgress] Updated completed narrators:', Array.from(updatedCompletedNarrators));
+      console.log('[useRoundProgress] Total players in queue:', state.originalNarratorQueue.length);
+      console.log('[useRoundProgress] Completed count:', updatedCompletedNarrators.size);
+      
+      // Check if all narrators have completed one round each
+      if (updatedCompletedNarrators.size >= state.originalNarratorQueue.length) {
+        console.log('[useRoundProgress] ✅ ALL NARRATORS COMPLETED - ENDING GAME');
+        console.log('[useRoundProgress] Completed:', updatedCompletedNarrators.size, 'vs Total:', state.originalNarratorQueue.length);
+        broadcastRoundEnd(currentRound.roundNumber, '', players, true);
+        setGameOver(true);
+        return;
+      }
+      
       // Find next narrator from original queue who hasn't narrated yet
       const nextNarratorId = state.originalNarratorQueue.find(narratorId => 
         !updatedCompletedNarrators.has(narratorId)
       );
       
-      console.log('[useRoundProgress] Original queue:', state.originalNarratorQueue);
-      console.log('[useRoundProgress] Completed narrators:', Array.from(state.completedNarrators));
       console.log('[useRoundProgress] Next narrator from queue:', nextNarratorId);
       
       if (!nextNarratorId) {
-        // No more narrators - end game
-        console.log('[useRoundProgress] All narrators completed, ending game');
+        // This should not happen if our logic above is correct, but safety check
+        console.log('[useRoundProgress] ⚠️ No next narrator found but not all completed - ending game');
         broadcastRoundEnd(currentRound.roundNumber, '', players, true);
         setGameOver(true);
       } else {
         // Move to next round with next narrator
         const nextRound = currentRound.roundNumber + 1;
         
-        console.log('[useRoundProgress] Next narrator:', nextNarratorId, 'Next round:', nextRound);
+        console.log('[useRoundProgress] ➡️ Moving to next round:', nextRound, 'with narrator:', nextNarratorId);
         
         setNextNarrator(nextNarratorId);
         setNextRoundNumber(nextRound);
