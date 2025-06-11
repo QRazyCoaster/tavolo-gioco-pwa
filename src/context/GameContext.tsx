@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 
 /* ──────────────── Player type ──────────────── */
@@ -56,11 +55,13 @@ type GameAction =
 
 /* ──────────────── Reducer ──────────────── */
 function gameReducer(state: GameState, action: GameAction): GameState {
+  // ▶️ Debug: log every action and current size of completedNarrators
+  console.log('[GameReducer] action:', action.type, 'payload:', (action as any).payload, 'completedNarrators:', state.completedNarrators.size);
+
   switch (action.type) {
     case 'CREATE_GAME':
       sessionStorage.setItem('gameId', action.payload.gameId);
       sessionStorage.setItem('pin', action.payload.pin);
-      
       return {
         ...state,
         gameId: action.payload.gameId,
@@ -68,6 +69,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         players: [action.payload.host],
         currentPlayer: action.payload.host,
       };
+
     case 'JOIN_GAME':
       return {
         ...state,
@@ -76,36 +78,45 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         currentPlayer: action.payload.player,
         players: [...state.players, action.payload.player],
       };
+
     case 'ADD_PLAYER':
       return { ...state, players: [...state.players, action.payload] };
+
     case 'ADD_PLAYER_LIST':
       return { ...state, players: action.payload };
+
     case 'REMOVE_PLAYER':
       return { ...state, players: state.players.filter(p => p.id !== action.payload) };
+
     case 'SELECT_GAME':
       return { ...state, selectedGame: action.payload };
+
     case 'START_GAME':
+      // ▶️ Only initialize narrator queue once at game start
       const narratorQueue = state.players.map(p => p.id);
-      return { 
-        ...state, 
+      console.log('[GameReducer] START_GAME – setting originalNarratorQueue:', narratorQueue);
+      return {
+        ...state,
         gameStarted: true,
         originalNarratorQueue: narratorQueue,
         completedNarrators: new Set()
       };
+
     case 'END_GAME':
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
       sessionStorage.removeItem('selectedGame');
-      return { 
-        ...state, 
-        gameStarted: false, 
-        selectedGame: null, 
-        gameId: null, 
+      return {
+        ...state,
+        gameStarted: false,
+        selectedGame: null,
+        gameId: null,
         pin: null,
         originalNarratorQueue: [],
         completedNarrators: new Set()
       };
+
     case 'UPDATE_SCORE':
       return {
         ...state,
@@ -113,8 +124,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           p.id === action.payload.playerId ? { ...p, score: action.payload.score } : p
         ),
       };
+
     case 'SET_CURRENT_PLAYER':
-      // Also store current player in session storage for recovery
       if (action.payload) {
         sessionStorage.setItem('currentPlayerId', action.payload.id);
         sessionStorage.setItem('currentPlayerName', action.payload.name);
@@ -123,40 +134,53 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         sessionStorage.removeItem('currentPlayerName');
       }
       return { ...state, currentPlayer: action.payload };
+
     case 'START_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: true };
+
     case 'STOP_BACKGROUND_MUSIC':
       return { ...state, backgroundMusicPlaying: false };
+
     case 'RESTORE_SESSION':
-      // Check for session data to restore
       const gameId = sessionStorage.getItem('gameId');
       const pin = sessionStorage.getItem('pin');
       const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
       const selectedGame = sessionStorage.getItem('selectedGame');
-      
       if (gameId && pin) {
+        console.log('[GameReducer] RESTORE_SESSION – preserving narrator queue and completed set');
         return {
           ...state,
           gameId,
           pin,
           gameStarted: gameStarted || false,
           selectedGame: selectedGame || state.selectedGame
+          // note: we deliberately do NOT overwrite originalNarratorQueue or completedNarrators here
         };
       }
       return state;
+
     case 'INITIALIZE_NARRATOR_QUEUE':
+      // ▶️ Guard against mid-game re-initialization (e.g. on reconnect)
+      if (state.gameStarted && state.originalNarratorQueue.length > 0) {
+        console.warn('[GameReducer] Ignoring INITIALIZE_NARRATOR_QUEUE – already initialized');
+        return state;
+      }
+      console.log('[GameReducer] INITIALIZE_NARRATOR_QUEUE – setting queue:', action.payload);
       return {
         ...state,
         originalNarratorQueue: action.payload,
         completedNarrators: new Set()
       };
+
     case 'MARK_NARRATOR_COMPLETED':
-      const newCompletedNarrators = new Set(state.completedNarrators);
-      newCompletedNarrators.add(action.payload);
+      const newCompleted = new Set(state.completedNarrators);
+      newCompleted.add(action.payload);
+      console.log('[GameReducer] MARK_NARRATOR_COMPLETED – new size:', newCompleted.size);
       return {
         ...state,
-        completedNarrators: newCompletedNarrators
+        completedNarrators: newCompleted
       };
+
     default:
       return state;
   }
@@ -177,11 +201,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const gameId = sessionStorage.getItem('gameId');
     const pin = sessionStorage.getItem('pin');
-    
     if (gameId && pin && !state.gameId) {
       dispatch({ type: 'RESTORE_SESSION' });
     }
-  }, []);
+  }, [state.gameId]);
 
   return <GameContext.Provider value={{ state, dispatch }}>{children}</GameContext.Provider>;
 };
