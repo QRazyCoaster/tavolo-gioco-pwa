@@ -90,8 +90,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'SELECT_GAME':
       return { ...state, selectedGame: action.payload };
     case 'START_GAME':
+      console.log('[GameContext] START_GAME - Current players:', state.players);
+      console.log('[GameContext] START_GAME - Number of players:', state.players.length);
       // Initialize narrator queue with current players when game starts
       const narratorQueue = state.players.map(p => p.id);
+      console.log('[GameContext] START_GAME - Created narrator queue:', narratorQueue);
       return { 
         ...state, 
         gameStarted: true,
