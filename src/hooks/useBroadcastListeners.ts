@@ -20,6 +20,7 @@ export const useBroadcastListeners = (
   setEliminatedPlayers: React.Dispatch<React.SetStateAction<Set<string>>>
 ) => {
   const { state } = useGame()
+  const currentPlayerId = state.currentPlayer?.id
   const hasSetup = useRef(false)
 
   useEffect(() => {
@@ -94,41 +95,41 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
-        const { scores, nextRound, nextNarratorId, isGameOver = false } = payload
+        const { scores } = payload
 
-        // 1) Update scores
+        // 1) Update scores on all clients
         if (Array.isArray(scores)) {
           scores.forEach((s: { id: string; score: number }) =>
             dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
           )
         }
 
-        // 2) Mark the just-finished narrator completed on every client
-        dispatch({
-          type: 'MARK_NARRATOR_COMPLETED',
-          payload: currentRound.narratorId
-        })
+        // 2) Mark the previous narrator completed on every client
+        dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId })
 
-        // 3) Reset per-round state
+        // 3) Reset answered/eliminated state
         setAnsweredPlayers(new Set())
         setShowPendingAnswers(false)
         setEliminatedPlayers(new Set())
 
-        // 4) Decide: end game if flagged OR no next narrator
-        if (isGameOver || !nextNarratorId) {
+        // 4) Determine next narrator or end game
+        const nextId = state.originalNarratorQueue.find(
+          id => !state.completedNarrators.has(id)
+        )
+        if (!nextId) {
           setGameOver(true)
         } else {
-          setNextNarrator(nextNarratorId)
-          setNextRoundNumber(nextRound)
+          setNextNarrator(nextId)
+          setNextRoundNumber(payload.nextRound)
           setShowRoundBridge(true)
         }
       }
     )
 
     /* ───────────────────────── housekeeping ───────────────────────── */
-    // gameChannel.on('disconnect', …)
-    // gameChannel.on('error', …)
-    // gameChannel.on('reconnect', …)
+    // gameChannel.on('disconnect', () => …)
+    // gameChannel.on('error', () => …)
+    // gameChannel.on('reconnect', () => …)
   }, [
     gameChannel,
     dispatch,
@@ -141,7 +142,7 @@ export const useBroadcastListeners = (
     setGameOver,
     gameId,
     currentRound,
-    state.originalNarratorQueue,
-    state.completedNarrators
+    state.completedNarrators,
+    state.originalNarratorQueue
   ])
 }
