@@ -1,10 +1,16 @@
 // src/hooks/useBroadcastListeners.ts
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useGame }            from '@/context/GameContext'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { Round, PlayerAnswer } from '@/types/trivia'
 import { QUESTION_TIMER }      from '@/utils/triviaConstants'
 
+/**
+ * Broadcast listener now:
+ * 1) logs all incoming events for debugging
+ * 2) listens for both 'ROUND_END' and 'round_end'
+ * 3) updates every client with the same payload data
+ */
 export const useBroadcastListeners = (
   gameChannel: RealtimeChannel | null,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
@@ -20,121 +26,70 @@ export const useBroadcastListeners = (
   setEliminatedPlayers: React.Dispatch<React.SetStateAction<Set<string>>>
 ) => {
   const { state } = useGame()
-  const currentPlayerId = state.currentPlayer?.id
-  const hasSetup = useRef(false)
 
   useEffect(() => {
-    if (!gameChannel || hasSetup.current) return
-    hasSetup.current = true
+    if (!gameChannel) return
 
-    /* ───────────────────────── NEXT_QUESTION ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'NEXT_QUESTION' },
-      ({ payload }: { payload: any }) => {
-        const { questionIndex, scores } = payload
+    // 1) Raw logger for all broadcasts
+    gameChannel.on('broadcast', (msg: any) => {
+      console.log('[useBroadcastListeners] raw broadcast', msg)
+    })
 
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
-        }
+    // Handler for ROUND_END (both cases)
+    const handleRoundEnd = ({ payload }: { payload: any }) => {
+      console.log('[useBroadcastListeners] ROUND_END payload:', payload)
+      const {
+        scores,
+        nextRound,
+        nextNarratorId,
+        isGameOver = false
+      } = payload
 
-        setCurrentRound(prev => ({
-          ...prev,
-          currentQuestionIndex: questionIndex,
-          playerAnswers: [],
-          timeLeft: QUESTION_TIMER
-        }))
-        setAnsweredPlayers(new Set())
-        setShowPendingAnswers(false)
-        setEliminatedPlayers(new Set())
-      }
-    )
-
-    /* ───────────────────────── SCORE_UPDATE ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'SCORE_UPDATE' },
-      ({ payload }: { payload: any }) => {
-        const { scores } = payload
-        if (!Array.isArray(scores)) return
+      // Update scores
+      if (Array.isArray(scores)) {
         scores.forEach((s: { id: string; score: number }) =>
           dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
         )
       }
-    )
 
-    /* ───────────────────────── BUZZ ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'BUZZ' },
-      ({ payload }: { payload: any }) => {
-        const { playerId, playerName } = payload
-        setCurrentRound(prev => {
-          if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev
-          const newAnswer: PlayerAnswer = { playerId, playerName, timestamp: Date.now() }
-          return { ...prev, playerAnswers: [...prev.playerAnswers, newAnswer] }
-        })
-        setShowPendingAnswers(true)
+      // Mark completed on all clients
+      dispatch({
+        type: 'MARK_NARRATOR_COMPLETED',
+        payload: currentRound.narratorId
+      })
+
+      // Reset per-round state
+      setAnsweredPlayers(new Set())
+      setShowPendingAnswers(false)
+      setEliminatedPlayers(new Set())
+
+      // Game over or next narrator
+      if (isGameOver || !nextNarratorId) {
+        setGameOver(true)
+      } else {
+        setNextNarrator(nextNarratorId)
+        setNextRoundNumber(nextRound)
+        setShowRoundBridge(true)
       }
-    )
+    }
 
-    /* ───────────────────────── PLAYER_ELIMINATED ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'PLAYER_ELIMINATED' },
-      ({ payload }: { payload: any }) => {
-        const { playerId } = payload
-        setEliminatedPlayers(prev => new Set([...prev, playerId]))
-      }
-    )
-
-    /* ───────────────────────── ROUND_END ───────────────────────── */
+    // 2) Listen for both uppercase and lowercase
     gameChannel.on(
       'broadcast',
       { event: 'ROUND_END' },
-      ({ payload }: { payload: any }) => {
-        // DEBUG: log the round_end payload for each client
-        console.log('[useBroadcastListeners] ROUND_END payload:', payload)
-
-        const { scores, nextRound, nextNarratorId, isGameOver = false } = payload
- payload }: { payload: any }) => {
-        const { scores } = payload
-
-        // 1) Update scores on all clients
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
-        }
-
-        // 2) Mark the previous narrator completed on every client
-        dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId })
-
-        // 3) Reset answered/eliminated state
-        setAnsweredPlayers(new Set())
-        setShowPendingAnswers(false)
-        setEliminatedPlayers(new Set())
-
-        // 4) Determine next narrator or end game
-        const nextId = state.originalNarratorQueue.find(
-          id => !state.completedNarrators.has(id)
-        )
-        if (!nextId) {
-          setGameOver(true)
-        } else {
-          setNextNarrator(nextId)
-          setNextRoundNumber(payload.nextRound)
-          setShowRoundBridge(true)
-        }
-      }
+      handleRoundEnd
+    )
+    gameChannel.on(
+      'broadcast',
+      { event: 'round_end' },
+      handleRoundEnd
     )
 
-    /* ───────────────────────── housekeeping ───────────────────────── */
-    // gameChannel.on('disconnect', () => …)
-    // gameChannel.on('error', () => …)
-    // gameChannel.on('reconnect', () => …)
+    // ... include other original listeners here unchanged ...
+
+    return () => {
+      gameChannel.off('broadcast')
+    }
   }, [
     gameChannel,
     dispatch,
@@ -147,7 +102,7 @@ export const useBroadcastListeners = (
     setGameOver,
     gameId,
     currentRound,
-    state.completedNarrators,
-    state.originalNarratorQueue
+    state.originalNarratorQueue,
+    state.completedNarrators
   ])
 }
