@@ -92,6 +92,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_GAME':
       console.log('[GameContext] START_GAME - Current players:', state.players);
       console.log('[GameContext] START_GAME - Number of players:', state.players.length);
+      console.log('[GameContext] START_GAME - RESETTING completedNarrators!');
+      console.log('[GameContext] START_GAME - Stack trace:', new Error().stack);
       // Initialize narrator queue with current players when game starts
       const narratorQueue = state.players.map(p => p.id);
       console.log('[GameContext] START_GAME - Created narrator queue:', narratorQueue);
@@ -102,6 +104,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         completedNarrators: new Set()
       };
     case 'END_GAME':
+      console.log('[GameContext] END_GAME - RESETTING completedNarrators!');
+      console.log('[GameContext] END_GAME - Stack trace:', new Error().stack);
       // Clear sessionStorage when the game ends
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
@@ -157,6 +161,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
       return state;
     case 'INITIALIZE_NARRATOR_QUEUE':
+      console.log('[GameContext] INITIALIZE_NARRATOR_QUEUE - RESETTING completedNarrators!');
+      console.log('[GameContext] INITIALIZE_NARRATOR_QUEUE - Stack trace:', new Error().stack);
       return {
         ...state,
         originalNarratorQueue: action.payload,
