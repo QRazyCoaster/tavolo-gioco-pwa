@@ -115,12 +115,15 @@ export const useBroadcastListeners = (
         setShowPendingAnswers(false)
         setEliminatedPlayers(new Set())
 
-        if (isGameOver) {
+        // Determine if game should end after the number of rounds equals number of players
+        const numPlayers = state.players.length
+        if (isGameOver || nextRound > numPlayers) {
           setGameOver(true)
         } else {
           if (nextNarratorId) setNextNarrator(nextNarratorId)
           setNextRoundNumber(nextRound)
           setShowRoundBridge(true)
+        }
         }
       }
     )
