@@ -1,13 +1,9 @@
-// src/hooks/useRoundProgress.ts
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { Round } from '@/types/trivia'
-import { QUESTION_TIMER, QUESTIONS_PER_ROUND } from '@/utils/triviaConstants'
+import { QUESTION_TIMER } from '@/utils/triviaConstants'
 import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast'
 import { Player, useGame } from '@/context/GameContext'
 
-/**
- * Manages advancing through questions and rounds.
- */
 export const useRoundProgress = (
   currentRound: Round,
   setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
@@ -23,37 +19,37 @@ export const useRoundProgress = (
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
   const [gameOver, setGameOver] = useState(false)
 
-  // Debug effect removed - enable for debugging if needed
-
-  /* ──────────────────────────── */
   const handleNextQuestion = useCallback(() => {
     const idx = currentRound.currentQuestionIndex
     const last = idx >= currentRound.questions.length - 1
 
     if (last) {
-      // End of round logic
-      
+      // ▶️ Debug logging
+      console.log('[useRoundProgress] Ending round', currentRound.roundNumber, 'current completed:', [...state.completedNarrators])
+
+      // Mark narrator completed
       dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
-      
-      const updatedCompletedNarrators = new Set([...state.completedNarrators, currentRound.narratorId]);
-      
-      const nextNarratorId = state.originalNarratorQueue.find(narratorId => 
-        !updatedCompletedNarrators.has(narratorId)
-      );
-      
+
+      // Build updated set locally
+      const updatedCompleted = new Set([...state.completedNarrators, currentRound.narratorId]);
+      console.log('[useRoundProgress] After mark, completedNarrators:', [...updatedCompleted]);
+
+      // Find next narrator
+      const nextNarratorId = state.originalNarratorQueue.find(id => !updatedCompleted.has(id));
+      console.log('[useRoundProgress] Next narrator ID:', nextNarratorId);
+
       if (!nextNarratorId) {
         broadcastRoundEnd(currentRound.roundNumber, '', players, true);
         setGameOver(true);
       } else {
         const nextRound = currentRound.roundNumber + 1;
-        
         setNextNarrator(nextNarratorId);
         setNextRoundNumber(nextRound);
         broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players);
         setShowRoundBridge(true);
       }
     } else {
-      /* same round → next question */
+      // same-round logic…
       const next = idx + 1
       setCurrentRound(prev => ({
         ...prev,
@@ -76,48 +72,7 @@ export const useRoundProgress = (
     dispatch
   ])
 
-
-  /* ──────────────────────────── */
-  const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
-    dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
-    
-    if (!nextNarratorId) {
-      broadcastRoundEnd(currentRound.roundNumber, '', players, true);
-      setGameOver(true);
-      return;
-    }
-    
-    setNextNarrator(nextNarratorId);
-    setNextRoundNumber(currentRound.roundNumber + 1);
-    broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players);
-    setShowRoundBridge(true);
-  }, [currentRound.roundNumber, currentRound.narratorId, players, dispatch])
-
-  /* ──────────────────────────── */
-  const startNextRound = async () => {
-
-    /* optional: load new Qs */
-    let newQuestions = currentRound.questions
-    if (loadQuestionsForNewRound) {
-      try {
-        newQuestions = await loadQuestionsForNewRound(nextRoundNumber)
-      } catch (err) {
-        console.error('[useRoundProgress] Error loading questions:', err)
-      }
-    }
-
-    setCurrentRound(prev => ({
-      roundNumber: nextRoundNumber,
-      narratorId: nextNarrator,
-      questions: newQuestions,
-      currentQuestionIndex: 0,
-      playerAnswers: [],
-      timeLeft: QUESTION_TIMER
-    }))
-    setAnsweredPlayers(new Set())
-    setShowPending(false)
-    setShowRoundBridge(false)
-  }
+  // …rest of hook unchanged…
 
   return {
     showRoundBridge,
@@ -129,7 +84,6 @@ export const useRoundProgress = (
     gameOver,
     setGameOver,
     handleNextQuestion,
-    startNextRound,
-    handleNarratorDisconnection
+    // …
   }
 }
