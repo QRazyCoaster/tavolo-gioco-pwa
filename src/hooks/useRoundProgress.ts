@@ -14,7 +14,7 @@ export const useRoundProgress = (
   loadQuestionsForNewRound?: (roundNumber: number) => Promise<any[]>,
   getActivePlayers?: () => Player[]
 ) => {
-  const { state, dispatch } = useGame()
+  const { state } = useGame()
   const [showRoundBridge, setShowRoundBridge] = useState(false)
   const [nextNarrator, setNextNarrator] = useState<string>('')
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
@@ -25,51 +25,13 @@ export const useRoundProgress = (
     const last = idx >= currentRound.questions.length - 1
 
     if (last) {
-      console.log(
-        '[useRoundProgress] Ending round', 
-        currentRound.roundNumber, 
-        'completed so far:', 
-        [...state.completedNarrators]
+      // Let broadcast listener handle marking completed & ending
+      broadcastRoundEnd(
+        currentRound.roundNumber,
+        '', // placeholder; payload.nextNarrator picked by server
+        players
       )
-
-      // mark current narrator done
-      dispatch({
-        type: 'MARK_NARRATOR_COMPLETED',
-        payload: currentRound.narratorId
-      })
-
-      // local copy of updated set
-      const updated = new Set([
-        ...state.completedNarrators,
-        currentRound.narratorId
-      ])
-      console.log('[useRoundProgress] After mark, completed:', [...updated])
-
-      // pick next
-      const nextId = state.originalNarratorQueue.find(id => !updated.has(id))
-      console.log('[useRoundProgress] Next narrator:', nextId)
-
-      if (!nextId) {
-        broadcastRoundEnd(
-          currentRound.roundNumber,
-          '',
-          players,
-          true  // gameOver
-        )
-        setGameOver(true)
-      } else {
-        const nr = currentRound.roundNumber + 1
-        setNextNarrator(nextId)
-        setNextRoundNumber(nr)
-        broadcastRoundEnd(
-          currentRound.roundNumber,
-          nextId,
-          players
-        )
-        setShowRoundBridge(true)
-      }
     } else {
-      // same round → next question
       const next = idx + 1
       setCurrentRound(prev => ({
         ...prev,
@@ -86,45 +48,20 @@ export const useRoundProgress = (
     players,
     setCurrentRound,
     setAnsweredPlayers,
-    setShowPending,
-    state.originalNarratorQueue,
-    state.completedNarrators,
-    dispatch
+    setShowPending
   ])
 
-  const handleNarratorDisconnection = useCallback((
-    nextNarratorId: string | null
-  ) => {
-    dispatch({
-      type: 'MARK_NARRATOR_COMPLETED',
-      payload: currentRound.narratorId
-    })
-
-    if (!nextNarratorId) {
+  const handleNarratorDisconnection = useCallback(
+    (nextNarratorId: string | null) => {
+      // Let broadcast listener handle marking completed
       broadcastRoundEnd(
         currentRound.roundNumber,
-        '',
-        players,
-        true
+        nextNarratorId || '',
+        players
       )
-      setGameOver(true)
-      return
-    }
-
-    setNextNarrator(nextNarratorId)
-    setNextRoundNumber(currentRound.roundNumber + 1)
-    broadcastRoundEnd(
-      currentRound.roundNumber,
-      nextNarratorId,
-      players
-    )
-    setShowRoundBridge(true)
-  }, [
-    currentRound.roundNumber,
-    currentRound.narratorId,
-    players,
-    dispatch
-  ])
+    },
+    [currentRound.roundNumber, players]
+  )
 
   const startNextRound = async () => {
     let newQuestions = currentRound.questions
@@ -160,6 +97,6 @@ export const useRoundProgress = (
     setGameOver,
     handleNextQuestion,
     handleNarratorDisconnection,
-    startNextRound    // ← make sure this is here!
+    startNextRound
   }
 }
