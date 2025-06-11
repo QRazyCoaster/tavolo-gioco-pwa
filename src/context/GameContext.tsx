@@ -58,13 +58,8 @@ type GameAction =
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'CREATE_GAME':
-      // When creating a game, also store in sessionStorage for persistence
       sessionStorage.setItem('gameId', action.payload.gameId);
       sessionStorage.setItem('pin', action.payload.pin);
-      console.log('GameContext - CREATE_GAME: Storing session data', {
-        gameId: action.payload.gameId,
-        pin: action.payload.pin
-      });
       
       return {
         ...state,
@@ -90,13 +85,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'SELECT_GAME':
       return { ...state, selectedGame: action.payload };
     case 'START_GAME':
-      console.log('[GameContext] START_GAME - Current players:', state.players);
-      console.log('[GameContext] START_GAME - Number of players:', state.players.length);
-      console.log('[GameContext] START_GAME - RESETTING completedNarrators!');
-      console.log('[GameContext] START_GAME - Stack trace:', new Error().stack);
-      // Initialize narrator queue with current players when game starts
       const narratorQueue = state.players.map(p => p.id);
-      console.log('[GameContext] START_GAME - Created narrator queue:', narratorQueue);
       return { 
         ...state, 
         gameStarted: true,
@@ -104,9 +93,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         completedNarrators: new Set()
       };
     case 'END_GAME':
-      console.log('[GameContext] END_GAME - RESETTING completedNarrators!');
-      console.log('[GameContext] END_GAME - Stack trace:', new Error().stack);
-      // Clear sessionStorage when the game ends
       sessionStorage.removeItem('gameStarted');
       sessionStorage.removeItem('gameId');
       sessionStorage.removeItem('pin');
@@ -148,9 +134,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const gameStarted = sessionStorage.getItem('gameStarted') === 'true';
       const selectedGame = sessionStorage.getItem('selectedGame');
       
-      // Only restore if we have valid session data
       if (gameId && pin) {
-        console.log('GameContext - Restoring session:', { gameId, pin, gameStarted, selectedGame });
         return {
           ...state,
           gameId,
@@ -161,19 +145,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
       return state;
     case 'INITIALIZE_NARRATOR_QUEUE':
-      console.log('[GameContext] INITIALIZE_NARRATOR_QUEUE - RESETTING completedNarrators!');
-      console.log('[GameContext] INITIALIZE_NARRATOR_QUEUE - Stack trace:', new Error().stack);
       return {
         ...state,
         originalNarratorQueue: action.payload,
         completedNarrators: new Set()
       };
     case 'MARK_NARRATOR_COMPLETED':
-      console.log('[GameContext] MARK_NARRATOR_COMPLETED - Before:', Array.from(state.completedNarrators));
-      console.log('[GameContext] MARK_NARRATOR_COMPLETED - Adding:', action.payload);
       const newCompletedNarrators = new Set(state.completedNarrators);
       newCompletedNarrators.add(action.payload);
-      console.log('[GameContext] MARK_NARRATOR_COMPLETED - After:', Array.from(newCompletedNarrators));
       return {
         ...state,
         completedNarrators: newCompletedNarrators
@@ -195,13 +174,11 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
 
-  // Al caricamento iniziale, prova a ripristinare dalla sessionStorage
   useEffect(() => {
     const gameId = sessionStorage.getItem('gameId');
     const pin = sessionStorage.getItem('pin');
     
     if (gameId && pin && !state.gameId) {
-      console.log('GameProvider - Tentativo di ripristino della sessione', { gameId, pin });
       dispatch({ type: 'RESTORE_SESSION' });
     }
   }, []);

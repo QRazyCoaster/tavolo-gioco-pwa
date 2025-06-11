@@ -32,13 +32,10 @@ export class QuestionService {
       const stored = localStorage.getItem(key);
       if (stored) {
         this.usedQuestions = new Set(JSON.parse(stored));
-        console.log('[QuestionService] Loaded', this.usedQuestions.size, 'used questions for game', gameId);
       } else {
         this.usedQuestions = new Set();
-        console.log('[QuestionService] No used questions found for game', gameId, '- starting fresh');
       }
     } catch (error) {
-      console.error('[QuestionService] Error loading used questions:', error);
       this.usedQuestions = new Set();
     }
   }
@@ -48,129 +45,48 @@ export class QuestionService {
     try {
       const key = this.getUsedQuestionsKey(this.currentGameId);
       localStorage.setItem(key, JSON.stringify([...this.usedQuestions]));
-      console.log('[QuestionService] Saved', this.usedQuestions.size, 'used questions for game', this.currentGameId);
     } catch (error) {
-      console.error('[QuestionService] Error saving used questions:', error);
+      // Silently handle storage errors
     }
   }
 
   setGameId(gameId: string): void {
     if (this.currentGameId !== gameId) {
-      console.log('[QuestionService] Switching to game:', gameId);
       this.currentGameId = gameId;
       this.loadUsedQuestions(gameId);
     }
   }
 
-  /** Fetch all questions for the given language, regardless of total size */
   async fetchQuestionsByLanguage(language: 'en' | 'it'): Promise<TriviaQuestion[]> {
-    console.log('[QuestionService] 🔍 DEBUGGING: Fetching questions for language:', language);
-
-    // 1) Initial fetch with count to understand the limitation
-    const { data: firstBatch, count, error: countErr } = await supabase
-      .from('trivia_questions')
-      .select('*', { count: 'exact' })
-      .eq('language', language);
-
-    if (countErr) {
-      console.error('[QuestionService] ❌ Error fetching count:', countErr);
-      throw countErr;
-    }
-    
-    const total = count ?? 0;
-    console.log(`[QuestionService] 📊 DEBUGGING: Database reports total questions: ${total}`);
-    console.log(`[QuestionService] 📊 DEBUGGING: First batch returned: ${firstBatch?.length ?? 0} questions`);
-    
-    // Debug: Check categories in first batch
-    if (firstBatch) {
-      const categoriesInFirstBatch = new Set(firstBatch.map(q => q.category));
-      console.log(`[QuestionService] 📊 DEBUGGING: Categories in first batch:`, [...categoriesInFirstBatch]);
-      const drinksInFirstBatch = firstBatch.filter(q => q.category === 'drinks').length;
-      console.log(`[QuestionService] 🍺 DEBUGGING: Drinks questions in first batch: ${drinksInFirstBatch}`);
-    }
-
-    // 2) Force fetch ALL questions with explicit high limit to bypass any default limits
-    console.log(`[QuestionService] 🚀 DEBUGGING: Attempting to fetch ALL ${total} questions with explicit limit...`);
     const { data: allData, error: fetchErr } = await supabase
       .from('trivia_questions')
       .select('*')
       .eq('language', language)
-      .limit(5000) // Force high limit to bypass Supabase defaults
-      .order('id'); // Add consistent ordering
+      .limit(5000)
+      .order('id');
 
     if (fetchErr) {
-      console.error('[QuestionService] ❌ Error fetching all questions:', fetchErr);
       throw fetchErr;
-    }
-
-    const actualFetched = allData?.length ?? 0;
-    console.log(`[QuestionService] ✅ DEBUGGING: Successfully fetched ${actualFetched} questions (expected ${total})`);
-    
-    // Debug: Analyze the full dataset
-    if (allData) {
-      const allCategories = new Set(allData.map(q => q.category));
-      console.log(`[QuestionService] 📊 DEBUGGING: All categories in dataset:`, [...allCategories]);
-      
-      const categoryBreakdown = {};
-      allCategories.forEach(cat => {
-        const count = allData.filter(q => q.category === cat).length;
-        categoryBreakdown[cat] = count;
-        console.log(`[QuestionService] 📊 DEBUGGING: Category '${cat}': ${count} questions`);
-      });
-      
-      const drinksQuestions = allData.filter(q => q.category === 'drinks');
-      console.log(`[QuestionService] 🍺 DEBUGGING: Total drinks questions found: ${drinksQuestions.length}`);
-      if (drinksQuestions.length > 0) {
-        console.log(`[QuestionService] 🍺 DEBUGGING: First drinks question:`, drinksQuestions[0]);
-      }
-    }
-
-    if (actualFetched !== total) {
-      console.warn(`[QuestionService] ⚠️ DEBUGGING: Mismatch! Database says ${total} but we fetched ${actualFetched}`);
     }
 
     return allData || [];
   }
 
   selectQuestionsForRound(availableQuestions: TriviaQuestion[]): TriviaQuestion[] {
-    console.log('===============================');
-    console.log('[QuestionService] Starting question selection for game:', this.currentGameId);
-    console.log('[QuestionService] Available questions:', availableQuestions.length);
-    console.log('[QuestionService] Used questions count:', this.usedQuestions.size);
-    console.log('[QuestionService] Expected categories:', CATEGORIES);
-
-    // Determine which categories actually exist
-    const categoriesInDatabase = new Set(availableQuestions.map(q => q.category));
-    console.log('[QuestionService] Categories found in database:', [...categoriesInDatabase]);
-
-    const missingCategories = CATEGORIES.filter(cat => !categoriesInDatabase.has(cat));
-    if (missingCategories.length) {
-      console.error('[QuestionService] ❌ MISSING CATEGORIES in database:', missingCategories);
-    }
-
-    // Group by category, excluding used
     const questionsByCategory = CATEGORIES.reduce((acc, category) => {
       const categoryQuestions = availableQuestions.filter(q =>
         q.category === category && !this.usedQuestions.has(q.id)
       );
       acc[category] = categoryQuestions;
-
-      // Debug drinks
-      if (category === 'drinks') {
-        console.log(`🍺 DRINKS category: total=${availableQuestions.filter(q => q.category === 'drinks').length}, unused=${categoryQuestions.length}`);
-      }
-      console.log(`[QuestionService] Category ${category}: ${categoryQuestions.length} unused / ${availableQuestions.filter(q => q.category === category).length} total`);
       return acc;
     }, {} as Record<QuestionCategory, TriviaQuestion[]>);
 
     // If any category has no unused questions, reset pool
     const availableCats = CATEGORIES.filter(cat => questionsByCategory[cat].length > 0);
     if (availableCats.length < CATEGORIES.length) {
-      console.warn('[QuestionService] ⚠️ Cannot select one per category, resetting used pool');
       this.resetUsedQuestions();
       CATEGORIES.forEach(cat => {
         questionsByCategory[cat] = availableQuestions.filter(q => q.category === cat);
-        console.log(`[QuestionService] After reset - Category ${cat}: ${questionsByCategory[cat].length} questions`);
       });
     }
 
@@ -181,18 +97,9 @@ export class QuestionService {
       if (pool.length) {
         const pick = pool[Math.floor(Math.random() * pool.length)];
         selected.push(pick);
-        console.log(`[QuestionService] ✅ Selected from ${cat}: ${pick.id}`);
-      } else {
-        console.error(`[QuestionService] ❌ No questions for category ${cat}`);
       }
     }
 
-    // Validate count
-    if (selected.length !== CATEGORIES.length) {
-      console.error(`[QuestionService] ❌ Expected ${CATEGORIES.length} questions, got ${selected.length}`);
-    } else {
-      console.log('[QuestionService] ✅ Successfully selected all categories');
-    }
 
     // Mark used
     selected.forEach(q => this.usedQuestions.add(q.id));
@@ -202,13 +109,11 @@ export class QuestionService {
   }
 
   resetUsedQuestions(): void {
-    console.log('[QuestionService] Resetting used questions pool for game:', this.currentGameId);
     this.usedQuestions.clear();
     this.saveUsedQuestions();
   }
 
   clearGameData(gameId: string): void {
-    console.log('[QuestionService] Clearing data for game:', gameId);
     const key = this.getUsedQuestionsKey(gameId);
     localStorage.removeItem(key);
     if (this.currentGameId === gameId) {

@@ -33,32 +33,19 @@ export const useRoundProgress = (
     if (last) {
       // End of round logic
       
-      // Mark current narrator as completed
-      console.log('[useRoundProgress] Dispatching MARK_NARRATOR_COMPLETED for:', currentRound.narratorId);
       dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
       
-      // Create updated completed narrators set (since dispatch is async)
       const updatedCompletedNarrators = new Set([...state.completedNarrators, currentRound.narratorId]);
       
-      // Find next narrator from original queue who hasn't narrated yet
       const nextNarratorId = state.originalNarratorQueue.find(narratorId => 
         !updatedCompletedNarrators.has(narratorId)
       );
       
-      console.log('[useRoundProgress] Original queue:', state.originalNarratorQueue);
-      console.log('[useRoundProgress] Completed narrators (updated):', Array.from(updatedCompletedNarrators));
-      console.log('[useRoundProgress] Next narrator from queue:', nextNarratorId);
-      
       if (!nextNarratorId) {
-        // No more narrators - end game
-        console.log('[useRoundProgress] All narrators completed, ending game');
         broadcastRoundEnd(currentRound.roundNumber, '', players, true);
         setGameOver(true);
       } else {
-        // Move to next round with next narrator
         const nextRound = currentRound.roundNumber + 1;
-        
-        console.log('[useRoundProgress] Next narrator:', nextNarratorId, 'Next round:', nextRound);
         
         setNextNarrator(nextNarratorId);
         setNextRoundNumber(nextRound);
@@ -92,21 +79,14 @@ export const useRoundProgress = (
 
   /* ──────────────────────────── */
   const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
-    console.log('[useRoundProgress] Handling narrator disconnection, next narrator:', nextNarratorId);
-    
-    // Mark current narrator as completed even if they disconnected
     dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
     
     if (!nextNarratorId) {
-      // No more valid narrators - end game
-      console.log('[useRoundProgress] Ending game due to no more narrators');
       broadcastRoundEnd(currentRound.roundNumber, '', players, true);
       setGameOver(true);
       return;
     }
     
-    // Skip to round bridge with new narrator - next round number
-    console.log('[useRoundProgress] Skipping to round bridge with new narrator:', nextNarratorId);
     setNextNarrator(nextNarratorId);
     setNextRoundNumber(currentRound.roundNumber + 1);
     broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players);

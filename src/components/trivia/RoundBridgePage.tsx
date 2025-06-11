@@ -19,11 +19,6 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
   const { language } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<number>(6);
   
-  // Debugging round number
-  useEffect(() => {
-    console.log('[RoundBridgePage] Next round number:', nextRoundNumber);
-    console.log('[RoundBridgePage] Next narrator:', nextNarrator?.name);
-  }, [nextRoundNumber, nextNarrator]);
   
   // Countdown effect
   useEffect(() => {
@@ -41,9 +36,7 @@ const RoundBridgePage: React.FC<RoundBridgePageProps> = ({
     return () => clearInterval(timer);
   }, [onCountdownComplete]);
 
-  // Make sure we have a valid narrator and round number
   if (!nextNarrator || !nextRoundNumber) {
-    console.error('[RoundBridgePage] Missing required props:', { nextNarrator, nextRoundNumber });
     return null;
   }
 

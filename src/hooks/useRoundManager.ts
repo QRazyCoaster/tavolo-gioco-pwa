@@ -35,51 +35,32 @@ export function useRoundManager(hostId: string) {
     timeLeft: QUESTION_TIMER,
   })
 
-  // Track if we've already initialized the narrator to prevent resets
-  const [narratorInitialized, setNarratorInitialized] = useState(false)
 
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set())
   const [showPendingAnswers, setShowPendingAnswers] = useState(false)
 
-  // Initialize question service with game ID when available
   useEffect(() => {
     if (state.gameId) {
-      console.log('[useRoundManager] Initializing question service for game:', state.gameId);
       questionService.setGameId(state.gameId);
     }
   }, [state.gameId]);
 
-  // Load questions on mount
   useEffect(() => {
     const loadQuestions = async () => {
       if (!state.gameId) {
-        console.log('[useRoundManager] No gameId available, waiting...');
         return;
       }
 
       try {
-        console.log('[useRoundManager] Loading questions for language:', language, 'game:', state.gameId);
         setQuestionsError(null);
         
-        // Fetch from database
         const questions = await questionService.fetchQuestionsByLanguage(language);
-        console.log('[useRoundManager] Fetched questions from database:', questions.length);
         
         if (questions.length === 0) {
           throw new Error('No questions found in database');
         }
 
-        // Check if we have at least one question per category
-        const categoriesRepresented = new Set(questions.map(q => q.category));
-        console.log('[useRoundManager] Categories in database:', [...categoriesRepresented]);
-        
-        if (categoriesRepresented.size < 7) {
-          console.warn('[useRoundManager] Database missing some categories, only has:', categoriesRepresented.size);
-        }
-
-        // Select questions for the round
         const selectedQuestions = questionService.selectQuestionsForRound(questions);
-        console.log('[useRoundManager] Selected questions for round:', selectedQuestions.length);
         
         if (selectedQuestions.length === 0) {
           throw new Error('No questions could be selected from database');
@@ -90,67 +71,28 @@ export function useRoundManager(hostId: string) {
           id: `r1-${q.id}` 
         }));
 
-        console.log('[useRoundManager] Successfully loaded database questions for round 1');
-        selectedQuestions.forEach((q, index) => {
-          console.log(`[useRoundManager] Q${index + 1} [${q.category}]:`, q.question.substring(0, 50) + '...');
-        });
-
-        console.log('[useRoundManager] Before setting currentRound - current narratorId:', currentRound.narratorId);
-        console.log('[useRoundManager] Before setting currentRound - narratorInitialized:', narratorInitialized);
-        console.log('[useRoundManager] Before setting currentRound - originalNarratorQueue[0]:', state.originalNarratorQueue[0]);
-        
-        setCurrentRound(prev => {
-          // Only set narratorId if we haven't initialized it yet or if it's empty
-          const shouldSetNarrator = !narratorInitialized || !prev.narratorId;
-          const newNarratorId = shouldSetNarrator ? (state.originalNarratorQueue[0] || hostId) : prev.narratorId;
-          
-          console.log('[useRoundManager] shouldSetNarrator:', shouldSetNarrator, 'newNarratorId:', newNarratorId);
-          
-          return {
-            ...prev,
-            questions: questionsWithRoundId,
-            narratorId: newNarratorId
-          };
-        });
-        
-        if (!narratorInitialized) {
-          console.log('[useRoundManager] Setting narratorInitialized to true');
-          setNarratorInitialized(true);
-        }
+        setCurrentRound(prev => ({
+          ...prev,
+          questions: questionsWithRoundId,
+          narratorId: state.originalNarratorQueue[0] || hostId
+        }));
         
         setQuestionsLoaded(true);
         
       } catch (error) {
-        console.error('[useRoundManager] Database completely unavailable, using EXTREME fallback questions:', error);
         setQuestionsError('Database unavailable - using backup questions');
         
-        // EXTREME FALLBACK: Only use when database is completely unavailable
         const fallbackQuestions = language === 'it' ? mockQuestionsItalian : mockQuestions;
         const questionsWithRoundId = fallbackQuestions.slice(0, 7).map((q): TriviaQuestion => ({ 
           ...q, 
           id: `r1-fallback-${q.id}` 
         }));
         
-        console.log('[useRoundManager] Using extreme fallback questions:', questionsWithRoundId.length);
-        
-        setCurrentRound(prev => {
-          // Only set narratorId if we haven't initialized it yet or if it's empty
-          const shouldSetNarrator = !narratorInitialized || !prev.narratorId;
-          const newNarratorId = shouldSetNarrator ? (state.originalNarratorQueue[0] || hostId) : prev.narratorId;
-          
-          console.log('[useRoundManager] FALLBACK shouldSetNarrator:', shouldSetNarrator, 'newNarratorId:', newNarratorId);
-          
-          return {
-            ...prev,
-            questions: questionsWithRoundId,
-            narratorId: newNarratorId
-          };
-        });
-        
-        if (!narratorInitialized) {
-          console.log('[useRoundManager] FALLBACK Setting narratorInitialized to true');
-          setNarratorInitialized(true);
-        }
+        setCurrentRound(prev => ({
+          ...prev,
+          questions: questionsWithRoundId,
+          narratorId: state.originalNarratorQueue[0] || hostId
+        }));
         
         setQuestionsLoaded(true);
       }
@@ -190,18 +132,13 @@ export function useRoundManager(hostId: string) {
    */
   const loadQuestionsForNewRound = async (roundNumber: number) => {
     try {
-      console.log('[useRoundManager] Loading questions for NEW round:', roundNumber, 'game:', state.gameId);
-      
-      // Fetch from database
       const questions = await questionService.fetchQuestionsByLanguage(language);
-      console.log('[useRoundManager] Fetched questions for round', roundNumber, ':', questions.length);
       
       if (questions.length === 0) {
         throw new Error('No questions found in database');
       }
 
       const selectedQuestions = questionService.selectQuestionsForRound(questions);
-      console.log('[useRoundManager] Selected questions for round', roundNumber, ':', selectedQuestions.length);
       
       if (selectedQuestions.length === 0) {
         throw new Error('No questions could be selected from database');
@@ -211,25 +148,16 @@ export function useRoundManager(hostId: string) {
         ...q, 
         id: `r${roundNumber}-${q.id}` 
       }));
-
-      console.log('[useRoundManager] Successfully loaded database questions for round', roundNumber);
-      selectedQuestions.forEach((q, index) => {
-        console.log(`[useRoundManager] R${roundNumber} Q${index + 1} [${q.category}]:`, q.question.substring(0, 50) + '...');
-      });
       
       return questionsWithRoundId;
       
     } catch (error) {
-      console.error('[useRoundManager] Error loading questions for round', roundNumber, ', using extreme fallback:', error);
-      
-      // EXTREME FALLBACK: Only use when database is completely unavailable
       const fallbackQuestions = language === 'it' ? mockQuestionsItalian : mockQuestions;
       const questionsWithRoundId = fallbackQuestions.slice(0, 7).map((q): TriviaQuestion => ({ 
         ...q, 
         id: `r${roundNumber}-fallback-${q.id}` 
       }));
       
-      console.log('[useRoundManager] Using extreme fallback for round', roundNumber);
       return questionsWithRoundId;
     }
   };
