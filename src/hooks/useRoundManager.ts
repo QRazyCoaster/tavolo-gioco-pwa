@@ -35,6 +35,9 @@ export function useRoundManager(hostId: string) {
     timeLeft: QUESTION_TIMER,
   })
 
+  // Track if we've already initialized the narrator to prevent resets
+  const [narratorInitialized, setNarratorInitialized] = useState(false)
+
   const [answeredPlayers, setAnsweredPlayers] = useState<Set<string>>(new Set())
   const [showPendingAnswers, setShowPendingAnswers] = useState(false)
 
@@ -92,11 +95,28 @@ export function useRoundManager(hostId: string) {
           console.log(`[useRoundManager] Q${index + 1} [${q.category}]:`, q.question.substring(0, 50) + '...');
         });
 
-        setCurrentRound(prev => ({
-          ...prev,
-          questions: questionsWithRoundId,
-          narratorId: state.originalNarratorQueue[0] || hostId // Ensure correct first narrator
-        }));
+        console.log('[useRoundManager] Before setting currentRound - current narratorId:', currentRound.narratorId);
+        console.log('[useRoundManager] Before setting currentRound - narratorInitialized:', narratorInitialized);
+        console.log('[useRoundManager] Before setting currentRound - originalNarratorQueue[0]:', state.originalNarratorQueue[0]);
+        
+        setCurrentRound(prev => {
+          // Only set narratorId if we haven't initialized it yet or if it's empty
+          const shouldSetNarrator = !narratorInitialized || !prev.narratorId;
+          const newNarratorId = shouldSetNarrator ? (state.originalNarratorQueue[0] || hostId) : prev.narratorId;
+          
+          console.log('[useRoundManager] shouldSetNarrator:', shouldSetNarrator, 'newNarratorId:', newNarratorId);
+          
+          return {
+            ...prev,
+            questions: questionsWithRoundId,
+            narratorId: newNarratorId
+          };
+        });
+        
+        if (!narratorInitialized) {
+          console.log('[useRoundManager] Setting narratorInitialized to true');
+          setNarratorInitialized(true);
+        }
         
         setQuestionsLoaded(true);
         
@@ -113,11 +133,24 @@ export function useRoundManager(hostId: string) {
         
         console.log('[useRoundManager] Using extreme fallback questions:', questionsWithRoundId.length);
         
-        setCurrentRound(prev => ({
-          ...prev,
-          questions: questionsWithRoundId,
-          narratorId: state.originalNarratorQueue[0] || hostId // Ensure correct first narrator
-        }));
+        setCurrentRound(prev => {
+          // Only set narratorId if we haven't initialized it yet or if it's empty
+          const shouldSetNarrator = !narratorInitialized || !prev.narratorId;
+          const newNarratorId = shouldSetNarrator ? (state.originalNarratorQueue[0] || hostId) : prev.narratorId;
+          
+          console.log('[useRoundManager] FALLBACK shouldSetNarrator:', shouldSetNarrator, 'newNarratorId:', newNarratorId);
+          
+          return {
+            ...prev,
+            questions: questionsWithRoundId,
+            narratorId: newNarratorId
+          };
+        });
+        
+        if (!narratorInitialized) {
+          console.log('[useRoundManager] FALLBACK Setting narratorInitialized to true');
+          setNarratorInitialized(true);
+        }
         
         setQuestionsLoaded(true);
       }
