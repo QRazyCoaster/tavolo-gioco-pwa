@@ -95,6 +95,11 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
+        // DEBUG: log the round_end payload for each client
+        console.log('[useBroadcastListeners] ROUND_END payload:', payload)
+
+        const { scores, nextRound, nextNarratorId, isGameOver = false } = payload
+ payload }: { payload: any }) => {
         const { scores } = payload
 
         // 1) Update scores on all clients
