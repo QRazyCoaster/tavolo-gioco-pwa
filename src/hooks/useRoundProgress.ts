@@ -45,7 +45,7 @@ export const useRoundProgress = (
       );
       
       console.log('[useRoundProgress] Original queue:', state.originalNarratorQueue);
-      console.log('[useRoundProgress] Completed narrators:', Array.from(state.completedNarrators));
+      console.log('[useRoundProgress] Completed narrators (updated):', Array.from(updatedCompletedNarrators));
       console.log('[useRoundProgress] Next narrator from queue:', nextNarratorId);
       
       if (!nextNarratorId) {
