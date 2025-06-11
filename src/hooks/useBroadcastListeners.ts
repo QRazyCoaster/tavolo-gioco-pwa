@@ -95,44 +95,41 @@ export const useBroadcastListeners = (
       'broadcast',
       { event: 'ROUND_END' },
       ({ payload }: { payload: any }) => {
-        const { nextRound, nextNarratorId, scores, isGameOver = false } = payload
+        const { scores } = payload
 
-        // update scores
+        // 1) Update scores on all clients
         if (Array.isArray(scores)) {
           scores.forEach((s: { id: string; score: number }) =>
             dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
           )
         }
 
-        // 1) Mark narrator completed on every client
-        dispatch({
-          type: 'MARK_NARRATOR_COMPLETED',
-          payload: currentRound.narratorId
-        })
+        // 2) Mark the previous narrator completed on every client
+        dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId })
 
-        // reset answered/eliminated state
+        // 3) Reset answered/eliminated state
         setAnsweredPlayers(new Set())
         setShowPendingAnswers(false)
         setEliminatedPlayers(new Set())
 
-        // Determine if game should end after the number of rounds equals number of players
-        const numPlayers = state.players.length
-        if (isGameOver || nextRound > numPlayers) {
+        // 4) Determine next narrator or end game
+        const nextId = state.originalNarratorQueue.find(
+          id => !state.completedNarrators.has(id)
+        )
+        if (!nextId) {
           setGameOver(true)
         } else {
-          if (nextNarratorId) setNextNarrator(nextNarratorId)
-          setNextRoundNumber(nextRound)
+          setNextNarrator(nextId)
+          setNextRoundNumber(payload.nextRound)
           setShowRoundBridge(true)
-        }
         }
       }
     )
 
     /* ───────────────────────── housekeeping ───────────────────────── */
-    // Note: These events may need different signatures in newer Supabase versions
-    // gameChannel.on('disconnect', () => console.log('[useBroadcastListeners] Game channel disconnected'))
-    // gameChannel.on('error', (error: any) => console.error('[useBroadcastListeners] Game channel error:', error))
-    // gameChannel.on('reconnect', () => console.log('[useBroadcastListeners] Game channel reconnected'))
+    // gameChannel.on('disconnect', () => …)
+    // gameChannel.on('error', () => …)
+    // gameChannel.on('reconnect', () => …)
   }, [
     gameChannel,
     dispatch,
@@ -144,8 +141,8 @@ export const useBroadcastListeners = (
     setNextRoundNumber,
     setGameOver,
     gameId,
-    currentRound.roundNumber,
-    currentPlayerId,
-    setEliminatedPlayers
+    currentRound,
+    state.completedNarrators,
+    state.originalNarratorQueue
   ])
 }
