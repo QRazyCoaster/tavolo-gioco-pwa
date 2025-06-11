@@ -1,141 +1,174 @@
-
 // src/hooks/useBroadcastListeners.ts
-import { useEffect, useRef } from 'react'
-import { useGame }            from '@/context/GameContext'
-import type { RealtimeChannel } from '@supabase/supabase-js'
-import type { Round, PlayerAnswer } from '@/types/trivia'
-import { QUESTION_TIMER }      from '@/utils/triviaConstants'
+import { useEffect } from 'react'
+import { useGame } from '@/context/GameContext'
 
-export const useBroadcastListeners = (
-  gameChannel: RealtimeChannel | null,
-  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
-  setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
-  setShowPendingAnswers: React.Dispatch<React.SetStateAction<boolean>>,
-  setNextNarrator: React.Dispatch<React.SetStateAction<string>>,
-  setShowRoundBridge: React.Dispatch<React.SetStateAction<boolean>>,
-  setNextRoundNumber: React.Dispatch<React.SetStateAction<number>>,
-  setGameOver: React.Dispatch<React.SetStateAction<boolean>>,
-  dispatch: React.Dispatch<any>,
-  gameId: string | null,
-  currentRound: Round,
-  setEliminatedPlayers: React.Dispatch<React.SetStateAction<Set<string>>>
-) => {
-  const { state } = useGame()
-  const currentPlayerId = state.currentPlayer?.id
-  const hasSetup = useRef(false)
+interface RoundEndPayload {
+  prevNarratorId: string;
+  nextNarratorId: string | null;
+  roundNumber: number;
+  isGameOver: boolean;
+}
 
+export function useBroadcastListeners(
+  channel: any,
+  setCurrentRound: React.Dispatch<any>,
+  setAnsweredPlayers: React.Dispatch<Set<string>>,
+  setShowPending: React.Dispatch<boolean>,
+  setNextNarrator: React.Dispatch<string>,
+  setShowRoundBridge: React.Dispatch<boolean>,
+  setNextRoundNumber: React.Dispatch<number>,
+  setGameOver: React.Dispatch<boolean>,
+  dispatch: React.Dispatch<any>
+) {
   useEffect(() => {
-    if (!gameChannel || hasSetup.current) return
-    hasSetup.current = true
+    if (!channel) return
 
-    /* ───────────────────────── NEXT_QUESTION ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'NEXT_QUESTION' },
-      ({ payload }: { payload: any }) => {
-        const { questionIndex, scores } = payload
+    // Listen for round_end broadcasts
+    channel.on('round_end', (payload: RoundEndPayload) => {
+      // 1) Mark the previous narrator completed on every client
+      dispatch({
+        type: 'MARK_NARRATOR_COMPLETED',
+        payload: payload.prevNarratorId
+      })
 
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
-        }
-
-        setCurrentRound(prev => ({
-          ...prev,
-          currentQuestionIndex: questionIndex,
-          playerAnswers: [],
-          timeLeft: QUESTION_TIMER
-        }))
-        setAnsweredPlayers(new Set())
-        setShowPendingAnswers(false)
-        setEliminatedPlayers(new Set())
+      // 2) Drive UI for next round or game over
+      if (payload.isGameOver) {
+        setGameOver(true)
+      } else {
+        setNextNarrator(payload.nextNarratorId!)  // nextNarratorId guaranteed non-null here
+        setNextRoundNumber(payload.roundNumber + 1)
+        setShowRoundBridge(true)
       }
-    )
+    })
 
-    /* ───────────────────────── SCORE_UPDATE ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'SCORE_UPDATE' },
-      ({ payload }: { payload: any }) => {
-        const { scores } = payload
-        if (!Array.isArray(scores)) return
-        scores.forEach((s: { id: string; score: number }) =>
-          dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-        )
+    return () => {
+      channel.off('round_end')
+    }
+  }, [channel, dispatch, setGameOver, setNextNarrator, setNextRoundNumber, setShowRoundBridge])
+}
+
+
+
+// src/hooks/useRoundProgress.ts
+import { useState, useCallback } from 'react'
+import { Round } from '@/types/trivia'
+import { QUESTION_TIMER } from '@/utils/triviaConstants'
+import { broadcastNextQuestion, broadcastRoundEnd } from '@/utils/triviaBroadcast'
+import { Player, useGame } from '@/context/GameContext'
+
+export const useRoundProgress = (
+  currentRound: Round,
+  setCurrentRound: React.Dispatch<React.SetStateAction<Round>>,
+  players: Player[],
+  setAnsweredPlayers: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setShowPending: React.Dispatch<React.SetStateAction<boolean>>,
+  loadQuestionsForNewRound?: (roundNumber: number) => Promise<any[]>,
+  getActivePlayers?: () => Player[]
+) => {
+  const { state, dispatch } = useGame()
+  const [showRoundBridge, setShowRoundBridge] = useState(false)
+  const [nextNarrator, setNextNarrator] = useState<string>('')
+  const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
+  const [gameOver, setGameOver] = useState(false)
+
+  const handleNextQuestion = useCallback(() => {
+    const idx = currentRound.currentQuestionIndex
+    const last = idx >= currentRound.questions.length - 1
+
+    if (last) {
+      console.log('[useRoundProgress] Ending round', currentRound.roundNumber)
+
+      // Removed local-only MARK_NARRATOR_COMPLETED — now handled in broadcast listener
+
+      const updated = new Set([
+        ...state.completedNarrators,
+        currentRound.narratorId
+      ])
+      const nextId = state.originalNarratorQueue.find(id => !updated.has(id))
+
+      if (!nextId) {
+        broadcastRoundEnd(currentRound.roundNumber, '', players, true)
+        setGameOver(true)
+      } else {
+        const nr = currentRound.roundNumber + 1
+        setNextNarrator(nextId)
+        setNextRoundNumber(nr)
+        broadcastRoundEnd(currentRound.roundNumber, nextId, players)
+        setShowRoundBridge(true)
       }
-    )
-
-    /* ───────────────────────── BUZZ ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'BUZZ' },
-      ({ payload }: { payload: any }) => {
-        const { playerId, playerName } = payload
-        setCurrentRound(prev => {
-          if (prev.playerAnswers.some(a => a.playerId === playerId)) return prev
-          const newAnswer: PlayerAnswer = { playerId, playerName, timestamp: Date.now() }
-          return { ...prev, playerAnswers: [...prev.playerAnswers, newAnswer] }
-        })
-        setShowPendingAnswers(true)
-      }
-    )
-
-    /* ───────────────────────── PLAYER_ELIMINATED ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'PLAYER_ELIMINATED' },
-      ({ payload }: { payload: any }) => {
-        const { playerId } = payload
-        setEliminatedPlayers(prev => new Set([...prev, playerId]))
-      }
-    )
-
-    /* ───────────────────────── ROUND_END ───────────────────────── */
-    gameChannel.on(
-      'broadcast',
-      { event: 'ROUND_END' },
-      ({ payload }: { payload: any }) => {
-        const { nextRound, nextNarratorId, scores, isGameOver = false } = payload
-
-        if (Array.isArray(scores)) {
-          scores.forEach((s: { id: string; score: number }) =>
-            dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
-          )
-        }
-
-        setAnsweredPlayers(new Set())
-        setShowPendingAnswers(false)
-        setEliminatedPlayers(new Set())
-
-        if (isGameOver) {
-          setGameOver(true)
-        } else {
-          if (nextNarratorId) setNextNarrator(nextNarratorId)
-          setNextRoundNumber(nextRound)
-          setShowRoundBridge(true)
-        }
-      }
-    )
-
-    /* ───────────────────────── housekeeping ───────────────────────── */
-    // Note: These events may need different signatures in newer Supabase versions
-    // gameChannel.on('disconnect', () => console.log('[useBroadcastListeners] Game channel disconnected'))
-    // gameChannel.on('error', (error: any) => console.error('[useBroadcastListeners] Game channel error:', error))
-    // gameChannel.on('reconnect', () => console.log('[useBroadcastListeners] Game channel reconnected'))
+    } else {
+      const next = idx + 1
+      setCurrentRound(prev => ({
+        ...prev,
+        currentQuestionIndex: next,
+        playerAnswers: [],
+        timeLeft: QUESTION_TIMER
+      }))
+      setAnsweredPlayers(new Set())
+      setShowPending(false)
+      broadcastNextQuestion(next, players)
+    }
   }, [
-    gameChannel,
-    dispatch,
+    currentRound,
+    players,
     setCurrentRound,
     setAnsweredPlayers,
-    setShowPendingAnswers,
-    setNextNarrator,
-    setShowRoundBridge,
-    setNextRoundNumber,
-    setGameOver,
-    gameId,
-    currentRound.roundNumber,
-    currentPlayerId,
-    setEliminatedPlayers
+    setShowPending,
+    state.originalNarratorQueue,
+    state.completedNarrators
   ])
+
+  // Unchanged disconnect handler…
+  const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
+    // dispatch handled by broadcast listener
+    if (!nextNarratorId) {
+      broadcastRoundEnd(currentRound.roundNumber, '', players, true)
+      setGameOver(true)
+      return
+    }
+    setNextNarrator(nextNarratorId)
+    setNextRoundNumber(currentRound.roundNumber + 1)
+    broadcastRoundEnd(currentRound.roundNumber, nextNarratorId, players)
+    setShowRoundBridge(true)
+  }, [
+    currentRound.roundNumber,
+    currentRound.narratorId,
+    players
+  ])
+
+  const startNextRound = async () => {
+    let newQuestions = currentRound.questions
+    if (loadQuestionsForNewRound) {
+      try {
+        newQuestions = await loadQuestionsForNewRound(nextRoundNumber)
+      } catch (err) {
+        console.error('[useRoundProgress] Error loading:', err)
+      }
+    }
+    setCurrentRound({
+      roundNumber: nextRoundNumber,
+      narratorId: nextNarrator,
+      questions: newQuestions,
+      currentQuestionIndex: 0,
+      playerAnswers: [],
+      timeLeft: QUESTION_TIMER
+    })
+    setAnsweredPlayers(new Set())
+    setShowPending(false)
+    setShowRoundBridge(false)
+  }
+
+  return {
+    showRoundBridge,
+    setShowRoundBridge,
+    nextNarrator,
+    setNextNarrator,
+    nextRoundNumber,
+    setNextRoundNumber,
+    gameOver,
+    setGameOver,
+    handleNextQuestion,
+    handleNarratorDisconnection,
+    startNextRound
+  }
 }
