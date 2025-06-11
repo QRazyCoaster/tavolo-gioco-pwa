@@ -1,4 +1,3 @@
-
 // src/hooks/useBroadcastListeners.ts
 import { useEffect, useRef } from 'react'
 import { useGame }            from '@/context/GameContext'
@@ -98,12 +97,20 @@ export const useBroadcastListeners = (
       ({ payload }: { payload: any }) => {
         const { nextRound, nextNarratorId, scores, isGameOver = false } = payload
 
+        // update scores
         if (Array.isArray(scores)) {
           scores.forEach((s: { id: string; score: number }) =>
             dispatch({ type: 'UPDATE_SCORE', payload: { playerId: s.id, score: s.score } })
           )
         }
 
+        // 1) Mark narrator completed on every client
+        dispatch({
+          type: 'MARK_NARRATOR_COMPLETED',
+          payload: currentRound.narratorId
+        })
+
+        // reset answered/eliminated state
         setAnsweredPlayers(new Set())
         setShowPendingAnswers(false)
         setEliminatedPlayers(new Set())
