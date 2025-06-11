@@ -18,20 +18,15 @@ export const useNarratorDisconnectionHandler = ({
   const { state, dispatch } = useGame();
   const lastNarratorActiveRef = useRef<boolean>(true);
 
-  // Helper function to get next narrator (only for disconnection handling)
+  // Helper function to get next narrator 
   const getNextNarrator = useCallback(() => {
-    console.log('[useNarratorDisconnectionHandler] Getting next narrator due to disconnection')
-    console.log('[useNarratorDisconnectionHandler] Current narrator (disconnected):', currentRound.narratorId)
+    console.log('[useNarratorDisconnectionHandler] Getting next narrator')
     console.log('[useNarratorDisconnectionHandler] Completed narrators:', Array.from(state.completedNarrators))
     console.log('[useNarratorDisconnectionHandler] Original queue:', state.originalNarratorQueue)
     
-    // Create updated completed narrators set including the disconnected narrator
-    const updatedCompletedNarrators = new Set([...state.completedNarrators, currentRound.narratorId]);
-    console.log('[useNarratorDisconnectionHandler] Updated completed (with disconnected):', Array.from(updatedCompletedNarrators))
-    
     // Find next narrator from original queue who hasn't been narrator yet
     const nextNarratorId = state.originalNarratorQueue.find(narratorId => 
-      !updatedCompletedNarrators.has(narratorId)
+      !state.completedNarrators.has(narratorId) && narratorId !== currentRound.narratorId
     );
     
     if (nextNarratorId) {
@@ -39,7 +34,7 @@ export const useNarratorDisconnectionHandler = ({
       return nextNarratorId
     }
     
-    console.log('[useNarratorDisconnectionHandler] No valid next narrator found - all have completed')
+    console.log('[useNarratorDisconnectionHandler] No valid next narrator found')
     return null
   }, [state.completedNarrators, state.originalNarratorQueue, currentRound.narratorId]);
 
