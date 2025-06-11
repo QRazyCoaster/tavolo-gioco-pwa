@@ -34,6 +34,7 @@ export const useRoundProgress = (
       // End of round logic
       
       // Mark current narrator as completed
+      console.log('[useRoundProgress] Dispatching MARK_NARRATOR_COMPLETED for:', currentRound.narratorId);
       dispatch({ type: 'MARK_NARRATOR_COMPLETED', payload: currentRound.narratorId });
       
       // Create updated completed narrators set (since dispatch is async)

@@ -163,8 +163,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         completedNarrators: new Set()
       };
     case 'MARK_NARRATOR_COMPLETED':
+      console.log('[GameContext] MARK_NARRATOR_COMPLETED - Before:', Array.from(state.completedNarrators));
+      console.log('[GameContext] MARK_NARRATOR_COMPLETED - Adding:', action.payload);
       const newCompletedNarrators = new Set(state.completedNarrators);
       newCompletedNarrators.add(action.payload);
+      console.log('[GameContext] MARK_NARRATOR_COMPLETED - After:', Array.from(newCompletedNarrators));
       return {
         ...state,
         completedNarrators: newCompletedNarrators
