@@ -100,14 +100,20 @@ export const broadcastPlayerEliminated = (playerId: string) => {
 
 export const broadcastRoundEnd = (
   currentRoundNumber: number,
-  nextNarratorId: string,
+  currentNarratorId: string,
   players: Player[],
-  isGameOver: boolean = false
+  activePlayers: Player[],
+  completedNarrators: Set<string>
 ) => {
   if (!gameChannel) {
     console.error('[triviaBroadcast] Cannot broadcast round end - game channel not set');
     return;
   }
+  
+  // Calculate next narrator from active players who haven't been narrator yet
+  const availableNarrators = activePlayers.filter(p => !completedNarrators.has(p.id));
+  const nextNarratorId = availableNarrators.length > 0 ? availableNarrators[0].id : '';
+  const isGameOver = !nextNarratorId;
   
   // Get current scores from game state, applying minimum score limit
   const scores = players.map(p => ({ 
@@ -115,14 +121,14 @@ export const broadcastRoundEnd = (
     score: Math.max(MIN_SCORE_LIMIT, p.score || 0) 
   }));
   
-  // Calculate the next round number (current + 1)
   const nextRoundNumber = currentRoundNumber + 1;
   
   console.log('[triviaBroadcast] Broadcasting round end:', {
     currentRound: currentRoundNumber,
     nextRound: nextRoundNumber,
     nextNarrator: nextNarratorId,
-    isGameOver
+    isGameOver,
+    availableNarrators: availableNarrators.map(p => p.name)
   });
   
   // Send round end event to all players

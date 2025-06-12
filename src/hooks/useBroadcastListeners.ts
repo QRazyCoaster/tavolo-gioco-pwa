@@ -30,12 +30,7 @@ export const useBroadcastListeners = (
   useEffect(() => {
     if (!gameChannel) return
 
-    // 1) Raw logger for all broadcasts
-    gameChannel.on('broadcast', (msg: any) => {
-      console.log('[useBroadcastListeners] raw broadcast', msg)
-    })
-
-    // Handler for ROUND_END (both cases)
+    // Handler for ROUND_END
     const handleRoundEnd = ({ payload }: { payload: any }) => {
       console.log('[useBroadcastListeners] ROUND_END payload:', payload)
       const {
@@ -63,7 +58,7 @@ export const useBroadcastListeners = (
       setShowPendingAnswers(false)
       setEliminatedPlayers(new Set())
 
-      // Game over or next narrator
+      // Game over or next narrator (use broadcast values)
       if (isGameOver || !nextNarratorId) {
         setGameOver(true)
       } else {
@@ -73,36 +68,26 @@ export const useBroadcastListeners = (
       }
     }
 
-    // 2) Listen for both uppercase and lowercase
+    // Listen for ROUND_END
     gameChannel.on(
       'broadcast',
       { event: 'ROUND_END' },
       handleRoundEnd
     )
-    gameChannel.on(
-      'broadcast',
-      { event: 'round_end' },
-      handleRoundEnd
-    )
-
-    // ... include other original listeners here unchanged ...
 
     return () => {
-      gameChannel.off('broadcast')
+      gameChannel.unsubscribe()
     }
   }, [
     gameChannel,
     dispatch,
-    setCurrentRound,
     setAnsweredPlayers,
     setShowPendingAnswers,
     setNextNarrator,
     setShowRoundBridge,
     setNextRoundNumber,
     setGameOver,
-    gameId,
-    currentRound,
-    state.originalNarratorQueue,
-    state.completedNarrators
+    currentRound.narratorId,
+    setEliminatedPlayers
   ])
 }

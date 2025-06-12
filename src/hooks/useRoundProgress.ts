@@ -25,32 +25,17 @@ export const useRoundProgress = (
     const last = idx >= currentRound.questions.length - 1
 
     if (last) {
-      // Compute updated completed set locally
-      const updatedCompleted = new Set([...
-        state.completedNarrators,
-        currentRound.narratorId
-      ])
-      // Find next narrator
-      const nextId = state.originalNarratorQueue.find(
-        id => !updatedCompleted.has(id)
-      )
-      const isGameOverFlag = !nextId
-
-      // Broadcast round end with correct nextNarratorId and gameOver flag
+      // Get active players for next narrator calculation
+      const activePlayers = getActivePlayers ? getActivePlayers() : players;
+      
+      // Broadcast round end - let the broadcaster calculate next narrator
       broadcastRoundEnd(
         currentRound.roundNumber,
-        nextId ?? '',
+        currentRound.narratorId,
         players,
-        isGameOverFlag
+        activePlayers,
+        state.completedNarrators
       )
-
-      if (isGameOverFlag) {
-        setGameOver(true)
-      } else {
-        setNextNarrator(nextId!)  // safe since !isGameOverFlag
-        setNextRoundNumber(currentRound.roundNumber + 1)
-        setShowRoundBridge(true)
-      }
     } else {
       // Next question in current round
       const next = idx + 1
@@ -70,19 +55,23 @@ export const useRoundProgress = (
     setCurrentRound,
     setAnsweredPlayers,
     setShowPending,
-    state.originalNarratorQueue,
-    state.completedNarrators
+    state.completedNarrators,
+    getActivePlayers
   ])
 
   const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
+    // Get active players for next narrator calculation
+    const activePlayers = getActivePlayers ? getActivePlayers() : players;
+    
     // On disconnect, broadcast round end as if they finished
     broadcastRoundEnd(
       currentRound.roundNumber,
-      nextNarratorId ?? '',
+      currentRound.narratorId,
       players,
-      nextNarratorId == null
+      activePlayers,
+      state.completedNarrators
     )
-  }, [currentRound.roundNumber, players])
+  }, [currentRound.roundNumber, currentRound.narratorId, players, state.completedNarrators, getActivePlayers])
 
   const startNextRound = async () => {
     let newQuestions = currentRound.questions
