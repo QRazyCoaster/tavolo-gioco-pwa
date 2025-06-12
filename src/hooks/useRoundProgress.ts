@@ -14,7 +14,7 @@ export const useRoundProgress = (
   loadQuestionsForNewRound?: (roundNumber: number) => Promise<any[]>,
   getActivePlayers?: () => Player[]
 ) => {
-  const { state } = useGame()
+  const { state, dispatch } = useGame()
   const [showRoundBridge, setShowRoundBridge] = useState(false)
   const [nextNarrator, setNextNarrator] = useState<string>('')
   const [nextRoundNumber, setNextRoundNumber] = useState<number>(1)
@@ -28,14 +28,43 @@ export const useRoundProgress = (
       // Get active players for next narrator calculation
       const activePlayers = getActivePlayers ? getActivePlayers() : players;
       
-      // Broadcast round end - let the broadcaster calculate next narrator
+      // Calculate next narrator (same logic as broadcast)
+      const availableNarrators = activePlayers.filter(p => !state.completedNarrators.has(p.id));
+      const nextNarratorId = availableNarrators.length > 0 ? availableNarrators[0].id : '';
+      const isGameOver = !nextNarratorId;
+      
+      // Broadcast round end to other clients
       broadcastRoundEnd(
         currentRound.roundNumber,
         currentRound.narratorId,
         players,
         activePlayers,
         state.completedNarrators
-      )
+      );
+      
+      // Apply same state changes locally for the narrator
+      dispatch({
+        type: 'MARK_NARRATOR_COMPLETED',
+        payload: currentRound.narratorId
+      });
+      
+      // Update scores locally
+      players.forEach(p => 
+        dispatch({ type: 'UPDATE_SCORE', payload: { playerId: p.id, score: p.score || 0 } })
+      );
+      
+      // Reset per-round state
+      setAnsweredPlayers(new Set());
+      setShowPending(false);
+      
+      // Transition to next state
+      if (isGameOver) {
+        setGameOver(true);
+      } else {
+        setNextNarrator(nextNarratorId);
+        setNextRoundNumber(currentRound.roundNumber + 1);
+        setShowRoundBridge(true);
+      }
     } else {
       // Next question in current round
       const next = idx + 1
@@ -56,7 +85,8 @@ export const useRoundProgress = (
     setAnsweredPlayers,
     setShowPending,
     state.completedNarrators,
-    getActivePlayers
+    getActivePlayers,
+    dispatch
   ])
 
   const handleNarratorDisconnection = useCallback((nextNarratorId: string | null) => {
